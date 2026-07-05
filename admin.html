@@ -584,7 +584,7 @@
 
   <div class="card">
     <h2>Empresa</h2>
-    <p class="hint">El dominio de correo es fijo de la plataforma (@centralweb.com). La sigla identifica internamente a tu empresa dentro de CentralWeb y forma parte del correo de cada bandeja. Se definieron en el alta inicial, pero podés modificarlos si lo necesitás.</p>
+    <p class="hint">El dominio de correo es fijo de la plataforma (@novadgt.com). La sigla identifica internamente a tu empresa dentro de CentralWeb y forma parte del correo de cada bandeja. Se definieron en el alta inicial, pero podés modificarlos si lo necesitás.</p>
     <div class="row">
       <div>
         <label class="field-label">Nombre formal</label>
@@ -607,7 +607,7 @@
         Crear bandeja
       </button>
     </div>
-    <p class="hint">Cada bandeja obtiene una casilla simulada propia (bandeja.sigla@centralweb.com).</p>
+    <p class="hint">Cada bandeja obtiene una casilla simulada propia (bandeja.sigla@novadgt.com).</p>
     <div id="bandejas-listado"></div>
   </div>
 
@@ -653,7 +653,7 @@
       </div>
       <div style="margin-bottom:14px">
         <label class="field-label">Email</label>
-        <input type="text" id="modal-usuario-email" placeholder="ej. martina.gonzalez@centralweb.com">
+        <input type="text" id="modal-usuario-email" placeholder="ej. martina.gonzalez@novadgt.com">
       </div>
       <div>
         <label class="field-label">Rol</label>
@@ -906,11 +906,11 @@
   function seedDefaults() {
     if (!localStorage.getItem(LS_USUARIOS)) {
       localStorage.setItem(LS_USUARIOS, JSON.stringify([
-        { key: 'user_ng', initials: 'NG', nombre: 'Nicolás', apellido: 'Gravina', email: 'nicolas.gravina@centralweb.com', gradient: GRADIENTES[0], rol: 'Administrador' },
-        { key: 'user_cp', initials: 'CP', nombre: 'Carlos',  apellido: 'P.',       email: 'carlos.p@centralweb.com',      gradient: GRADIENTES[1], rol: 'Agente' },
-        { key: 'user_lm', initials: 'LM', nombre: 'Laura',   apellido: 'M.',       email: 'laura.m@centralweb.com',       gradient: GRADIENTES[2], rol: 'Agente' },
-        { key: 'user_sr', initials: 'SR', nombre: 'Sofía',   apellido: 'R.',       email: 'sofia.r@centralweb.com',       gradient: GRADIENTES[3], rol: 'Agente' },
-        { key: 'user_jf', initials: 'JF', nombre: 'Jorge',   apellido: 'F.',       email: 'jorge.f@centralweb.com',       gradient: GRADIENTES[4], rol: 'Agente' },
+        { key: 'user_ng', initials: 'NG', nombre: 'Nicolás', apellido: 'Gravina', email: 'nicolas.gravina@novadgt.com', gradient: GRADIENTES[0], rol: 'Administrador' },
+        { key: 'user_cp', initials: 'CP', nombre: 'Carlos',  apellido: 'P.',       email: 'carlos.p@novadgt.com',      gradient: GRADIENTES[1], rol: 'Agente' },
+        { key: 'user_lm', initials: 'LM', nombre: 'Laura',   apellido: 'M.',       email: 'laura.m@novadgt.com',       gradient: GRADIENTES[2], rol: 'Agente' },
+        { key: 'user_sr', initials: 'SR', nombre: 'Sofía',   apellido: 'R.',       email: 'sofia.r@novadgt.com',       gradient: GRADIENTES[3], rol: 'Agente' },
+        { key: 'user_jf', initials: 'JF', nombre: 'Jorge',   apellido: 'F.',       email: 'jorge.f@novadgt.com',       gradient: GRADIENTES[4], rol: 'Agente' },
       ]));
     }
     if (!localStorage.getItem(LS_BANDEJAS)) {
@@ -939,7 +939,7 @@
         cambio = true;
       }
       if (!u.email) {
-        u.email = `${slugify(u.nombre + ' ' + u.apellido)}@centralweb.com`;
+        u.email = `${slugify(u.nombre + ' ' + u.apellido)}@novadgt.com`;
         cambio = true;
       }
     });
@@ -1267,7 +1267,7 @@
 
   function correoDeBandeja(bandejaKey) {
     const sigla = getEmpresa().sigla;
-    return sigla ? `${bandejaKey}.${sigla}@centralweb.com` : `${bandejaKey}@(sigla sin definir)`;
+    return sigla ? `${bandejaKey}.${sigla}@novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
   }
 
   function renderEmpresa() {
@@ -1275,7 +1275,7 @@
     document.getElementById('empresa-nombre-input').value = empresa.nombreFormal || '';
     document.getElementById('empresa-sigla-input').value = empresa.sigla || '';
     document.getElementById('empresa-preview').innerHTML = empresa.sigla
-      ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@centralweb.com</b>`
+      ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@novadgt.com</b>`
       : 'Definí la sigla para previsualizar los correos de cada bandeja.';
   }
 
@@ -1543,7 +1543,7 @@
     const sigla = getEmpresa().sigla || '';
     const preview = document.getElementById('modal-bandeja-correo-preview');
     preview.innerHTML = `El correo va a quedar como:
-      <input type="text" id="modal-bandeja-alias-input" value="${alias}">.${sigla}@centralweb.com`;
+      <input type="text" id="modal-bandeja-alias-input" value="${alias}">.${sigla}@novadgt.com`;
     const input = document.getElementById('modal-bandeja-alias-input');
     input.focus();
     input.select();

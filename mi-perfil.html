@@ -364,7 +364,7 @@
 
   function correoDeBandeja(bandejaKey) {
     const sigla = getEmpresa().sigla;
-    return sigla ? `${bandejaKey}.${sigla}@centralweb.com` : `${bandejaKey}@(sigla sin definir)`;
+    return sigla ? `${bandejaKey}.${sigla}@novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
   }
 
   function currentUser() {
@@ -385,7 +385,7 @@
         cambio = true;
       }
       if (!u.email) {
-        u.email = `${(u.nombre + '.' + u.apellido).toLowerCase().replace(/[^a-z0-9.]+/g, '')}@centralweb.com`;
+        u.email = `${(u.nombre + '.' + u.apellido).toLowerCase().replace(/[^a-z0-9.]+/g, '')}@novadgt.com`;
         cambio = true;
       }
     });
