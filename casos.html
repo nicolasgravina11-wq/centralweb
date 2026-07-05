@@ -1,0 +1,2840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CentralWeb — Gestión de Casos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #0a1628;
+      --blue-900:  #0d2244;
+      --blue-800:  #0e3a6e;
+      --blue-700:  #1352a8;
+      --blue-600:  #1a6cd4;
+      --blue-500:  #2183f0;
+      --blue-400:  #4fa3f7;
+      --blue-300:  #7cc2fb;
+      --blue-200:  #bfdffd;
+      --blue-100:  #e8f3fe;
+      --blue-50:   #f4f9ff;
+      --sidebar-w: 220px;
+      --header-h:  60px;
+      --text-primary:   #0d1f3c;
+      --text-secondary: #4a6285;
+      --text-muted:     #8ba4c4;
+      --border:         #d0e2f7;
+      --bg:             #f0f5fc;
+      --white:          #ffffff;
+      --shadow-sm: 0 1px 3px rgba(13,34,68,.07), 0 1px 2px rgba(13,34,68,.04);
+      --shadow-md: 0 4px 12px rgba(13,34,68,.10), 0 2px 6px rgba(13,34,68,.06);
+      --shadow-lg: 0 10px 30px rgba(13,34,68,.14);
+      --amber:       #f0a82c;
+      --amber-dark:  #d6921a;
+      --amber-text:  #412402;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── DISPONIBLE BTN (topbar) ── */
+    .disponible-topbar-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 13px;
+      border-radius: 5px;
+      border: 1.5px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.1);
+      color: white;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      user-select: none;
+    }
+    .disponible-topbar-btn:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); }
+    .disponible-topbar-btn .disp-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .disponible-topbar-btn .disp-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 20px;
+    }
+
+    /* ── USUARIOS FLOTANTE (desde bandeja menu) ── */
+    .bandeja-usuarios-item {
+      position: relative;
+    }
+    .usuarios-hover-panel {
+      display: none;
+      position: absolute;
+      left: 100%; top: 0;
+      width: 220px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      max-height: 280px;
+      overflow-y: auto;
+      z-index: 200;
+      padding: 6px 0;
+    }
+    .usuarios-hover-panel.open { display: block; }
+    .usuarios-hover-panel::-webkit-scrollbar { width: 4px; }
+    .usuarios-hover-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .usuario-hover-row {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: background .12s;
+      font-size: 13px; font-weight: 500; color: var(--text-primary);
+    }
+    .usuario-hover-row:hover { background: var(--blue-50); }
+    .usuario-hover-row.offline { color: var(--text-muted); }
+    .usuario-hover-row .uav {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: white; flex-shrink: 0;
+      position: relative;
+    }
+    .usuario-hover-row .uav .udot {
+      position: absolute; bottom: -1px; right: -1px;
+      width: 8px; height: 8px; border-radius: 50%;
+      border: 1.5px solid white;
+    }
+    .usuario-hover-row .ucount {
+      margin-left: auto; font-size: 11px; font-weight: 700;
+      background: var(--blue-100); color: var(--blue-700);
+      border-radius: 10px; padding: 1px 7px; min-width: 18px; text-align: center;
+    }
+
+    /* ── MAIN ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      height: var(--header-h);
+      background: #0c447c;
+      border-bottom: none;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .page-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: white;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .page-title svg { width: 18px; height: 18px; color: var(--blue-300); }
+
+    .topbar-sep { width: 1px; height: 24px; background: rgba(255,255,255,.15); margin: 0 4px; }
+
+    .bandeja-select {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.12);
+      border: 1.5px solid rgba(255,255,255,.2);
+      border-radius: 5px;
+      padding: 8px 16px;
+      min-width: 170px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .bandeja-select:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.35); }
+    .bandeja-select svg { width: 14px; height: 14px; }
+
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn svg { width: 15px; height: 15px; }
+
+    .btn-primary {
+      background: var(--blue-600);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--blue-700);
+    }
+
+    #btn-nuevo-caso {
+      background: #16a34a;
+      color: white;
+    }
+    #btn-nuevo-caso:hover {
+      background: #15803d;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--blue-50); border-color: var(--blue-300); color: var(--blue-700); }
+
+    .icon-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 5px;
+      border: 1.5px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.1);
+      cursor: pointer;
+      color: rgba(255,255,255,.85);
+      transition: all .15s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); color: white; }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    .notif-btn { position: relative; }
+    .notif-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 8px; height: 8px;
+      background: #f87171;
+      border-radius: 50%;
+      border: 2px solid var(--blue-700);
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .checkbox-wrap {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      font-size: 13px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #selectAll-wrap input[type="checkbox"] { display: none; }
+    .custom-check-box {
+      width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0;
+      border: 1.5px solid #94a3b8; background: white;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+    }
+    .custom-check-box svg { width: 11px; height: 11px; display: none; stroke: white; }
+    .checkbox-wrap.has-selection .custom-check-box {
+      background: var(--blue-600); border-color: var(--blue-600);
+    }
+    .checkbox-wrap.has-selection .custom-check-box svg { display: block; }
+    input[type="checkbox"] { accent-color: var(--blue-600); width: 14px; height: 14px; cursor: pointer; }
+
+    .search-wrap {
+      flex: 1; max-width: 320px;
+      position: relative;
+    }
+    .search-wrap svg {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      width: 15px; height: 15px;
+      color: var(--text-muted);
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 7px 12px 7px 34px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--blue-50);
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    .search-wrap input:focus { border-color: var(--blue-400); box-shadow: 0 0 0 3px rgba(33,131,240,.10); background: white; }
+    .search-wrap input::placeholder { color: var(--text-muted); }
+
+    .toolbar-sep { width: 1px; height: 24px; background: var(--border); }
+
+    .btn-transfer {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 14px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-transfer:hover:not(:disabled) { border-color: var(--blue-400); color: var(--blue-700); background: var(--blue-50); }
+    .btn-transfer svg { width: 14px; height: 14px; }
+    .btn-transfer:disabled,
+    .estado-select.disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+
+    .estado-select {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 12px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .estado-select:hover { border-color: var(--blue-400); color: var(--blue-700); background: var(--blue-50); }
+    .estado-select svg { width: 12px; height: 12px; }
+
+    .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+    .sort-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      background: white;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all .15s;
+    }
+    .sort-btn:hover { background: var(--blue-50); border-color: var(--blue-300); color: var(--blue-700); }
+    .sort-btn svg { width: 15px; height: 15px; }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead tr {
+      background: var(--blue-50);
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    th {
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      user-select: none;
+    }
+    th:first-child { padding-left: 20px; }
+    th:last-child { padding-right: 20px; text-align: right; }
+
+    th.sortable { cursor: pointer; }
+    th.sortable:hover { color: var(--blue-700); }
+    th svg { width: 12px; height: 12px; vertical-align: middle; margin-left: 3px; color: var(--text-muted); }
+
+    tbody tr {
+      border-bottom: 1px solid var(--blue-50);
+      transition: background .12s;
+      cursor: pointer;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--blue-50); }
+    tbody tr.unread { background: rgba(33,131,240,.04); }
+    tbody tr.unread:hover { background: rgba(33,131,240,.08); }
+    tbody tr.ultimo-visto { background: rgba(13,34,68,.12); transition: background 1.2s ease; }
+    tbody tr.ultimo-visto:hover { background: rgba(13,34,68,.18); }
+    tbody tr.ultimo-visto.fading { background: transparent; }
+
+    td {
+      padding: 10px 16px;
+      font-size: 13.5px;
+      vertical-align: middle;
+    }
+    td:first-child { padding-left: 20px; }
+    td:last-child { padding-right: 20px; text-align: right; }
+
+    .td-check { width: 40px; }
+    .td-icon { width: 44px; }
+    .td-subject { min-width: 240px; }
+    .td-ticket { width: 110px; }
+    .td-estado { width: 120px; }
+    .td-usuario { width: 160px; }
+    .td-fecha { width: 130px; }
+
+    .mail-icon {
+      width: 34px; height: 34px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mail-icon.unread { background: var(--blue-600); }
+    .mail-icon.read   { background: var(--blue-100); }
+    .mail-icon svg    { width: 16px; height: 16px; }
+    .mail-icon.unread svg { fill: white; }
+    .mail-icon.read svg   { fill: var(--blue-400); }
+
+    .subject-line { font-weight: 500; color: var(--text-secondary); font-size: 13.5px; margin-bottom: 2px; }
+    .from-line    { font-size: 12px; color: var(--text-muted); }
+
+    /* Unread state: todo en negrita y color más fuerte */
+    tbody tr.unread .subject-line { font-weight: 700; color: var(--text-primary); }
+    tbody tr.unread .from-line    { font-weight: 600; color: var(--text-secondary); }
+    tbody tr.unread .ticket-num   { font-weight: 800; background: var(--blue-200); color: var(--blue-800); }
+    tbody tr.unread .fecha-cell .date { font-weight: 700; }
+    tbody tr.unread .fecha-cell .time { font-weight: 600; color: var(--text-secondary); }
+
+    tbody tr.en-gracia { opacity: .5; background: #dde2e9; }
+    tbody tr.en-gracia:hover { background: #d2d8e0; }
+    .badge-transferido {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10.5px; font-weight: 700;
+      color: #b45309; background: #fef3c7;
+      border-radius: 5px; padding: 2px 7px;
+      margin-left: 6px; white-space: nowrap;
+    }
+
+    .ticket-num {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--blue-700);
+      background: var(--blue-100);
+      padding: 3px 9px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    /* STATUS BADGES */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .badge-abierto  { background: #fde8e8; color: #b91c1c; }
+    .badge-abierto::before { background: #f87171; }
+
+    .badge-espera   { background: #e0f5ff; color: #0369a1; }
+    .badge-espera::before { background: #38bdf8; }
+
+    .badge-cerrado  { background: #f1f5f9; color: #475569; }
+    .badge-cerrado::before { background: #94a3b8; }
+
+    /* USUARIO CELL */
+    .user-cell { display: flex; align-items: center; gap: 8px; }
+    .mini-avatar {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: white;
+      flex-shrink: 0;
+    }
+    .user-cell-info .name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .user-cell-info .bandeja { font-size: 11.5px; color: var(--text-muted); }
+    .sin-asignar { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+    /* FECHA */
+    .fecha-cell .date { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .fecha-cell .time { font-size: 11.5px; color: var(--text-muted); }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 64px 24px;
+    }
+    .empty-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 18px;
+      background: var(--blue-100);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .empty-icon svg { width: 30px; height: 30px; fill: var(--blue-400); }
+    .empty-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+    .empty-desc  { font-size: 13.5px; color: var(--text-muted); }
+
+    /* STATUS FILTER BUTTONS */
+    .status-filter {
+      position: relative;
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s, box-shadow .15s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .status-filter:hover { transform: scale(1.12); }
+    .status-filter.active { border-color: var(--blue-700); box-shadow: 0 0 0 3px rgba(26,108,212,.15); }
+    .status-filter-count {
+      position: absolute;
+      bottom: -7px; right: -7px;
+      background: var(--navy);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 8px;
+      display: none;
+      pointer-events: none;
+    }
+    .status-filter.active .status-filter-count { display: block; }
+
+    /* SCROLLBAR */
+    .table-wrap::-webkit-scrollbar { width: 6px; }
+    .table-wrap::-webkit-scrollbar-track { background: transparent; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--blue-200); border-radius: 3px; }
+    .table-wrap::-webkit-scrollbar-thumb:hover { background: var(--blue-300); }
+
+    /* PRIORITY DOT on row */
+    .priority { width: 4px; height: 36px; border-radius: 2px; margin: -13px 0; }
+    .priority.alta  { background: #ef4444; }
+    .priority.media { background: #f59e0b; }
+    .priority.baja  { background: #22c55e; }
+
+    /* ── CASE TABS ── */
+    #case-tabs { display: flex; align-items: center; gap: 5px; }
+    .case-tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 8px 5px 12px;
+      border-radius: 5px;
+      border: 1.5px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.7);
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: all .15s;
+      max-width: 180px;
+    }
+    .case-tab:hover { background: rgba(255,255,255,.18); color: white; }
+    .case-tab.active { background: white; color: var(--blue-800); border-color: white; }
+    .case-tab .tab-label { overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+    .tab-close {
+      width: 18px; height: 18px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; border: none;
+      background: transparent; color: inherit;
+      font-size: 15px; line-height: 1; cursor: pointer;
+      opacity: .5; font-family: inherit;
+      transition: opacity .12s, background .12s;
+    }
+    .tab-close:hover { opacity: 1; background: rgba(0,0,0,.12); }
+    .case-tab.active .tab-close:hover { background: rgba(0,0,0,.08); }
+
+    /* ── BANDEJA DROPDOWN ── */
+    .bandeja-wrap { position: relative; }
+    .bandeja-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      background: var(--navy);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      min-width: 210px;
+      max-height: 70vh;
+      z-index: 300;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .bandeja-menu.open { display: block; }
+    .bandeja-menu-title {
+      padding: 10px 14px 6px;
+      font-size: 10px; font-weight: 700; letter-spacing: .8px;
+      text-transform: uppercase; color: rgba(255,255,255,.4);
+    }
+    .bandeja-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,.75);
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .bandeja-item:hover, .bandeja-item.hovered { background: rgba(255,255,255,.08); color: white; }
+    .bandeja-item.active { background: var(--blue-700); color: white; }
+    .bandeja-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .7; }
+    .bandeja-item.active svg { opacity: 1; }
+    .bandeja-sep { height: 1px; background: rgba(255,255,255,.08); margin: 4px 0; }
+    .bandeja-user-avatar { width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0; }
+    .bandeja-count {
+      margin-left: auto;
+      background: rgba(255,255,255,.15);
+      color: rgba(255,255,255,.8);
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px;
+      min-width: 20px; text-align: center;
+    }
+    .bandeja-count.red { background: #e84444; color: white; }
+    .bandeja-usuarios-toggle {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,.75);
+      cursor: pointer;
+      transition: background .12s;
+      user-select: none;
+    }
+    .bandeja-usuarios-toggle:hover, .bandeja-usuarios-toggle.hovered { background: rgba(255,255,255,.08); color: white; }
+    .bandeja-usuarios-toggle .utoggle-chevron { margin-left: auto; transition: transform .2s; }
+    .bandeja-usuarios-toggle.open .utoggle-chevron { transform: rotate(180deg); }
+    .bandeja-usuarios-sublist {
+      display: none;
+      max-height: 220px;
+      overflow-y: auto;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+    .bandeja-usuarios-sublist.open { display: block; }
+    .bandeja-usuarios-sublist::-webkit-scrollbar { width: 4px; }
+    .bandeja-usuarios-sublist::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 4px; }
+
+    /* ── DROPDOWN ── */
+    .dropdown-wrap { position: relative; }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      box-shadow: var(--shadow-lg);
+      min-width: 160px;
+      max-height: 70vh;
+      z-index: 200;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .dropdown-menu.open { display: block; }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 14px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background .12s;
+    }
+    .dropdown-item:hover { background: var(--blue-50); }
+    .dropdown-item .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dropdown-item.danger { color: #b91c1c; }
+    .dropdown-item.danger:hover { background: #fde8e8; }
+    /* transfer modal */
+    #transfer-modal-backdrop { display:none; position:fixed; inset:0; background:rgba(10,22,40,.5); backdrop-filter:blur(3px); z-index:1000; align-items:center; justify-content:center; }
+    #transfer-modal-backdrop.open { display:flex; }
+    #transfer-modal { background:white; border-radius:14px; box-shadow:0 8px 40px rgba(0,0,0,.22); width:520px; max-width:95vw; max-height:80vh; display:flex; flex-direction:column; animation:modalIn .18s ease; overflow:hidden; }
+    #transfer-modal-header { display:flex; align-items:center; padding:16px 20px 12px; border-bottom:1px solid var(--border); gap:10px; flex-shrink:0; }
+    #transfer-modal-header h3 { font-size:15px; font-weight:700; color:var(--text-primary); flex:1; margin:0; }
+    #transfer-modal-header button { width:28px; height:28px; border-radius:6px; border:none; background:none; font-size:19px; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; justify-content:center; line-height:1; }
+    #transfer-modal-header button:hover { background:var(--blue-50); color:var(--text-primary); }
+    #transfer-modal-body { overflow-y:auto; flex:1; padding:6px 0 8px; }
+    #transfer-modal-body .tm-section-title { padding:10px 18px 4px; font-size:10px; font-weight:700; letter-spacing:.7px; text-transform:uppercase; color:var(--text-muted); }
+    #transfer-modal-body .tm-divider { height:1px; background:var(--border); margin:6px 0; }
+    #transfer-modal-body .tm-item { display:flex; align-items:center; gap:10px; padding:9px 18px; cursor:pointer; font-size:13.5px; color:var(--text-primary); transition:background .1s; }
+    #transfer-modal-body .tm-item:hover { background:var(--blue-50); }
+    #transfer-modal-body .tm-revert-icon { display:flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--blue-100); color:var(--blue-700); flex-shrink:0; }
+    #transfer-modal-body .tm-bandeja-pill { font-size:11px; font-weight:700; color:var(--blue-700); background:var(--blue-100); border-radius:5px; padding:2px 6px; flex-shrink:0; }
+    #transfer-modal-body .tm-user-count { font-size:11px; font-weight:700; background:#fca5a5; color:#7f1d1d; border-radius:10px; padding:1px 7px; margin-left:auto; }
+    #transfer-modal-body .tm-online-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    #transfer-modal-body .tm-sub-icon { opacity:.6; flex-shrink:0; }
+    .dropdown-item-bandeja svg {
+      width: 15px; height: 15px; flex-shrink: 0; color: var(--blue-500);
+    }
+    .dropdown-item-bandeja span {
+      font-weight: 600; color: var(--text-primary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .dropdown-item-bandeja .bandeja-orden-pill {
+      font-size: 11px; font-weight: 700;
+      color: var(--blue-700); background: var(--blue-100);
+      border-radius: 5px; padding: 2px 6px;
+      flex-shrink: 0;
+    }
+    .dropdown-sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+    .dropdown-section-title { padding: 6px 14px 2px; font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); }
+    .transfer-user-count { font-size: 11px; font-weight: 700; background: #fca5a5; color: #7f1d1d; border-radius: 10px; padding: 1px 7px; min-width: 18px; text-align: center; }
+    .transfer-user-count:empty { display: none; }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(10,22,40,.55);
+      backdrop-filter: blur(3px);
+      z-index: 500;
+      align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 14px;
+      box-shadow: var(--shadow-lg);
+      width: 520px;
+      max-width: 95vw;
+      overflow: hidden;
+      animation: modalIn .18s ease;
+    }
+    @keyframes modalIn { from { opacity:0; transform: translateY(12px) scale(.97); } to { opacity:1; transform: none; } }
+    .modal-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text-primary); flex: 1; }
+    .modal-close {
+      width: 30px; height: 30px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-muted);
+      background: none; border: none; font-size: 20px; line-height: 1;
+      transition: background .12s;
+    }
+    .modal-close:hover { background: var(--blue-50); color: var(--text-primary); }
+    .modal-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 14px 22px;
+      border-top: 1px solid var(--border);
+      background: var(--blue-50);
+    }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .form-input, .form-select, .form-textarea {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 13.5px; font-family: inherit;
+      color: var(--text-primary);
+      background: white;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--blue-400);
+      box-shadow: 0 0 0 3px rgba(33,131,240,.10);
+    }
+    .form-textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .mini-toolbar {
+      display: flex; align-items: center; gap: 4px;
+      border: 1.5px solid var(--border); border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 5px 7px;
+      background: var(--bg-soft, #f8fafc);
+    }
+    .mini-toolbar-btn {
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: none; border-radius: 5px;
+      color: var(--text-secondary); cursor: pointer; font-size: 12.5px; font-weight: 700;
+    }
+    .mini-toolbar-btn:hover { background: var(--blue-100); color: var(--blue-700); }
+    .mini-toolbar-sep { width: 1px; height: 16px; background: var(--border); margin: 0 3px; }
+    .mini-toolbar-attach {
+      display: flex; align-items: center; gap: 5px;
+      margin-left: auto;
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      border: none; background: none; cursor: pointer; padding: 4px 7px; border-radius: 5px;
+    }
+    .mini-toolbar-attach:hover { background: var(--blue-100); color: var(--blue-700); }
+    .mini-toolbar-attach svg { width: 13px; height: 13px; }
+    .rte-mensaje-inicial {
+      border: 1.5px solid var(--border);
+      border-radius: 0 0 8px 8px;
+      padding: 8px 12px;
+      min-height: 90px;
+      line-height: 1.6;
+      font-size: 13.5px;
+      outline: none;
+    }
+    .rte-mensaje-inicial:focus { border-color: var(--blue-400); box-shadow: 0 0 0 3px rgba(33,131,240,.10); }
+    .rte-mensaje-inicial:empty::before { content: attr(data-placeholder); color: var(--text-muted); }
+    .nuevo-caso-attach-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .nuevo-caso-attach-chip {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--blue-50); border-radius: 6px;
+      padding: 4px 8px; font-size: 12px; color: var(--text-secondary);
+    }
+    .nuevo-caso-attach-chip button { border: none; background: none; cursor: pointer; color: var(--text-muted); font-size: 13px; line-height: 1; padding: 0; }
+
+    /* ── BULK ACTION BAR ── */
+    .bulk-bar {
+      display: none;
+      align-items: center; gap: 10px;
+      padding: 10px 24px;
+      background: var(--blue-700);
+      color: white;
+      font-size: 13px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .bulk-bar.visible { display: flex; }
+    .bulk-count { font-size: 14px; font-weight: 700; }
+    .bulk-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 7px;
+      border: 1.5px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.1);
+      color: white; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: background .12s;
+    }
+    .bulk-btn:hover { background: rgba(255,255,255,.22); }
+    .bulk-btn svg { width: 13px; height: 13px; }
+    .bulk-dismiss {
+      margin-left: auto; cursor: pointer;
+      background: none; border: none; color: rgba(255,255,255,.7);
+      font-size: 20px; line-height: 1; padding: 2px 6px;
+    }
+    .bulk-dismiss:hover { color: white; }
+
+    /* toast */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: var(--navy); color: white;
+      padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+      z-index: 999; white-space: nowrap;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toast.show { opacity: 1; pointer-events: auto; }
+    .toast-copy-btn {
+      display: flex; align-items: center; gap: 5px;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.12);
+      color: white; border-radius: 6px;
+      padding: 4px 9px; font-size: 12px; font-weight: 600;
+      cursor: pointer;
+    }
+    .toast-copy-btn:hover { background: rgba(255,255,255,.22); }
+    .toast-copy-btn svg { width: 12px; height: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<!-- ─── MAIN ─── -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="page-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Casos
+    </div>
+
+    <div class="bandeja-wrap">
+      <div class="bandeja-select" id="bandeja-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <span id="bandeja-label" style="cursor:pointer" onclick="scrollToLastCase(event)">Bandeja principal</span>
+        <svg id="bandeja-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="cursor:pointer" onclick="toggleBandejaMenu(event)"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="bandeja-menu" id="bandeja-menu">
+        <div class="bandeja-menu-title">Bandejas</div>
+        <div id="bandeja-dinamicas-list"></div>
+        <div id="bandeja-subbandejas-list"></div>
+        <div class="bandeja-item" data-bandeja="asignados">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mis asignados
+          <span class="bandeja-count" id="bc-asignados"></span>
+        </div>
+        <div class="bandeja-sep"></div>
+        <div class="bandeja-usuarios-toggle" id="usuarios-toggle-btn" onclick="toggleUsuariosEnBandeja(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;opacity:.7"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Usuarios
+          <svg class="utoggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="bandeja-usuarios-sublist" id="bandeja-usuarios-list"></div>
+      </div>
+    </div>
+
+    <div id="case-tabs"></div>
+
+    <div class="topbar-right">
+      <div class="icon-btn notif-btn">
+        <div class="notif-dot"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div class="dropdown-wrap">
+        <div class="icon-btn" title="Configuración" onclick="toggleConfigMenu(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </div>
+        <div class="dropdown-menu" id="config-menu" style="right:0;left:auto">
+          <div class="dropdown-item" id="config-menu-admin-item" onclick="window.location.href='admin.html'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;opacity:.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Administrador
+          </div>
+          <div class="dropdown-item" onclick="window.location.href='mi-perfil.html'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;opacity:.7"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mi perfil
+          </div>
+          <div class="dropdown-sep"></div>
+          <div class="dropdown-item danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;opacity:.7"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Cerrar sesión
+          </div>
+        </div>
+      </div>
+      <div class="disponible-topbar-btn" id="disponible-btn" title="Cambiar disponibilidad">
+        <span class="disp-dot" id="status-dot" style="background:#22c55e"></span>
+        <span id="disponible-label">Disponible</span>
+        <span class="disp-badge" id="disponible-badge" style="background:#22c55e;color:white">ON</span>
+      </div>
+      <div class="dropdown-wrap">
+        <div class="disponible-topbar-btn" id="ver-como-btn" title="Cambiar de usuario (simulación)">
+          <span id="ver-como-avatar" style="display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:8px;font-weight:700;flex-shrink:0"></span>
+          <span id="ver-como-label">Ver como…</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px;height:11px"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="dropdown-menu" id="ver-como-menu" style="right:0;left:auto">
+          <div class="dropdown-section-title">Ver como</div>
+          <div id="ver-como-list"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-nuevo-caso">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo Caso
+      </button>
+    </div>
+  </header>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <label class="checkbox-wrap" id="selectAll-wrap">
+      <input type="checkbox" id="selectAll" />
+      <div class="custom-check-box">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1.5,6 4.5,9 10.5,3"/>
+        </svg>
+      </div>
+      <span id="selectCount">0 selec.</span>
+    </label>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Buscar por asunto, remitente, ticket…" />
+    </div>
+
+    <label class="checkbox-wrap">
+      <input type="checkbox" id="incluir-cerrados" />
+      Incluir cerrados
+    </label>
+
+    <div class="toolbar-sep"></div>
+
+    <div class="dropdown-wrap">
+      <button class="btn-transfer" id="btn-transferir" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+        Transferir
+      </button>
+    </div>
+
+    <div class="dropdown-wrap">
+      <div class="estado-select" id="estado-btn" data-disabled="true">
+        Estado
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown-menu" id="estado-menu">
+        <div class="dropdown-item" onclick="bulkEstado('abierto')"><span class="dot" style="background:#f87171"></span>Abierto</div>
+        <div class="dropdown-item" onclick="bulkEstado('espera')"><span class="dot" style="background:#38bdf8"></span>En espera</div>
+        <div class="dropdown-item" onclick="bulkEstado('cerrado')"><span class="dot" style="background:#94a3b8"></span>Cerrado</div>
+      </div>
+    </div>
+
+    <div class="toolbar-right">
+      <div class="status-filter" id="sf-abierto" data-status="abierto" style="background:#fca5a5" title="Casos abiertos">
+        <span class="status-filter-count" id="cnt-abierto">0</span>
+      </div>
+      <div class="status-filter" id="sf-espera" data-status="espera" style="background:#93c5fd" title="Casos en espera">
+        <span class="status-filter-count" id="cnt-espera">0</span>
+      </div>
+      <div class="status-filter" id="sf-cerrado" data-status="cerrado" style="background:#cbd5e1" title="Casos cerrados">
+        <span class="status-filter-count" id="cnt-cerrado">0</span>
+      </div>
+      <div class="toolbar-sep"></div>
+      <div class="sort-btn" id="sort-btn" title="Más antiguos primero">
+        <svg id="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 9 1 6 5 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="td-check"></th>
+            <th class="td-icon"></th>
+            <th class="td-subject sortable">Asunto / Remitente <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></th>
+            <th class="td-ticket">N° Ticket</th>
+            <th class="td-estado">Estado</th>
+            <th class="td-usuario sortable">Asignado a</th>
+            <th class="td-fecha sortable">Ingreso <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- ROW 1 -->
+          <tr class="unread" data-status="abierto" data-ticket="#10482" data-bandeja="facturacion" data-ts="202606130914">
+            <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+            <td class="td-icon"><div class="mail-icon unread"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div></td>
+            <td class="td-subject">
+              <div class="subject-line">Error en facturación — cargo duplicado en cuenta</div>
+              <div class="from-line">De: Maria González &lt;mgonzalez@empresa.com&gt;</div>
+            </td>
+            <td><span class="ticket-num">#10482</span></td>
+            <td><span class="badge badge-abierto">Abierto</span></td>
+            <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+            <td>
+              <div class="fecha-cell">
+                <div class="date">13 jun 2026</div>
+                <div class="time">09:14 hs</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ROW 2 -->
+          <tr class="unread" data-status="abierto" data-ticket="#10481" data-bandeja="facturacion" data-ts="202606130855">
+            <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+            <td class="td-icon"><div class="mail-icon unread"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div></td>
+            <td class="td-subject">
+              <div class="subject-line">Consulta sobre integración API con nuestro sistema ERP</div>
+              <div class="from-line">De: Tecnología TechCorp &lt;it@techcorp.com.ar&gt;</div>
+            </td>
+            <td><span class="ticket-num">#10481</span></td>
+            <td><span class="badge badge-abierto">Abierto</span></td>
+            <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+            <td>
+              <div class="fecha-cell">
+                <div class="date">13 jun 2026</div>
+                <div class="time">08:55 hs</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ROW 3 -->
+          <tr data-status="espera" data-ticket="#10480" data-bandeja="facturacion" data-ts="202606121732">
+            <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+            <td class="td-icon"><div class="mail-icon read"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div></td>
+            <td class="td-subject">
+              <div class="subject-line">Solicitud de baja de servicio — contrato nro. 4892</div>
+              <div class="from-line">De: Recursos Humanos Acme &lt;rrhh@acme.com.ar&gt;</div>
+            </td>
+            <td><span class="ticket-num">#10480</span></td>
+            <td><span class="badge badge-espera">Espera</span></td>
+            <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+            <td>
+              <div class="fecha-cell">
+                <div class="date">12 jun 2026</div>
+                <div class="time">17:32 hs</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ROW 4 -->
+          <tr data-status="abierto" data-ticket="#10479" data-bandeja="facturacion" data-ts="202606121510">
+            <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+            <td class="td-icon"><div class="mail-icon read"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div></td>
+            <td class="td-subject">
+              <div class="subject-line">Re: Actualización de datos de contacto — urgente</div>
+              <div class="from-line">De: Pedro Salas &lt;psalas@globalnet.com&gt;</div>
+            </td>
+            <td><span class="ticket-num">#10479</span></td>
+            <td><span class="badge badge-abierto">Abierto</span></td>
+            <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+            <td>
+              <div class="fecha-cell">
+                <div class="date">12 jun 2026</div>
+                <div class="time">15:10 hs</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ROW 5 -->
+          <tr class="unread" data-status="abierto" data-ticket="#10478" data-bandeja="facturacion" data-ts="202606121047">
+            <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+            <td class="td-icon"><div class="mail-icon unread"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div></td>
+            <td class="td-subject">
+              <div class="subject-line">Sistema caído — no podemos procesar pagos desde las 10hs</div>
+              <div class="from-line">De: Gerencia Distribuidora Sur &lt;admin@distrsur.com.ar&gt;</div>
+            </td>
+            <td><span class="ticket-num">#10478</span></td>
+            <td><span class="badge badge-abierto">Abierto</span></td>
+            <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+            <td>
+              <div class="fecha-cell">
+                <div class="date">12 jun 2026</div>
+                <div class="time">10:47 hs</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ROW 6 -->
+          <tr data-status="cerrado" data-ticket="#10477" data-bandeja="facturacion" data-ts="202606111420">
+            <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+            <td class="td-icon"><div class="mail-icon read"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div></td>
+            <td class="td-subject">
+              <div class="subject-line">Pedido de certificado de garantía extendida</div>
+              <div class="from-line">De: Ana Torres &lt;atorres@clinicacentral.com&gt;</div>
+            </td>
+            <td><span class="ticket-num">#10477</span></td>
+            <td><span class="badge badge-cerrado">Cerrado</span></td>
+            <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+            <td>
+              <div class="fecha-cell">
+                <div class="date">11 jun 2026</div>
+                <div class="time">14:20 hs</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ROW 7 -->
+          <tr data-status="abierto" data-ticket="#10476" data-bandeja="facturacion" data-ts="202606111105">
+            <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+            <td class="td-icon"><div class="mail-icon read"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div></td>
+            <td class="td-subject">
+              <div class="subject-line">Cambio de plan de suscripción — migrar a Enterprise</div>
+              <div class="from-line">De: Fernando Díaz &lt;fdiaz@logisticapro.com&gt;</div>
+            </td>
+            <td><span class="ticket-num">#10476</span></td>
+            <td><span class="badge badge-abierto">Abierto</span></td>
+            <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+            <td>
+              <div class="fecha-cell">
+                <div class="date">11 jun 2026</div>
+                <div class="time">11:05 hs</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- INFINITE SCROLL SENTINEL -->
+    <div id="scroll-status" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:20px;font-size:13px;color:var(--text-muted)">
+      <div id="scroll-spinner" style="display:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5" style="animation:spin .8s linear infinite">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+      </div>
+      <span id="scroll-label"></span>
+    </div>
+    <div id="scroll-sentinel" style="height:1px"></div>
+  </div>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</main>
+
+<!-- ── MODAL NUEVO CASO ── -->
+<div class="modal-backdrop" id="modal-nuevo">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo Caso</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input class="form-input" type="text" id="nuevo-caso-nombre" placeholder="Nombre del contacto" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Apellido</label>
+          <input class="form-input" type="text" id="nuevo-caso-apellido" placeholder="Apellido" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="nuevo-caso-email" placeholder="correo@ejemplo.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Asunto</label>
+        <input class="form-input" type="text" id="nuevo-caso-asunto" placeholder="Descripción breve del caso" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Bandeja</label>
+          <select class="form-select" id="nuevo-caso-bandeja"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Asignado a</label>
+          <select class="form-select" id="nuevo-caso-asignado"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Estado inicial</label>
+        <select class="form-select" id="nuevo-caso-estado">
+          <option value="abierto">Abierto</option>
+          <option value="espera">En espera</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mensaje inicial (opcional)</label>
+        <div class="mini-toolbar" onmousedown="event.preventDefault()">
+          <button type="button" class="mini-toolbar-btn" title="Negrita" onclick="document.execCommand('bold')"><b>B</b></button>
+          <button type="button" class="mini-toolbar-btn" title="Cursiva" onclick="document.execCommand('italic')"><i>I</i></button>
+          <button type="button" class="mini-toolbar-btn" title="Subrayado" onclick="document.execCommand('underline')"><u>S</u></button>
+          <div class="mini-toolbar-sep"></div>
+          <button type="button" class="mini-toolbar-attach" title="Adjuntar archivo" onclick="document.getElementById('nuevo-caso-attach-input').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            Adjuntar
+          </button>
+          <input type="file" id="nuevo-caso-attach-input" multiple style="display:none" onchange="_onNuevoCasoAttach(this)">
+        </div>
+        <div class="rte-mensaje-inicial" id="nuevo-caso-mensaje" contenteditable="true" data-placeholder="Descripción detallada del caso…"></div>
+        <div class="nuevo-caso-attach-list" id="nuevo-caso-attach-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearCaso()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Crear Caso
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Gate de alta inicial: sin datos de empresa todavía, no se puede usar la app.
+  if (!localStorage.getItem('cw_empresa')) {
+    window.location.href = 'alta-inicial.html';
+  }
+
+  let _ultimoVistoTimer = null;
+  function aplicarUltimoVisto() {
+    const ticket = localStorage.getItem('cw_ultimo_visto');
+    if (!ticket) return;
+    document.querySelectorAll('tbody tr.ultimo-visto').forEach(tr => tr.classList.remove('ultimo-visto', 'fading'));
+    const tr = document.querySelector(`tbody tr[data-ticket="${ticket}"]`);
+    if (!tr) return;
+    tr.classList.add('ultimo-visto');
+    if (_ultimoVistoTimer) clearTimeout(_ultimoVistoTimer);
+    _ultimoVistoTimer = setTimeout(() => {
+      tr.classList.add('fading');
+      setTimeout(() => tr.classList.remove('ultimo-visto', 'fading'), 1200);
+    }, 15000);
+  }
+
+  function aplicarLeidos() {
+    try {
+      const read = new Set(JSON.parse(localStorage.getItem('cw_read') || '[]'));
+      document.querySelectorAll('tbody tr[data-ticket]').forEach(tr => {
+        if (!read.has(tr.dataset.ticket)) return;
+        tr.classList.remove('unread');
+        const icon = tr.querySelector('.mail-icon');
+        if (icon) { icon.classList.remove('unread'); icon.classList.add('read'); }
+      });
+    } catch(e) {}
+  }
+  function reabrirPorRespuesta(ticket) {
+    // Cambia estado a abierto
+    const map = getStatusMap();
+    map[ticket] = 'abierto';
+    saveStatusMap(map);
+
+    // Marca como no leído
+    const read = getReadSet();
+    read.delete(ticket);
+    localStorage.setItem('cw_read', JSON.stringify([...read]));
+
+    // Actualiza DOM si la fila ya está renderizada
+    const tr = tbody.querySelector(`tr[data-ticket="${ticket}"]`);
+    if (tr) {
+      tr.dataset.status = 'abierto';
+      tr.querySelector('td:nth-child(5)').innerHTML = badgeMap['abierto'];
+      tr.classList.add('unread');
+      tr.querySelector('.mail-icon')?.classList.replace('read', 'unread');
+    }
+
+    applyVisibility();
+    recountFilters();
+    updateUnreadBadge();
+    _persistAllCases();
+    showToast(`Caso ${ticket} reabierto por nueva respuesta del cliente`);
+  }
+
+  function procesarReaperturasPendientes() {
+    const ticket = localStorage.getItem('cw_reabrir_ticket');
+    if (!ticket) return;
+    localStorage.removeItem('cw_reabrir_ticket');
+    reabrirPorRespuesta(ticket);
+  }
+
+  function scrollToLastIfPending() {
+    if (!localStorage.getItem('cw_scroll_to_last')) return;
+    localStorage.removeItem('cw_scroll_to_last');
+    const ticket = localStorage.getItem('cw_ultimo_visto');
+    if (!ticket) return;
+    const row = tbody.querySelector(`tr[data-ticket="${ticket}"]`);
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Corre tanto en carga normal como al volver desde bfcache
+  aplicarLeidos();
+  aplicarUltimoVisto();
+  window.addEventListener('pageshow', () => { procesarReaperturasPendientes(); aplicarLeidos(); aplicarUltimoVisto(); scrollToLastIfPending(); });
+
+  // ════════════════════════════════
+  //  DATA
+  // ════════════════════════════════
+  // Datos completos de todos los casos (HTML inicial + POOL)
+  const ALL_CASES = [
+    { ticket:'#10482', status:'abierto', subBandeja:'principal' },
+    { ticket:'#10481', status:'abierto', subBandeja:'principal'   },
+    { ticket:'#10480', status:'espera',  subBandeja:'principal'   },
+    { ticket:'#10479', status:'abierto', subBandeja:'principal'   },
+    { ticket:'#10478', status:'abierto', subBandeja:'principal' },
+    { ticket:'#10477', status:'cerrado', subBandeja:'principal'   },
+    { ticket:'#10476', status:'abierto', subBandeja:'principal'   },
+    { ticket:'#10475', status:'abierto', subBandeja:'principal'   },
+    { ticket:'#10474', status:'espera',  subBandeja:'principal'   },
+    { ticket:'#10473', status:'abierto', subBandeja:'principal'   },
+    { ticket:'#10472', status:'cerrado', subBandeja:'principal' },
+    { ticket:'#10471', status:'abierto', subBandeja:'principal'   },
+    { ticket:'#10470', status:'espera',  subBandeja:'principal'   },
+    { ticket:'#10469', status:'cerrado', subBandeja:'principal' },
+    { ticket:'#10468', status:'abierto', subBandeja:'principal'   },
+    { ticket:'#10467', status:'espera',  subBandeja:'principal'   },
+    { ticket:'#10466', status:'abierto', subBandeja:'principal' },
+    { ticket:'#10465', status:'cerrado', subBandeja:'principal'   },
+    { ticket:'#10464', status:'abierto', subBandeja:'principal' },
+  ];
+
+  const POOL = [
+    { subject:'Reclamo por producto dañado en envío',       from:'Juan Herrera <jherrera@ventas.com>',          ticket:'#10475', status:'abierto', user:'CP', name:'Carlos P.',  sub:'Soporte',   subBandeja:'facturacion',   date:'11 jun 2026', time:'09:30 hs', unread:false },
+    { subject:'Acceso bloqueado al portal de clientes',     from:'IT Grupo Norte <it@gruponorte.com>',          ticket:'#10474', status:'espera',  user:'LM', name:'Laura M.',   sub:'Tech',      subBandeja:'facturacion',   date:'10 jun 2026', time:'18:45 hs', unread:true  },
+    { subject:'Solicitud de presupuesto para 200 licencias',from:'Compras Avantek <compras@avantek.com>',       ticket:'#10473', status:'abierto', user:'SR', name:'Sofía R.',   sub:'Ventas',    subBandeja:'facturacion',   date:'10 jun 2026', time:'16:20 hs', unread:false },
+    { subject:'Error al exportar reportes en PDF',          from:'Claudia Vega <cvega@industrial.com.ar>',      ticket:'#10472', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'10 jun 2026', time:'14:10 hs', unread:false },
+    { subject:'Demora en entrega — orden #98231',           from:'Operaciones LogPro <ops@logpro.com>',         ticket:'#10471', status:'abierto', user:'JF', name:'Jorge F.',   sub:'Soporte',   subBandeja:'facturacion',   date:'09 jun 2026', time:'11:55 hs', unread:true  },
+    { subject:'Configuración de dominio personalizado',     from:'Admin WebPlus <admin@webplus.com.ar>',        ticket:'#10470', status:'espera',  user:'LM', name:'Laura M.',   sub:'Tech',      subBandeja:'facturacion',   date:'09 jun 2026', time:'10:30 hs', unread:false },
+    { subject:'Factura incorrecta — mes de mayo',           from:'Contabilidad Santek <cont@santek.com>',       ticket:'#10469', status:'cerrado', user:'CP', name:'Carlos P.',  sub:'Soporte',   subBandeja:'facturacion', date:'09 jun 2026', time:'09:00 hs', unread:false },
+    { subject:'Alta de nuevo usuario administrador',        from:'RRHH Centauro <rrhh@centauro.com>',          ticket:'#10468', status:'abierto', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion',   date:'08 jun 2026', time:'17:40 hs', unread:true  },
+    { subject:'Problema con sincronización de calendarios', from:'Pablo Mora <pmora@estudio.com>',             ticket:'#10467', status:'espera',  user:'LM', name:'Laura M.',   sub:'Tech',      subBandeja:'facturacion',   date:'08 jun 2026', time:'15:05 hs', unread:false },
+    { subject:'Cancelación anticipada de contrato',         from:'Legal Nexo SA <legal@nexosa.com.ar>',        ticket:'#10466', status:'abierto', user:'SR', name:'Sofía R.',   sub:'Ventas',    subBandeja:'facturacion', date:'08 jun 2026', time:'12:20 hs', unread:false },
+    { subject:'Solicitud de capacitación para el equipo',   from:'Florencia Ríos <frios@corp.com>',            ticket:'#10465', status:'cerrado', user:'CP', name:'Carlos P.',  sub:'Soporte',   subBandeja:'facturacion',   date:'07 jun 2026', time:'10:15 hs', unread:false },
+    { subject:'Integración con Mercado Pago no funciona',   from:'Dev Team FastBuy <dev@fastbuy.com>',         ticket:'#10464', status:'abierto', user:'LM', name:'Laura M.',   sub:'Tech',      subBandeja:'facturacion', date:'07 jun 2026', time:'09:50 hs', unread:true  },
+    // Casos cerrados históricos (visibles solo con "incluir cerrados")
+    { subject:'Factura incorrecta — empresa mal cargada',           from:'Pedro Salas <psalas@globalnet.com>',                ticket:'#10463', status:'cerrado', user:'MF', name:'María F.',   sub:'Facturación',subBandeja:'facturacion',date:'10 jun 2026', time:'08:45 hs', unread:false },
+    { subject:'Retraso en activación de 12 nuevos usuarios',        from:'Recursos Humanos Acme <rrhh@acme.com.ar>',          ticket:'#10461', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'08 jun 2026', time:'10:05 hs', unread:false },
+    { subject:'No llegan notificaciones de turno por email',        from:'Ana Torres <atorres@clinicacentral.com>',           ticket:'#10458', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'05 jun 2026', time:'12:10 hs', unread:false },
+    { subject:'Error 500 al consumir endpoint /orders',             from:'Tecnología TechCorp <it@techcorp.com.ar>',          ticket:'#10455', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'02 jun 2026', time:'09:10 hs', unread:false },
+    { subject:'Solicitud de acceso para 5 sucursales nuevas',       from:'Gerencia Distribuidora Sur <admin@distrsur.com.ar>', ticket:'#10444', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'28 may 2026', time:'11:30 hs', unread:false },
+    { subject:'Consulta sobre renovación de contrato',              from:'Maria González <mgonzalez@empresa.com>',            ticket:'#10391', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'28 may 2026', time:'11:02 hs', unread:false },
+    { subject:'Ajuste de permisos para rol de supervisor',          from:'Fernando Díaz <fdiaz@logisticapro.com>',            ticket:'#10440', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'25 may 2026', time:'09:30 hs', unread:false },
+    { subject:'Cambio de dirección fiscal en contrato',             from:'Pedro Salas <psalas@globalnet.com>',                ticket:'#10435', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'22 may 2026', time:'13:20 hs', unread:false },
+    { subject:'Solicitud de exportación masiva de datos',           from:'Recursos Humanos Acme <rrhh@acme.com.ar>',          ticket:'#10430', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Consultas', subBandeja:'consultas', date:'20 may 2026', time:'16:30 hs', unread:false },
+    { subject:'Consulta sobre módulo de telemedicina',              from:'Ana Torres <atorres@clinicacentral.com>',           ticket:'#10427', status:'cerrado', user:'MF', name:'María F.',   sub:'Consultas', subBandeja:'consultas', date:'18 may 2026', time:'10:00 hs', unread:false },
+    { subject:'Límite de rate de la API superado en producción',    from:'Tecnología TechCorp <it@techcorp.com.ar>',          ticket:'#10421', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'15 may 2026', time:'14:22 hs', unread:false },
+    { subject:'Error al generar remitos desde el portal',           from:'Gerencia Distribuidora Sur <admin@distrsur.com.ar>', ticket:'#10410', status:'cerrado', user:'MF', name:'María F.',   sub:'Principal', subBandeja:'facturacion', date:'05 may 2026', time:'09:00 hs', unread:false },
+    { subject:'Cotización para plan con 50 usuarios',               from:'Fernando Díaz <fdiaz@logisticapro.com>',            ticket:'#10402', status:'cerrado', user:'MF', name:'María F.',   sub:'Consultas', subBandeja:'consultas', date:'18 abr 2026', time:'16:20 hs', unread:false },
+    { subject:'Consulta sobre descuento por volumen',               from:'Pedro Salas <psalas@globalnet.com>',                ticket:'#10396', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Consultas', subBandeja:'consultas', date:'12 abr 2026', time:'10:50 hs', unread:false },
+    { subject:'Documentación de webhooks desactualizada',           from:'Tecnología TechCorp <it@techcorp.com.ar>',          ticket:'#10388', status:'cerrado', user:'MF', name:'María F.',   sub:'Consultas', subBandeja:'consultas', date:'28 abr 2026', time:'11:40 hs', unread:false },
+    { subject:'Renovación anticipada de licencias corporativas',    from:'Recursos Humanos Acme <rrhh@acme.com.ar>',          ticket:'#10374', status:'cerrado', user:'MF', name:'María F.',   sub:'Facturación',subBandeja:'facturacion',date:'10 abr 2026', time:'09:15 hs', unread:false },
+    { subject:'Actualización de logo y datos de la clínica',        from:'Ana Torres <atorres@clinicacentral.com>',           ticket:'#10381', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'05 abr 2026', time:'15:45 hs', unread:false },
+    { subject:'Solicitud de cambio de datos de facturación',        from:'Maria González <mgonzalez@empresa.com>',            ticket:'#10108', status:'cerrado', user:'MF', name:'María F.',   sub:'Facturación',subBandeja:'facturacion',date:'02 abr 2026', time:'14:30 hs', unread:false },
+    { subject:'Problema para acceder al panel de usuario',          from:'Maria González <mgonzalez@empresa.com>',            ticket:'#10254', status:'cerrado', user:'NG', name:'Nicolás G.', sub:'Principal', subBandeja:'facturacion', date:'10 may 2026', time:'09:45 hs', unread:false },
+  ];
+
+  const avatarColors = {
+    CP: 'linear-gradient(135deg,#1a6cd4,#4fa3f7)',
+    LM: 'linear-gradient(135deg,#7c3aed,#a78bfa)',
+    NG: 'linear-gradient(135deg,#0e5aa7,#2183f0)',
+    SR: 'linear-gradient(135deg,#065f46,#10b981)',
+    JF: 'linear-gradient(135deg,#b45309,#fbbf24)',
+  };
+
+  const badgeMap = {
+    abierto: '<span class="badge badge-abierto">Abierto</span>',
+    espera:  '<span class="badge badge-espera">Espera</span>',
+    cerrado: '<span class="badge badge-cerrado">Cerrado</span>',
+  };
+
+  // ════════════════════════════════
+  //  STATE
+  // ════════════════════════════════
+  const tbody        = document.querySelector('tbody');
+  const selectAll    = document.getElementById('selectAll');
+  const countEl      = document.getElementById('selectCount');
+  const incluirCerrados = document.getElementById('incluir-cerrados');
+
+  let loaded        = 7;
+  let loading       = false;
+  let activeFilter  = localStorage.getItem('cw_filtro') || null;
+  let searchQuery   = '';
+  let showCerrados  = false;
+  let activeBandeja = localStorage.getItem('cw_bandeja') || getBandejasDinamicas()[0]?.key || 'facturacion';
+  if (activeBandeja === 'todas' || activeBandeja === 'principal') activeBandeja = getBandejasDinamicas()[0]?.key || 'facturacion'; // migración: "Bandeja principal" ya no existe como vista
+  const TOTAL       = 7 + POOL.length;
+
+  // ════════════════════════════════
+  //  BUILD ROW
+  // ════════════════════════════════
+  function buildRow(d) {
+    return `
+      <tr${d.unread ? ' class="unread"' : ''} data-status="${d.status}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
+        <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
+        <td class="td-icon"><div class="mail-icon ${d.unread ? 'unread' : 'read'}">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        </div></td>
+        <td class="td-subject">
+          <div class="subject-line">${d.subject}</div>
+          <div class="from-line">De: ${d.from.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        </td>
+        <td><span class="ticket-num">${d.ticket}</span></td>
+        <td>${badgeMap[d.status]}</td>
+        <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+        <td>
+          <div class="fecha-cell">
+            <div class="date">${d.date}</div>
+            <div class="time">${d.time}</div>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  // ════════════════════════════════
+  //  VISIBILITY (search + filter + cerrados)
+  // ════════════════════════════════
+  function rowVisible(tr) {
+    const status  = tr.dataset.status;
+    const bandeja = tr.dataset.bandeja;
+    const q       = searchQuery.trim().toLowerCase();
+    const ticket  = tr.dataset.ticket;
+    // Margen de error: si acabás de cerrar este caso, sigue contando como visible
+    // hasta que cambies de bandeja o filtres "Abierto" (aunque el filtro "Casos abiertos"
+    // esté activo, que es lo más habitual mientras se navega una bandeja).
+    const enGraciaCierre = status === 'cerrado' && !!(ticket && _graciaCierre[ticket]);
+
+    // Modo búsqueda: muestra casos que coincidan, sin filtro de bandeja
+    if (q) {
+      if (status === 'cerrado' && !showCerrados && !enGraciaCierre) return false;
+      return _rowMatchesQuery(tr, q);
+    }
+
+    if (!showCerrados && status === 'cerrado' && activeFilter !== 'cerrado' && !enGraciaCierre) return false;
+    if (activeFilter && status !== activeFilter && !enGraciaCierre) return false;
+    if (activeBandeja === 'asignados') {
+      if (bandeja !== 'asignados' && bandeja !== CURRENT_USER_KEY) return false;
+    } else {
+      if (bandeja !== activeBandeja) {
+        // Margen de error: si este caso se transfirió afuera de la bandeja que estás mirando,
+        // sigue contando como visible hasta que cambies de bandeja o filtres "Abierto".
+        if (!(ticket && _gracia[ticket] === activeBandeja)) return false;
+      }
+    }
+    return true;
+  }
+
+  function _rowMatchesQuery(tr, q) {
+    // Busca en: asunto, remitente, ticket, asignado
+    const subject  = tr.querySelector('.subject-line')?.textContent.toLowerCase() || '';
+    const from     = tr.querySelector('.from-line')?.textContent.toLowerCase() || '';
+    const ticket   = (tr.dataset.ticket || '').toLowerCase();
+    const asignado = tr.querySelector('.td-asignado')?.textContent.toLowerCase() || '';
+    return subject.includes(q) || from.includes(q) || ticket.includes(q) || asignado.includes(q);
+  }
+
+  let _gracia = {};
+  let _graciaCierre = {};
+
+  function applyVisibility() {
+    _gracia = getCasosEnGracia();
+    _graciaCierre = getCierreEnGracia();
+    const rows = [...tbody.querySelectorAll('tr')];
+    let visible = 0;
+    rows.forEach(tr => {
+      const ticket = tr.dataset.ticket;
+      if (ticket && _gracia[ticket] && tr.dataset.bandeja !== _gracia[ticket]) {
+        _marcarFilaEnGracia(tr);
+      }
+      if (ticket && _graciaCierre[ticket] && tr.dataset.status === 'cerrado') {
+        tr.classList.add('en-gracia');
+      }
+      const show = rowVisible(tr);
+      tr.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    // empty state
+    let empty = document.getElementById('empty-state-row');
+    if (visible === 0) {
+      if (!empty) {
+        empty = document.createElement('tr');
+        empty.id = 'empty-state-row';
+        empty.innerHTML = `<td colspan="7">
+          <div class="empty-state">
+            <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <div class="empty-title">Sin resultados</div>
+            <div class="empty-desc">No hay casos que coincidan con los filtros aplicados.</div>
+          </div>
+        </td>`;
+        tbody.appendChild(empty);
+      }
+    } else {
+      if (empty) empty.remove();
+    }
+  }
+
+  // ════════════════════════════════
+  //  INFINITE SCROLL
+  // ════════════════════════════════
+  function updateShownCount() { /* noop */ }
+
+  function loadMore() {
+    if (loading || loaded >= TOTAL) return;
+    loading = true;
+    document.getElementById('scroll-spinner').style.display = 'block';
+    setTimeout(() => {
+      const batch = POOL.slice(loaded - 7, loaded - 7 + 5);
+      batch.forEach(d => tbody.insertAdjacentHTML('beforeend', buildRow(d)));
+      loaded = Math.min(loaded + batch.length, TOTAL);
+      document.getElementById('scroll-spinner').style.display = 'none';
+      loading = false;
+      applyStatusMap();
+      aplicarLeidos();
+      aplicarUltimoVisto();
+      updateShownCount();
+      sortRows();
+      applyVisibility();
+      recountFilters();
+      if (loaded >= TOTAL) {
+        document.getElementById('scroll-label').innerHTML =
+          `<span style="color:var(--text-muted)">✓ Todos los <strong style="color:var(--text-primary)">${TOTAL}</strong> casos cargados</span>`;
+      }
+    }, 600);
+  }
+
+  const sentinel = document.getElementById('scroll-sentinel');
+  new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) loadMore();
+  }, { root: document.querySelector('.table-wrap'), threshold: 0 }).observe(sentinel);
+
+  // ════════════════════════════════
+  //  SEARCH
+  // ════════════════════════════════
+  const searchInput = document.querySelector('.search-wrap input');
+
+  function _runSearch() {
+    searchQuery = searchInput.value.trim();
+    if (searchQuery) localStorage.setItem('cw_search_query', searchQuery);
+    else localStorage.removeItem('cw_search_query');
+    const label = document.getElementById('bandeja-label');
+    if (searchQuery) {
+      label.textContent = 'Resultados de búsqueda';
+    } else {
+      label.textContent = bandejaLabels[activeBandeja] || 'Bandeja principal';
+    }
+    applyVisibility();
+    recountFilters();
+  }
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') _runSearch();
+  });
+
+  // Al borrar el campo completamente, limpia la búsqueda en tiempo real
+  searchInput.addEventListener('input', e => {
+    if (e.target.value.trim() === '') _runSearch();
+  });
+
+  // ════════════════════════════════
+  //  INCLUIR CERRADOS
+  // ════════════════════════════════
+  incluirCerrados.addEventListener('change', () => {
+    showCerrados = incluirCerrados.checked;
+    if (showCerrados) localStorage.setItem('cw_incluir_cerrados', '1');
+    else localStorage.removeItem('cw_incluir_cerrados');
+    applyVisibility();
+    recountFilters();
+  });
+
+  // ════════════════════════════════
+  //  STATUS FILTER DOTS
+  // ════════════════════════════════
+  function recountFilters() {
+    const counts = { abierto: 0, espera: 0, cerrado: 0 };
+    // No usamos la constante CURRENT_USER_KEY acá porque esta función se llama
+    // (line 1621) antes de que esa constante se declare más abajo en el script.
+    const currentUserKey = localStorage.getItem('cw_usuario_activo') || 'user_ng';
+    tbody.querySelectorAll('tr[data-ticket]').forEach(tr => {
+      const bandeja = tr.dataset.bandeja;
+      const matches = activeBandeja === 'asignados'
+        ? (bandeja === 'asignados' || bandeja === currentUserKey)
+        : (bandeja === activeBandeja);
+      if (!matches) return;
+      const s = tr.dataset.status;
+      if (counts.hasOwnProperty(s)) counts[s]++;
+    });
+    ['abierto','espera','cerrado'].forEach(s => {
+      document.getElementById(`cnt-${s}`).textContent = counts[s];
+    });
+  }
+  recountFilters();
+
+  document.querySelectorAll('.status-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const status = btn.dataset.status;
+      const isActive = btn.classList.contains('active');
+      document.querySelectorAll('.status-filter').forEach(b => b.classList.remove('active'));
+      if (status === 'abierto') {
+        // El filtro "Casos abiertos" siempre limpia y muestra únicamente los abiertos,
+        // nunca funciona como toggle (si no, al estar ya activo por defecto, apretarlo
+        // lo desactivaba y mostraba también los casos en espera).
+        _limpiarGracia();
+        activeFilter = 'abierto';
+        localStorage.setItem('cw_filtro', 'abierto');
+        btn.classList.add('active');
+      } else {
+        activeFilter = isActive ? null : status;
+        localStorage.setItem('cw_filtro', activeFilter || '');
+        if (!isActive) btn.classList.add('active');
+      }
+      applyVisibility();
+    });
+  });
+
+  // ════════════════════════════════
+  //  CHECKBOX + BULK
+  // ════════════════════════════════
+  function getRowChecks() { return [...document.querySelectorAll('tbody input[type="checkbox"]')]; }
+
+  // Agranda el área clickeable de la casilla: togglea el checkbox aunque el clic
+  // caiga en el padding de la celda y no justo en el input de 14x14.
+  function _toggleRowCheckbox(e, td) {
+    if (e.target.tagName === 'INPUT') return; // el input ya se togglea solo
+    e.stopPropagation();
+    const cb = td.querySelector('input[type="checkbox"]');
+    if (!cb) return;
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function updateSelectCount() {
+    const n = getRowChecks().filter(c => c.checked).length;
+    countEl.textContent = n + ' selec.';
+    const hasSelection = n > 0;
+    document.getElementById('selectAll-wrap').classList.toggle('has-selection', hasSelection);
+    document.getElementById('btn-transferir').disabled = !hasSelection;
+    document.getElementById('estado-btn').classList.toggle('disabled', !hasSelection);
+  }
+
+  function saveSelection() {
+    const selected = getRowChecks().filter(c => c.checked).map(c => c.closest('tr').dataset.ticket);
+    localStorage.setItem('cw_selection', JSON.stringify(selected));
+  }
+
+  function restoreSelection() {
+    try {
+      const selected = JSON.parse(localStorage.getItem('cw_selection') || '[]');
+      if (!selected.length) return;
+      getRowChecks().forEach(c => {
+        const tr = c.closest('tr');
+        if (tr && selected.includes(tr.dataset.ticket)) c.checked = true;
+      });
+      updateSelectCount();
+    } catch {}
+  }
+
+  function clearSelection(persistClear = true) {
+    getRowChecks().forEach(c => c.checked = false);
+    selectAll.checked = false;
+    if (persistClear) localStorage.removeItem('cw_selection');
+    updateSelectCount();
+  }
+
+  selectAll.addEventListener('change', () => {
+    getRowChecks().forEach(c => {
+      const tr = c.closest('tr');
+      if (tr && tr.style.display !== 'none') c.checked = selectAll.checked;
+    });
+    saveSelection();
+    updateSelectCount();
+  });
+  tbody.addEventListener('change', e => {
+    if (e.target.type === 'checkbox') { saveSelection(); updateSelectCount(); }
+  });
+
+  // Fuente de verdad en memoria — localStorage es solo respaldo entre sesiones
+  let _statusMap = {};
+  try { _statusMap = JSON.parse(localStorage.getItem('cw_status_map') || '{}'); } catch {}
+
+  function getStatusMap() { return _statusMap; }
+  function saveStatusMap(map) {
+    _statusMap = map;
+    try { localStorage.setItem('cw_status_map', JSON.stringify(map)); } catch {}
+  }
+
+  let _bandejaMap = {};
+  try { _bandejaMap = JSON.parse(localStorage.getItem('cw_bandeja_map') || '{}'); } catch {}
+
+  let _prevBandejaMap = {};
+  try { _prevBandejaMap = JSON.parse(localStorage.getItem('cw_prev_bandeja_map') || '{}'); } catch {}
+  function savePrevBandejaMap() {
+    try { localStorage.setItem('cw_prev_bandeja_map', JSON.stringify(_prevBandejaMap)); } catch {}
+  }
+
+  function getBandejaMap() { return _bandejaMap; }
+  function saveBandejaMap(map) {
+    _bandejaMap = map;
+    try { localStorage.setItem('cw_bandeja_map', JSON.stringify(map)); } catch {}
+  }
+
+  // ── Margen de error al transferir ──
+  // Mientras estás mirando una bandeja, un caso que transferís a otro lado (desde la lista
+  // o desde dentro del caso) sigue viéndose ahí —apagado y marcado "Transferido"— hasta que
+  // cambiás de bandeja o tocás el filtro "Casos abiertos". Vive en sessionStorage (no en
+  // localStorage) a propósito: es una ayuda visual de la sesión actual, no un estado real del
+  // caso — si cerrás la pestaña del navegador, se pierde.
+  function getCasosEnGracia() {
+    try { return JSON.parse(sessionStorage.getItem('cw_casos_en_gracia') || '{}'); } catch (e) { return {}; }
+  }
+  function _marcarEnGracia(ticket, bandejaOriginal) {
+    const g = getCasosEnGracia();
+    g[ticket] = bandejaOriginal;
+    sessionStorage.setItem('cw_casos_en_gracia', JSON.stringify(g));
+    const tr = tbody.querySelector(`tr[data-ticket="${ticket}"]`);
+    _marcarFilaEnGracia(tr);
+  }
+  function _marcarFilaEnGracia(tr) {
+    if (!tr || tr.classList.contains('en-gracia')) return;
+    tr.classList.add('en-gracia');
+    const subject = tr.querySelector('.subject-line');
+    if (subject && !subject.querySelector('.badge-transferido')) {
+      subject.insertAdjacentHTML('beforeend', '<span class="badge-transferido">Transferido</span>');
+    }
+  }
+  function _limpiarGracia() {
+    sessionStorage.removeItem('cw_casos_en_gracia');
+    tbody.querySelectorAll('tr.en-gracia').forEach(tr => {
+      tr.classList.remove('en-gracia');
+      tr.querySelector('.badge-transferido')?.remove();
+    });
+    _limpiarGraciaCierre();
+  }
+
+  // ── Margen de error al cerrar ──
+  // Mismo mecanismo que arriba, pero para el cierre de casos (desde la lista o desde
+  // dentro del caso): un caso que cerrás sigue viéndose en la bandeja actual —apagado,
+  // con el estado "Cerrado"— hasta que cambiás de bandeja o tocás el filtro "Casos abiertos".
+  function getCierreEnGracia() {
+    try { return JSON.parse(sessionStorage.getItem('cw_cierre_en_gracia') || '{}'); } catch (e) { return {}; }
+  }
+  function _marcarCierreEnGracia(ticket) {
+    const g = getCierreEnGracia();
+    g[ticket] = true;
+    sessionStorage.setItem('cw_cierre_en_gracia', JSON.stringify(g));
+    const tr = tbody.querySelector(`tr[data-ticket="${ticket}"]`);
+    if (tr) tr.classList.add('en-gracia');
+  }
+  function _limpiarGraciaCierre() {
+    sessionStorage.removeItem('cw_cierre_en_gracia');
+  }
+
+  // ── Asignado map ──
+  let _asignadoMap = {};
+  try { _asignadoMap = JSON.parse(localStorage.getItem('cw_asignado_map') || '{}'); } catch {}
+  function saveAsignadoMap() {
+    try { localStorage.setItem('cw_asignado_map', JSON.stringify(_asignadoMap)); } catch {}
+  }
+
+  // ── Bandeja display map (última bandeja no-usuario) ──
+  let _bandejaDisplayMap = {};
+  try { _bandejaDisplayMap = JSON.parse(localStorage.getItem('cw_bandeja_display_map') || '{}'); } catch {}
+  function saveBandejaDisplayMap() {
+    try { localStorage.setItem('cw_bandeja_display_map', JSON.stringify(_bandejaDisplayMap)); } catch {}
+  }
+
+  function _saveTransferEventBandeja(ticket, destinoLabel) {
+    const now   = new Date();
+    const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
+    const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+    const event = { transferId:'tr_'+Date.now(), ticket, destino:destinoLabel, fecha, hora, ts:Date.now() };
+    const key   = 'cw_transfers_' + ticket;
+    const list  = JSON.parse(localStorage.getItem(key) || '[]');
+    list.push(event);
+    localStorage.setItem(key, JSON.stringify(list));
+  }
+
+  function buildAsignadoCell(ticket) {
+    const userKey = _asignadoMap[ticket];
+    const displayBandeja = bandejaLabels[_bandejaDisplayMap[ticket]] || 'Bandeja principal';
+    const userInfo = getUserInfoMap();
+    if (userKey && userInfo[userKey]) {
+      const u = userInfo[userKey];
+      return `<div class="user-cell">
+        <div class="mini-avatar" style="background:${u.gradient}">${u.initials}</div>
+        <div class="user-cell-info">
+          <div class="name">${u.name}</div>
+          <div class="bandeja">${displayBandeja}</div>
+        </div>
+      </div>`;
+    }
+    return '<span class="sin-asignar">Sin asignar</span>';
+  }
+
+  function applyAsignadoMap() {
+    tbody.querySelectorAll('tr[data-ticket]').forEach(tr => {
+      const cell = tr.querySelector('.td-asignado');
+      if (!cell) return;
+      cell.innerHTML = buildAsignadoCell(tr.dataset.ticket);
+    });
+  }
+
+  function applyBandejaMap() {
+    const map = getBandejaMap();
+    tbody.querySelectorAll('tr[data-ticket]').forEach(tr => {
+      const saved = map[tr.dataset.ticket];
+      if (saved) tr.dataset.bandeja = saved;
+    });
+  }
+
+  function revertCases() {
+    const checked = getRowChecks().filter(c => c.checked);
+    if (!checked.length) return;
+    const map = getBandejaMap();
+    checked.forEach(c => {
+      const tr = c.closest('tr');
+      const ticket = tr.dataset.ticket;
+      if (!ticket) return;
+      const current = tr.dataset.bandeja;
+      // Usar bandeja previa guardada, o la bandeja display (original antes de asignar a usuario), o la primera bandeja real
+      const prev = _prevBandejaMap[ticket]
+        || (current.startsWith('user_') ? (_bandejaDisplayMap[ticket] || getBandejasDinamicas()[0]?.key) : null);
+      if (!prev) return;
+      _prevBandejaMap[ticket] = current;
+      map[ticket] = prev;
+      tr.dataset.bandeja = prev;
+      const isUser = prev.startsWith('user_');
+      if (isUser) {
+        _asignadoMap[ticket] = prev;
+        if (!current.startsWith('user_')) _bandejaDisplayMap[ticket] = current;
+      } else {
+        delete _asignadoMap[ticket];
+        _bandejaDisplayMap[ticket] = prev;
+      }
+      const cell = tr.querySelector('.td-asignado');
+      if (cell) cell.innerHTML = buildAsignadoCell(ticket);
+      const prevLabel = prev.startsWith('user_') ? getUserInfoMap()[prev]?.name : bandejaLabels[prev];
+      _saveTransferEventBandeja(ticket, prevLabel);
+    });
+    saveBandejaMap(map);
+    saveAsignadoMap();
+    saveBandejaDisplayMap();
+    savePrevBandejaMap();
+    closeTransferModal();
+    applyVisibility();
+    recountFilters();
+    updateBandejaCounts();
+    clearSelection();
+    _persistAllCases();
+    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} devuelto${checked.length > 1 ? 's' : ''} a bandeja anterior`);
+  }
+
+  function transferCases(targetBandeja) {
+    const checked = getRowChecks().filter(c => c.checked);
+    if (!checked.length) { showToast('Seleccioná al menos un caso'); return; }
+    const map = getBandejaMap();
+    const isUser = targetBandeja.startsWith('user_');
+    checked.forEach(c => {
+      const tr = c.closest('tr');
+      const ticket = tr.dataset.ticket;
+      if (!ticket) return;
+      const currentBandeja = tr.dataset.bandeja; // valor ANTES del transfer
+      _prevBandejaMap[ticket] = currentBandeja;
+      map[ticket] = targetBandeja;
+      tr.dataset.bandeja = targetBandeja;
+      if (isUser) {
+        _asignadoMap[ticket] = targetBandeja;
+        // Guardar bandeja actual como display solo si no es un usuario
+        if (!currentBandeja.startsWith('user_')) {
+          _bandejaDisplayMap[ticket] = currentBandeja;
+        }
+      } else {
+        delete _asignadoMap[ticket];
+        _bandejaDisplayMap[ticket] = targetBandeja;
+      }
+      // Margen de error: si lo estabas viendo en esa bandeja, sigue apareciendo ahí (apagado)
+      // hasta que cambies de bandeja o filtres "Abierto".
+      if (!currentBandeja.startsWith('user_') && currentBandeja === activeBandeja) {
+        _marcarEnGracia(ticket, currentBandeja);
+      }
+      const cell = tr.querySelector('.td-asignado');
+      if (cell) cell.innerHTML = buildAsignadoCell(ticket);
+      // Guardar evento de transferencia en timeline del caso
+      const destinoLabel = isUser ? getUserInfoMap()[targetBandeja].name : bandejaLabels[targetBandeja];
+      _saveTransferEventBandeja(ticket, destinoLabel);
+    });
+    saveBandejaMap(map);
+    saveAsignadoMap();
+    saveBandejaDisplayMap();
+    savePrevBandejaMap();
+    closeTransferModal();
+    applyVisibility();
+    recountFilters();
+    updateBandejaCounts();
+    clearSelection();
+    _persistAllCases();
+    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} transferido${checked.length > 1 ? 's' : ''} a ${bandejaLabels[targetBandeja]}`);
+  }
+
+  function bulkEstado(newStatus) {
+    const checked = getRowChecks().filter(c => c.checked);
+    if (!checked.length) { showToast('Seleccioná al menos un caso'); return; }
+    const map = getStatusMap();
+    checked.forEach(c => {
+      const tr = c.closest('tr');
+      tr.dataset.status = newStatus;
+      tr.querySelector('td:nth-child(5)').innerHTML = badgeMap[newStatus];
+      if (tr.dataset.ticket) map[tr.dataset.ticket] = newStatus;
+      if (newStatus === 'cerrado' && tr.dataset.ticket) _marcarCierreEnGracia(tr.dataset.ticket);
+    });
+    saveStatusMap(map);
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+    applyVisibility();
+    recountFilters();
+    clearSelection();
+    _persistAllCases();
+    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} marcado${checked.length > 1 ? 's' : ''} como ${newStatus}`);
+  }
+
+  function applyStatusMap() {
+    const map = getStatusMap();
+    document.querySelectorAll('tbody tr[data-ticket]').forEach(tr => {
+      const saved = map[tr.dataset.ticket];
+      if (saved) {
+        tr.dataset.status = saved;
+        tr.querySelector('td:nth-child(5)').innerHTML = badgeMap[saved];
+      }
+    });
+  }
+
+  // ════════════════════════════════
+  //  TAB MANAGEMENT
+  // ════════════════════════════════
+  function getTabs() { try { return JSON.parse(localStorage.getItem('cw_tabs') || '[]'); } catch { return []; } }
+  function setTabs(t) { localStorage.setItem('cw_tabs', JSON.stringify(t)); }
+  function getActiveTab() { return localStorage.getItem('cw_active_tab') || 'bandeja'; }
+  function setActiveTab(v) { localStorage.setItem('cw_active_tab', v); }
+
+  function renderTabs() {
+    const tabs   = getTabs();
+    const active = getActiveTab();
+    const cont   = document.getElementById('case-tabs');
+    cont.innerHTML = tabs.map(t => `
+      <div class="case-tab${active === t.ticket ? ' active' : ''}" data-ticket="${t.ticket}" onclick="switchTab('${t.ticket}')">
+        <span class="tab-label" title="${t.subject}">${t.ticket} — ${(t.fromName||'').split(' ')[0]}</span>
+        <button class="tab-close" onclick="event.stopPropagation();closeTab('${t.ticket}')">×</button>
+      </div>`).join('');
+  }
+
+  function switchTab(ticket) {
+    const tab = getTabs().find(t => t.ticket === ticket);
+    if (!tab) return;
+    localStorage.setItem('cw_caso_actual', JSON.stringify(tab));
+    setActiveTab(ticket);
+    window.location.href = 'caso-detalle.html';
+  }
+
+  function closeTab(ticket) {
+    let tabs = getTabs().filter(t => t.ticket !== ticket);
+    setTabs(tabs);
+    if (getActiveTab() === ticket) setActiveTab('bandeja');
+    renderTabs();
+  }
+
+  // ════════════════════════════════
+  //  READ STATE (persiste en localStorage)
+  // ════════════════════════════════
+  function getReadSet() {
+    try { return new Set(JSON.parse(localStorage.getItem('cw_read') || '[]')); }
+    catch { return new Set(); }
+  }
+  function markTicketRead(ticket) {
+    const s = getReadSet();
+    s.add(ticket);
+    localStorage.setItem('cw_read', JSON.stringify([...s]));
+  }
+  function applyReadState() {
+    const read = getReadSet();
+    [...tbody.querySelectorAll('tr[data-ticket]')].forEach(tr => {
+      if (read.has(tr.dataset.ticket)) {
+        tr.classList.remove('unread');
+        tr.querySelector('.mail-icon')?.classList.replace('unread', 'read');
+      }
+    });
+    updateUnreadBadge();
+  }
+
+  // ════════════════════════════════
+  //  ROW CLICK → DETAIL
+  // ════════════════════════════════
+  tbody.addEventListener('click', e => {
+    const tr = e.target.closest('tr');
+    if (!tr || e.target.tagName === 'INPUT' || tr.id === 'empty-state-row') return;
+
+    // Recolectar datos del caso desde el DOM
+    const fromRaw  = tr.querySelector('.from-line')?.textContent.replace('De: ', '').trim() || '';
+    const fromMatch = fromRaw.match(/^(.+?)\s*<(.+?)>$/);
+    const caso = {
+      ticket:    tr.dataset.ticket || '',
+      status:    tr.dataset.status || 'abierto',
+      bandeja:   tr.dataset.bandeja || getBandejasDinamicas()[0]?.key,
+      subject:   tr.querySelector('.subject-line')?.textContent.trim() || '',
+      fromName:  fromMatch ? fromMatch[1].trim() : fromRaw,
+      fromEmail: fromMatch ? fromMatch[2].trim() : '',
+      userInit:  tr.querySelector('.mini-avatar')?.textContent.trim() || '',
+      userName:  tr.querySelector('.name')?.textContent.trim() || '',
+      userTeam:  tr.querySelector('.bandeja')?.textContent.trim() || '',
+      date:      tr.querySelector('.date')?.textContent.trim() || '',
+      time:      tr.querySelector('.time')?.textContent.trim() || '',
+    };
+    localStorage.setItem('cw_caso_actual', JSON.stringify(caso));
+    localStorage.setItem('cw_ultimo_visto', caso.ticket);
+
+    // Agregar a pestañas si no existe
+    const tabs = getTabs();
+    if (!tabs.find(t => t.ticket === caso.ticket)) {
+      tabs.push(caso);
+      setTabs(tabs);
+    }
+    setActiveTab(caso.ticket);
+
+    // Marcar como leído
+    if (caso.ticket) markTicketRead(caso.ticket);
+    tr.classList.remove('unread');
+    tr.querySelector('.mail-icon')?.classList.replace('unread', 'read');
+    updateUnreadBadge();
+    window.location.href = 'caso-detalle.html';
+  });
+
+  function updateUnreadBadge() {
+    const unread = [...tbody.querySelectorAll('tr.unread')].length;
+    const badge  = document.querySelector('.nav-badge.red');
+    if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? '' : 'none'; }
+    updateBandejaCounts();
+  }
+
+  function updateBandejaCounts() {
+    const rows = [...tbody.querySelectorAll('tr[data-ticket]')];
+    const bandejaKeys = [...getBandejasAccesibles().map(b => b.key), ...getSubbandejasAccesibles().map(s => s.key)];
+    const otrasKeys = ['asignados', ...getUsuariosDinamicos().map(u => u.key)];
+    const allKeys = [...bandejaKeys, ...otrasKeys];
+    const counts = {};
+    allKeys.forEach(k => counts[k] = 0);
+    rows.forEach(tr => {
+      if (!tr.classList.contains('unread')) return;
+      const b = tr.dataset.bandeja;
+      if (counts.hasOwnProperty(b)) counts[b]++;
+    });
+    [...bandejaKeys, ...otrasKeys].forEach(k => {
+      const el = document.getElementById(`bc-${k}`);
+      if (!el) return;
+      el.textContent = counts[k] || '';
+      el.style.display = counts[k] > 0 ? '' : 'none';
+    });
+  }
+
+  // ════════════════════════════════
+  //  SORT
+  // ════════════════════════════════
+  const MONTHS = {ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,oct:10,nov:11,dic:12};
+
+  function dateToTs(dateStr, timeStr) {
+    const [d, m, y] = dateStr.trim().split(' ');
+    const [hh, mm] = timeStr.replace(' hs','').split(':');
+    return parseInt(`${y}${String(MONTHS[m]).padStart(2,'0')}${d.padStart(2,'0')}${hh}${mm}`);
+  }
+
+  let sortDir = 'asc'; // asc = antiguos primero
+
+  function sortRows() {
+    const rows = [...tbody.querySelectorAll('tr[data-ts]')];
+    rows.sort((a, b) => sortDir === 'asc'
+      ? a.dataset.ts - b.dataset.ts
+      : b.dataset.ts - a.dataset.ts
+    );
+    rows.forEach(tr => tbody.appendChild(tr));
+  }
+
+  document.getElementById('sort-btn').addEventListener('click', () => {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    const btn = document.getElementById('sort-btn');
+    btn.title = sortDir === 'asc' ? 'Más antiguos primero' : 'Más recientes primero';
+    document.getElementById('sort-icon').innerHTML = sortDir === 'asc'
+      ? '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 9 1 6 5 6"/>'
+      : '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 15 1 18 5 18"/>';
+    sortRows();
+  });
+
+  // ════════════════════════════════
+  //  BANDEJA DROPDOWN
+  // ════════════════════════════════
+  function getBandejasDinamicas() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('cw_bandejas') || '[]');
+      if (Array.isArray(raw) && raw.length) return raw;
+    } catch (e) {}
+    return [{ key: 'facturacion', nombre: 'Facturación' }, { key: 'consultas', nombre: 'Consultas' }];
+  }
+
+  // Sub-bandejas aplanadas de todas las bandejas padre, con key compuesta para no colisionar entre padres distintos
+  function getSubbandejasDinamicas() {
+    const out = [];
+    getBandejasDinamicas().forEach(b => {
+      (b.subbandejas || []).forEach(s => {
+        out.push({ key: `${b.key}::${s.key}`, nombre: s.nombre });
+      });
+    });
+    return out;
+  }
+
+  // Usuario "logueado" simulado — mientras no haya backend con login real, se guarda en localStorage
+  // y se cambia con el selector "Ver como [usuario]". Mismo concepto que CURRENT_USER_KEY en admin.html.
+  const CURRENT_USER_KEY = localStorage.getItem('cw_usuario_activo') || 'user_ng';
+  const GRADIENTES = [
+    'linear-gradient(135deg,#1a6cd4,#4fa3f7)',
+    'linear-gradient(135deg,#7c3aed,#a78bfa)',
+    'linear-gradient(135deg,#059669,#34d399)',
+    'linear-gradient(135deg,#dc2626,#f87171)',
+    'linear-gradient(135deg,#d97706,#fbbf24)',
+    'linear-gradient(135deg,#0891b2,#67e8f9)',
+  ];
+
+  // Usuarios reales dados de alta en admin.html (cw_usuarios). Si todavía no se configuró nada,
+  // usa el mismo seed por defecto que admin.html para no quedar sin usuarios.
+  function getUsuariosDinamicos() {
+    let usuarios;
+    try {
+      usuarios = JSON.parse(localStorage.getItem('cw_usuarios') || '[]');
+    } catch (e) { usuarios = []; }
+    if (!Array.isArray(usuarios) || !usuarios.length) {
+      usuarios = [
+        { key: 'user_ng', initials: 'NG', nombre: 'Nicolás', apellido: 'Gravina', gradient: GRADIENTES[0], rol: 'Administrador' },
+        { key: 'user_cp', initials: 'CP', nombre: 'Carlos',  apellido: 'P.',       gradient: GRADIENTES[1], rol: 'Agente' },
+        { key: 'user_lm', initials: 'LM', nombre: 'Laura',   apellido: 'M.',       gradient: GRADIENTES[2], rol: 'Agente' },
+        { key: 'user_sr', initials: 'SR', nombre: 'Sofía',   apellido: 'R.',       gradient: GRADIENTES[3], rol: 'Agente' },
+        { key: 'user_jf', initials: 'JF', nombre: 'Jorge',   apellido: 'F.',       gradient: GRADIENTES[4], rol: 'Agente' },
+      ];
+    }
+    const onlineGuardado = localStorage.getItem('cw_disponible') !== 'off';
+    return usuarios.map(u => ({
+      key: u.key,
+      initials: u.initials,
+      name: `${u.nombre || ''} ${u.apellido || ''}`.trim(),
+      gradient: u.gradient || GRADIENTES[0],
+      rol: u.rol || 'Agente',
+      online: u.key === CURRENT_USER_KEY ? onlineGuardado : true,
+    }));
+  }
+
+  // ── Permisos por bandeja (cw_permisos), espejo del modelo de admin.html ──
+  function getPermisos() {
+    try { return JSON.parse(localStorage.getItem('cw_permisos') || '{}'); } catch (e) { return {}; }
+  }
+
+  const ES_ADMIN = (getUsuariosDinamicos().find(u => u.key === CURRENT_USER_KEY)?.rol) === 'Administrador';
+  // El acceso a admin.html es solo para administradores — simulado con "Ver como [usuario]".
+  document.getElementById('config-menu-admin-item').style.display = ES_ADMIN ? '' : 'none';
+
+  // Las sub-bandejas heredan el permiso de su bandeja padre (no se configuran aparte, ver admin.html).
+  function tieneAccesoBandeja(key) {
+    if (ES_ADMIN) return true;
+    const parentKey = key.includes('::') ? key.split('::')[0] : key;
+    return !!getPermisos()[parentKey]?.[CURRENT_USER_KEY]?.acceso;
+  }
+
+  function getBandejasAccesibles() {
+    return getBandejasDinamicas().filter(b => tieneAccesoBandeja(b.key));
+  }
+
+  function getSubbandejasAccesibles() {
+    return getSubbandejasDinamicas().filter(s => tieneAccesoBandeja(s.key));
+  }
+
+  function getUserInfoMap() {
+    const map = {};
+    getUsuariosDinamicos().forEach(u => { map[u.key] = u; });
+    return map;
+  }
+
+  function renderNuevoCasoAsignadoSelect() {
+    const select = document.getElementById('nuevo-caso-asignado');
+    if (!select) return;
+    select.innerHTML = '<option value="">Sin asignar</option>' +
+      getUsuariosDinamicos().map(u => `<option value="${u.key}">${u.name}</option>`).join('');
+  }
+  renderNuevoCasoAsignadoSelect();
+
+  function renderNuevoCasoBandejaSelect() {
+    const select = document.getElementById('nuevo-caso-bandeja');
+    if (!select) return;
+    select.innerHTML = getBandejasAccesibles().map(b => `<option value="${b.key}">${b.nombre}</option>`).join('') +
+      getSubbandejasAccesibles().map(s => `<option value="${s.key}">${s.nombre}</option>`).join('');
+  }
+  renderNuevoCasoBandejaSelect();
+
+  const bandejaLabels = {
+    asignados:   'Mis asignados',
+  };
+  getBandejasDinamicas().forEach(b => { bandejaLabels[b.key] = b.nombre; });
+  getSubbandejasDinamicas().forEach(s => { bandejaLabels[s.key] = s.nombre; });
+  getUsuariosDinamicos().forEach(u => { bandejaLabels[u.key] = u.name; });
+
+  function renderBandejasDinamicas() {
+    const list = document.getElementById('bandeja-dinamicas-list');
+    if (!list) return;
+    const iconBandeja = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>';
+    list.innerHTML = getBandejasAccesibles().map(b => `
+      <div class="bandeja-item" data-bandeja="${b.key}">
+        ${iconBandeja}
+        ${b.nombre}
+        <span class="bandeja-count" id="bc-${b.key}"></span>
+      </div>`).join('');
+    list.querySelectorAll('.bandeja-item[data-bandeja]').forEach(item => {
+      item.addEventListener('click', () => {
+        setBandeja(item.dataset.bandeja, true);
+        document.getElementById('bandeja-menu').classList.remove('open');
+      });
+    });
+  }
+  renderBandejasDinamicas();
+
+  function renderSubbandejasDinamicas() {
+    const list = document.getElementById('bandeja-subbandejas-list');
+    if (!list) return;
+    const iconSub = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.7"><path d="M9 18l6-6-6-6"/></svg>';
+    list.innerHTML = getSubbandejasAccesibles().map(s => `
+      <div class="bandeja-item" data-bandeja="${s.key}">
+        ${iconSub}
+        ${s.nombre}
+        <span class="bandeja-count" id="bc-${s.key}"></span>
+      </div>`).join('');
+    list.querySelectorAll('.bandeja-item[data-bandeja]').forEach(item => {
+      item.addEventListener('click', () => {
+        setBandeja(item.dataset.bandeja, true);
+        document.getElementById('bandeja-menu').classList.remove('open');
+      });
+    });
+  }
+  renderSubbandejasDinamicas();
+
+  function setBandeja(key, resetFilter = false) {
+    if (key !== activeBandeja) _limpiarGracia();
+    activeBandeja = key;
+    localStorage.setItem('cw_bandeja', key);
+    document.getElementById('bandeja-label').textContent = bandejaLabels[key];
+    document.querySelectorAll('.bandeja-item').forEach(i =>
+      i.classList.toggle('active', i.dataset.bandeja === key)
+    );
+    document.querySelectorAll('.nav-subitem').forEach(i =>
+      i.classList.toggle('active', i.dataset.bandeja === key)
+    );
+    if (resetFilter) {
+      activeFilter = 'abierto';
+      localStorage.setItem('cw_filtro', 'abierto');
+      document.querySelectorAll('.status-filter').forEach(b => b.classList.remove('active'));
+      document.querySelector('.status-filter[data-status="abierto"]')?.classList.add('active');
+      // Cambiar de bandeja o usuario limpia la búsqueda y el filtro "incluir cerrados" activos
+      searchQuery = '';
+      searchInput.value = '';
+      localStorage.removeItem('cw_search_query');
+      showCerrados = false;
+      incluirCerrados.checked = false;
+      localStorage.removeItem('cw_incluir_cerrados');
+      document.getElementById('bandeja-label').textContent = bandejaLabels[key];
+    }
+    clearSelection(true);
+    applyBandejaMap();
+    applyStatusMap();
+    applyVisibility();
+    recountFilters();
+  }
+
+  function toggleUsuariosEnBandeja(e) {
+    e.stopPropagation();
+    const btn  = document.getElementById('usuarios-toggle-btn');
+    const list = document.getElementById('bandeja-usuarios-list');
+    const open = list.classList.contains('open');
+    if (!open) renderBandejaUsuariosList();
+    btn.classList.toggle('open', !open);
+    list.classList.toggle('open', !open);
+  }
+
+  function renderBandejaUsuariosList() {
+    const list = document.getElementById('bandeja-usuarios-list');
+    if (!list) return;
+    const counts = {};
+    const usuarios = getUsuariosDinamicos();
+    usuarios.forEach(u => counts[u.key] = 0);
+    tbody.querySelectorAll('tr[data-ticket]').forEach(tr => {
+      if (counts.hasOwnProperty(tr.dataset.bandeja) && tr.dataset.status === 'abierto')
+        counts[tr.dataset.bandeja]++;
+    });
+    const sorted = usuarios.filter(u => u.key !== CURRENT_USER_KEY).sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0));
+    list.innerHTML = sorted.map(u => {
+      const cnt = counts[u.key] || 0;
+      return `<div class="bandeja-item" data-bandeja="${u.key}" style="gap:9px">
+        <span style="position:relative;flex-shrink:0">
+          <span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${u.gradient};font-size:9px;font-weight:700;color:white">${u.initials}</span>
+          <span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:${u.online ? '#22c55e' : '#94a3b8'};border:1.5px solid white"></span>
+        </span>
+        <span style="flex:1;color:${u.online ? '' : 'var(--text-muted)'}">${u.name}</span>
+        ${cnt > 0 ? `<span class="bandeja-count">${cnt}</span>` : ''}
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.bandeja-item[data-bandeja]').forEach(item => {
+      item.addEventListener('click', () => {
+        setBandeja(item.dataset.bandeja, true);
+        document.getElementById('bandeja-menu').classList.remove('open');
+      });
+    });
+  }
+
+  function updateTransferUserCounts() {
+    const counts = {};
+    const usuarios = getUsuariosDinamicos();
+    usuarios.forEach(u => counts[u.key] = 0);
+    tbody.querySelectorAll('tr[data-ticket]').forEach(tr => {
+      const b = tr.dataset.bandeja;
+      const s = tr.dataset.status;
+      if (counts.hasOwnProperty(b) && s === 'abierto') counts[b]++;
+    });
+    const sorted = [...usuarios].sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0));
+    const list = document.getElementById('transfer-users-list');
+    if (!list) return;
+    list.innerHTML = sorted.map(u => {
+      const cnt = counts[u.key] || 0;
+      const nameColor = u.online ? '#1e293b' : '#94a3b8';
+      return `<div class="tm-item" onclick="transferCases('${u.key}')">
+        <span class="tm-online-dot" style="background:${u.online ? '#22c55e' : '#94a3b8'}"></span>
+        <span style="color:${nameColor};flex:1">${u.name}</span>
+        ${cnt > 0 ? `<span class="tm-user-count">${cnt}</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function renderTransferBandejasList() {
+    const iconSub = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tm-sub-icon" style="width:15px;height:15px"><path d="M9 18l6-6-6-6"/></svg>';
+    const list = document.getElementById('transfer-bandejas-list');
+    if (!list) return;
+    const todasBandejas = getBandejasDinamicas();
+    list.innerHTML = getBandejasAccesibles().map(b => {
+      const orden = String(todasBandejas.findIndex(x => x.key === b.key) + 1).padStart(2, '0');
+      return `<div class="tm-item" onclick="transferCases('${b.key}')"><span class="tm-bandeja-pill">${orden}</span><span>${b.nombre}</span></div>`;
+    }).join('');
+    const subList = document.getElementById('transfer-subbandejas-list');
+    if (!subList) return;
+    subList.innerHTML = getSubbandejasAccesibles().map(s =>
+      `<div class="tm-item" onclick="transferCases('${s.key}')">${iconSub}<span>${s.nombre}</span></div>`
+    ).join('');
+  }
+
+  function openTransferModal() {
+    if (document.getElementById('btn-transferir').disabled) return;
+    renderTransferBandejasList();
+    updateTransferUserCounts();
+    const checked = getRowChecks().filter(c => c.checked);
+    const hasRevert = checked.some(c => {
+      const tr = c.closest('tr');
+      const ticket = tr?.dataset.ticket;
+      const bandeja = tr?.dataset.bandeja || '';
+      return ticket && (bandeja.startsWith('user_') || _prevBandejaMap[ticket]);
+    });
+    document.getElementById('tm-revert-section').style.display = hasRevert ? 'block' : 'none';
+    document.getElementById('transfer-modal-backdrop').classList.add('open');
+  }
+
+  function closeTransferModal() {
+    document.getElementById('transfer-modal-backdrop').classList.remove('open');
+  }
+
+  document.getElementById('btn-transferir').addEventListener('click', e => {
+    e.stopPropagation();
+    openTransferModal();
+  });
+
+  function _closeBandejaMenu() {
+    document.getElementById('bandeja-menu').classList.remove('open');
+    document.getElementById('bandeja-usuarios-list')?.classList.remove('open');
+    document.getElementById('usuarios-toggle-btn')?.classList.remove('open');
+    document.getElementById('bandeja-backdrop')?.remove();
+  }
+
+  function toggleBandejaMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('bandeja-menu');
+    const isOpen = menu.classList.contains('open');
+    if (isOpen) {
+      _closeBandejaMenu();
+    } else {
+      menu.classList.add('open');
+      renderBandejaUsuariosList();
+      const bd = document.createElement('div');
+      bd.id = 'bandeja-backdrop';
+      bd.style.cssText = 'position:fixed;inset:0;z-index:299';
+      bd.addEventListener('click', _closeBandejaMenu);
+      document.body.appendChild(bd);
+    }
+  }
+
+  function toggleConfigMenu(e) {
+    e.stopPropagation();
+    document.getElementById('config-menu').classList.toggle('open');
+  }
+
+  function scrollToLastCase(e) {
+    e.stopPropagation();
+    const ticket = localStorage.getItem('cw_ultimo_visto');
+    if (!ticket) return;
+    const row = tbody.querySelector(`tr[data-ticket="${ticket}"]`);
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // parpadeo para que se note
+    row.style.transition = 'background .2s';
+    row.style.background = 'rgba(59,130,246,.15)';
+    setTimeout(() => row.style.background = '', 1000);
+  }
+
+  document.querySelectorAll('#bandeja-menu > .bandeja-item[data-bandeja]').forEach(item => {
+    item.addEventListener('click', () => {
+      setBandeja(item.dataset.bandeja, true);
+      document.getElementById('bandeja-menu').classList.remove('open');
+    });
+  });
+
+  // Resaltado del menú de bandejas reforzado por JS (no depender solo de :hover),
+  // delegado en el documento para cubrir también los ítems de usuario que se renderizan dinámicamente.
+  document.addEventListener('mouseover', e => {
+    const item = e.target.closest('.bandeja-item, .bandeja-usuarios-toggle');
+    if (item) item.classList.add('hovered');
+  });
+  document.addEventListener('mouseout', e => {
+    const item = e.target.closest('.bandeja-item, .bandeja-usuarios-toggle');
+    if (item && !item.contains(e.relatedTarget)) item.classList.remove('hovered');
+  });
+
+  // ════════════════════════════════
+  //  ESTADO DROPDOWN
+  // ════════════════════════════════
+  document.getElementById('estado-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    if (document.getElementById('estado-btn').classList.contains('disabled')) return;
+    document.getElementById('estado-menu').classList.toggle('open');
+  });
+  document.getElementById('bandeja-menu').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('config-menu').addEventListener('click', e => e.stopPropagation());
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+    document.getElementById('bandeja-menu').classList.remove('open');
+    document.getElementById('bandeja-usuarios-list')?.classList.remove('open');
+    document.getElementById('usuarios-toggle-btn')?.classList.remove('open');
+  });
+
+  // ════════════════════════════════
+  //  MODAL NUEVO CASO
+  // ════════════════════════════════
+  document.getElementById('btn-nuevo-caso').addEventListener('click', () => {
+    ['nuevo-caso-nombre','nuevo-caso-apellido','nuevo-caso-email','nuevo-caso-asunto'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    renderNuevoCasoBandejaSelect();
+    renderNuevoCasoAsignadoSelect();
+    document.getElementById('nuevo-caso-estado').value = 'abierto';
+    document.getElementById('nuevo-caso-mensaje').innerHTML = '';
+    _nuevoCasoAttachFiles = [];
+    document.getElementById('nuevo-caso-attach-list').innerHTML = '';
+    document.getElementById('modal-nuevo').classList.add('open');
+  });
+
+  let _nuevoCasoAttachFiles = [];
+
+  function _onNuevoCasoAttach(input) {
+    Array.from(input.files || []).forEach(f => _nuevoCasoAttachFiles.push(f.name));
+    input.value = '';
+    _renderNuevoCasoAttachList();
+  }
+
+  function _renderNuevoCasoAttachList() {
+    const list = document.getElementById('nuevo-caso-attach-list');
+    list.innerHTML = _nuevoCasoAttachFiles.map((name, i) => `
+      <span class="nuevo-caso-attach-chip">
+        ${name}
+        <button type="button" onclick="_quitarNuevoCasoAttach(${i})" title="Quitar">×</button>
+      </span>
+    `).join('');
+  }
+
+  function _quitarNuevoCasoAttach(i) {
+    _nuevoCasoAttachFiles.splice(i, 1);
+    _renderNuevoCasoAttachList();
+  }
+
+  function closeModal() {
+    document.getElementById('modal-nuevo').classList.remove('open');
+  }
+
+  document.getElementById('modal-nuevo').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Misma sintaxis que el resto de las fechas mock ("27 jun 2026", "09:50 hs"), para que
+  // dateToTs() la parsee bien y el caso nuevo respete el orden vigente (sortRows/sortDir).
+  function _fechaHoraActual() {
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const now = new Date();
+    const dia = String(now.getDate()).padStart(2, '0');
+    const hh  = String(now.getHours()).padStart(2, '0');
+    const mm  = String(now.getMinutes()).padStart(2, '0');
+    return {
+      fecha: `${dia} ${meses[now.getMonth()]} ${now.getFullYear()}`,
+      hora: `${hh}:${mm} hs`,
+    };
+  }
+
+  function _siguienteTicket() {
+    let max = 0;
+    document.querySelectorAll('[data-ticket]').forEach(el => {
+      const n = parseInt((el.dataset.ticket || '').replace('#', ''), 10);
+      if (!isNaN(n) && n > max) max = n;
+    });
+    const guardado = parseInt(localStorage.getItem('cw_ticket_counter') || '0', 10);
+    const siguiente = Math.max(max, guardado) + 1;
+    localStorage.setItem('cw_ticket_counter', String(siguiente));
+    return `#${siguiente}`;
+  }
+
+  // Bandeja (o sub-bandeja) → mensaje de bienvenida configurado en admin.html, con el chip
+  // "N° de caso" reemplazado por el ticket real. Las sub-bandejas heredan el de su bandeja padre.
+  function _mensajeBienvenidaPara(bandejaKey, ticket) {
+    const parentKey = bandejaKey.includes('::') ? bandejaKey.split('::')[0] : bandejaKey;
+    const bandeja = getBandejasDinamicas().find(b => b.key === parentKey);
+    if (!bandeja || !bandeja.mensajeBienvenida) return null;
+    return bandeja.mensajeBienvenida.replace(/<span class="var-chip"[^>]*>[^<]*<\/span>/gi, ticket);
+  }
+
+  function crearCaso() {
+    const nombre   = document.getElementById('nuevo-caso-nombre').value.trim();
+    const apellido = document.getElementById('nuevo-caso-apellido').value.trim();
+    const email    = document.getElementById('nuevo-caso-email').value.trim();
+    const asunto   = document.getElementById('nuevo-caso-asunto').value.trim();
+    const bandejaKey = document.getElementById('nuevo-caso-bandeja').value;
+    const asignadoKey = document.getElementById('nuevo-caso-asignado').value;
+    const estado   = document.getElementById('nuevo-caso-estado').value;
+    if (!nombre || !apellido || !email || !asunto || !bandejaKey) {
+      showToast('Completá nombre, apellido, email, asunto y bandeja');
+      return;
+    }
+
+    const ticket = _siguienteTicket();
+    const { fecha, hora } = _fechaHoraActual();
+    const d = {
+      subject: asunto,
+      from: `${nombre} ${apellido} <${email}>`,
+      ticket, status: estado,
+      subBandeja: bandejaKey,
+      date: fecha, time: hora,
+      unread: true,
+    };
+    tbody.insertAdjacentHTML('afterbegin', buildRow(d));
+
+    if (asignadoKey) {
+      _asignadoMap[ticket] = asignadoKey;
+      _bandejaDisplayMap[ticket] = bandejaKey;
+      const map = getBandejaMap();
+      map[ticket] = asignadoKey;
+      saveBandejaMap(map);
+      const tr = tbody.querySelector(`tr[data-ticket="${ticket}"]`);
+      if (tr) tr.dataset.bandeja = asignadoKey;
+      const cell = tbody.querySelector(`tr[data-ticket="${ticket}"] .td-asignado`);
+      if (cell) cell.innerHTML = buildAsignadoCell(ticket);
+      saveAsignadoMap();
+      saveBandejaDisplayMap();
+    }
+
+    _guardarCasoCreado(d);
+
+    const bienvenida = _mensajeBienvenidaPara(bandejaKey, ticket);
+    if (bienvenida) localStorage.setItem('cw_bienvenida_' + ticket, bienvenida);
+
+    // Mensaje inicial y adjuntos cargados en el modal → se guardan para que caso-detalle.html
+    // los muestre como el correo entrante real de este caso (en vez del texto mock genérico).
+    const mensajeInicialHTML = document.getElementById('nuevo-caso-mensaje').innerHTML.trim();
+    localStorage.setItem('cw_mensaje_inicial_' + ticket, JSON.stringify({
+      texto: mensajeInicialHTML,
+      adjuntos: _nuevoCasoAttachFiles.slice(),
+    }));
+
+    sortRows();
+    applyVisibility();
+    recountFilters();
+    updateBandejaCounts();
+    updateUnreadBadge();
+    _persistAllCases();
+    closeModal();
+    showCasoCreadoToast(ticket);
+  }
+
+  // ════════════════════════════════
+  //  TOAST
+  // ════════════════════════════════
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function showCasoCreadoToast(ticket) {
+    const t = document.getElementById('toast');
+    t.innerHTML = `
+      <span>Caso ${ticket} creado correctamente</span>
+      <button type="button" class="toast-copy-btn" onclick="_copiarTicket('${ticket}', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        <span class="toast-copy-label">Copiar N°</span>
+      </button>`;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 5000);
+  }
+
+  function _copiarTicket(ticket, btn) {
+    navigator.clipboard?.writeText(ticket).catch(() => {});
+    const label = btn.querySelector('.toast-copy-label');
+    if (!label) return;
+    label.textContent = '¡Copiado!';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => document.getElementById('toast').classList.remove('show'), 1400);
+  }
+
+  // ════════════════════════════════
+  //  DISPONIBLE TOGGLE
+  // ════════════════════════════════
+  const dispBtn   = document.getElementById('disponible-btn');
+  const dispLabel = document.getElementById('disponible-label');
+  const dispBadge = document.getElementById('disponible-badge');
+  let online = localStorage.getItem('cw_disponible') !== 'off';
+
+  function applyDisponible() {
+    dispLabel.textContent = online ? 'Disponible' : 'Desconectado';
+    dispBadge.textContent = online ? 'ON' : 'OFF';
+    document.getElementById('status-dot').style.background = online ? '#22c55e' : '#94a3b8';
+    dispBadge.style.background = online ? '#22c55e' : '#475569';
+  }
+
+  dispBtn.addEventListener('click', () => {
+    online = !online;
+    localStorage.setItem('cw_disponible', online ? 'on' : 'off');
+    applyDisponible();
+  });
+
+  applyDisponible();
+
+  // ════════════════════════════════
+  //  VER COMO [USUARIO] (simulación de login, sin backend real)
+  // ════════════════════════════════
+  function applyVerComo() {
+    const userInfo = getUserInfoMap();
+    const u = userInfo[CURRENT_USER_KEY] || Object.values(userInfo)[0];
+    const avatar = document.getElementById('ver-como-avatar');
+    avatar.style.background = u.gradient;
+    avatar.textContent = u.initials;
+    document.getElementById('ver-como-label').textContent = u.name;
+  }
+
+  function renderVerComoList() {
+    const list = document.getElementById('ver-como-list');
+    if (!list) return;
+    list.innerHTML = getUsuariosDinamicos().map(u => `
+      <div class="dropdown-item${u.key === CURRENT_USER_KEY ? ' active' : ''}" data-usuario="${u.key}" style="justify-content:space-between;align-items:center;gap:8px">
+        <span style="display:flex;align-items:center;gap:7px">
+          <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${u.gradient};font-size:8px;font-weight:700;color:white;flex-shrink:0">${u.initials}</span>
+          ${u.name}
+        </span>
+        ${u.key === CURRENT_USER_KEY ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;color:#1a6cd4"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </div>`).join('');
+    list.querySelectorAll('[data-usuario]').forEach(item => {
+      item.addEventListener('click', () => {
+        const key = item.dataset.usuario;
+        if (key === CURRENT_USER_KEY) { document.getElementById('ver-como-menu').classList.remove('open'); return; }
+        localStorage.setItem('cw_usuario_activo', key);
+        window.location.reload();
+      });
+    });
+  }
+
+  document.getElementById('ver-como-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('ver-como-menu').classList.toggle('open');
+    renderVerComoList();
+  });
+  document.getElementById('ver-como-menu').addEventListener('click', e => e.stopPropagation());
+
+  applyVerComo();
+
+  // Persiste todos los casos (estáticos + pool) para que caso-detalle.html
+  // pueda armar el histórico de un remitente con la totalidad de sus casos,
+  // sin importar si viven en el HTML estático o en el pool simulado.
+  function _persistAllCases() {
+    const all = {};
+    tbody.querySelectorAll('tr[data-ticket]').forEach(tr => {
+      const fromRaw   = tr.querySelector('.from-line')?.textContent.replace('De: ', '').trim() || '';
+      const fromMatch = fromRaw.match(/^(.+?)\s*<(.+?)>$/);
+      const num = tr.dataset.ticket.replace('#', '');
+      all[num] = {
+        ticket:    tr.dataset.ticket,
+        estado:    tr.dataset.status,
+        bandeja:   tr.dataset.bandeja,
+        asunto:    tr.querySelector('.subject-line')?.textContent.trim() || '',
+        fromName:  fromMatch ? fromMatch[1].trim() : fromRaw,
+        fromEmail: (fromMatch ? fromMatch[2].trim() : '').toLowerCase(),
+        date:      tr.querySelector('.date')?.textContent.trim() || '',
+        time:      tr.querySelector('.time')?.textContent.trim() || '',
+        asignado:  tr.querySelector('.td-asignado')?.textContent.trim() || 'Sin asignar',
+      };
+    });
+    localStorage.setItem('cw_all_cases', JSON.stringify(all));
+  }
+
+  // Casos dados de alta con "+ Nuevo Caso": el POOL/HTML estático no los conoce,
+  // así que se guardan aparte para volver a insertarlos al recargar la página.
+  function getCasosCreados() {
+    try { return JSON.parse(localStorage.getItem('cw_casos_creados') || '[]'); } catch (e) { return []; }
+  }
+  function _guardarCasoCreado(d) {
+    const casos = getCasosCreados();
+    casos.push(d);
+    localStorage.setItem('cw_casos_creados', JSON.stringify(casos));
+  }
+
+  // ════════════════════════════════
+  //  INIT
+  // ════════════════════════════════
+  // Carga todo el POOL de una vez (dateToTs ya está definida aquí)
+  POOL.forEach(d => tbody.insertAdjacentHTML('beforeend', buildRow(d)));
+  getCasosCreados().forEach(d => tbody.insertAdjacentHTML('afterbegin', buildRow(d)));
+  loaded = TOTAL;
+  applyBandejaMap();
+  applyStatusMap();
+  applyAsignadoMap();
+  applyReadState();
+  _persistAllCases();
+  setActiveTab('bandeja');
+  renderTabs();
+  sortRows();
+  const _savedSel = localStorage.getItem('cw_selection');
+  // Si el usuario activo (simulado con "Ver como") no tiene acceso a la bandeja guardada, redirigir a la primera accesible
+  if (activeBandeja !== 'asignados' && !activeBandeja.startsWith('user_') && !tieneAccesoBandeja(activeBandeja)) {
+    activeBandeja = getBandejasAccesibles()[0]?.key || getSubbandejasAccesibles()[0]?.key || 'asignados';
+  }
+  setBandeja(activeBandeja);
+  if (_savedSel) localStorage.setItem('cw_selection', _savedSel);
+  restoreSelection();
+  updateUnreadBadge();
+
+  // Restaura filtro de estado activo
+  if (activeFilter) {
+    const btn = document.querySelector(`.status-filter[data-status="${activeFilter}"]`);
+    if (btn) btn.classList.add('active');
+  }
+
+  // Restaura "incluir cerrados" (queda tildado hasta que se cambie de bandeja/usuario)
+  if (localStorage.getItem('cw_incluir_cerrados') === '1') {
+    showCerrados = true;
+    incluirCerrados.checked = true;
+    applyVisibility();
+    recountFilters();
+  }
+
+  // Restaura la búsqueda activa (queda en pantalla hasta que se cambie de bandeja/usuario)
+  const _savedSearch = localStorage.getItem('cw_search_query');
+  if (_savedSearch) {
+    searchInput.value = _savedSearch;
+    _runSearch();
+  }
+</script>
+
+<div id="transfer-modal-backdrop" onclick="if(event.target===this)closeTransferModal()">
+  <div id="transfer-modal">
+    <div id="transfer-modal-header">
+      <h3>Transferir casos</h3>
+      <button onclick="closeTransferModal()">×</button>
+    </div>
+    <div id="transfer-modal-body">
+      <div class="tm-section-title">Bandejas</div>
+      <div id="transfer-bandejas-list"></div>
+      <div id="transfer-subbandejas-list"></div>
+      <div class="tm-divider"></div>
+      <div id="tm-revert-section" style="display:none">
+        <div class="tm-item revert" onclick="revertCases()">
+          <span class="tm-revert-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M3 10h10a8 8 0 010 16H3"/><polyline points="3 6 7 10 3 14"/></svg></span>
+          <span>Volver a bandeja anterior</span>
+        </div>
+        <div class="tm-divider"></div>
+      </div>
+      <div class="tm-section-title">Usuarios</div>
+      <div id="transfer-users-list"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

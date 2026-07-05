@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mi perfil — CentralWeb</title>
+<style>
+  :root {
+    --blue-900:  #0d2244;
+    --blue-800:  #0e3a6e;
+    --blue-700:  #1352a8;
+    --blue-600:  #1a6cd4;
+    --blue-500:  #2183f0;
+    --blue-400:  #4fa3f7;
+    --blue-300:  #7cc2fb;
+    --blue-200:  #bfdffd;
+    --blue-100:  #e8f3fe;
+    --blue-50:   #f4f9ff;
+
+    --text-primary:   #0d1f3c;
+    --text-secondary: #4a6285;
+    --text-muted:     #8ba4c4;
+    --border:         #d0e2f7;
+    --bg:             #f0f5fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+  }
+  header.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--blue-800), var(--blue-700));
+    color: white;
+  }
+  header.topbar .page-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  header.topbar .page-title svg { width: 18px; height: 18px; }
+  .back-link {
+    margin-left: auto;
+    color: white;
+    text-decoration: none;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: .9;
+  }
+  .back-link:hover { opacity: 1; }
+  .back-link svg { width: 14px; height: 14px; }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .card .hint {
+    margin: 0 0 16px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  .profile-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .avatar-lg {
+    width: 56px; height: 56px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .profile-head .rol-pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--blue-100);
+    color: var(--blue-700);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  label.field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  .field { margin-bottom: 14px; }
+  input[type=text] {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    background: var(--blue-50);
+  }
+  input[type=text]:focus { outline: 2px solid var(--blue-300); background: white; }
+  input[disabled] {
+    background: var(--bg);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+  button.btn {
+    border: none;
+    border-radius: 7px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--blue-600);
+    color: white;
+  }
+  button.btn:hover { background: var(--blue-700); }
+  button.btn.secondary {
+    background: var(--blue-100);
+    color: var(--blue-700);
+  }
+  button.btn.secondary:hover { background: var(--blue-200); }
+  .save-msg {
+    font-size: 12px;
+    color: #059669;
+    font-weight: 600;
+    margin-left: 10px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .save-msg.show { opacity: 1; }
+
+  /* Bandejas desplegable */
+  .bandejas-dropdown { position: relative; }
+  .bandejas-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 11px;
+    font-size: 13.5px;
+    cursor: pointer;
+    background: var(--blue-50);
+    user-select: none;
+  }
+  .bandejas-toggle .chevron { margin-left: auto; transition: transform .2s; width: 13px; height: 13px; }
+  .bandejas-toggle.open .chevron { transform: rotate(180deg); }
+  .bandejas-list {
+    display: none;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 7px 7px;
+    overflow: hidden;
+  }
+  .bandejas-list.open { display: block; }
+  .bandeja-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+    border-top: 1px solid var(--blue-50);
+  }
+  .bandeja-row .correo { margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
+  .ver-otros-tag {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--blue-700);
+    background: var(--blue-100);
+    padding: 1px 7px;
+    border-radius: 20px;
+  }
+  .empty-msg { font-size: 12.5px; color: var(--text-muted); padding: 9px 12px; }
+
+  /* Firma */
+  .signature-mode-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .sig-tab {
+    border: 1px solid var(--border);
+    background: var(--blue-50);
+    color: var(--text-secondary);
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sig-tab.active { background: var(--blue-600); color: white; border-color: var(--blue-600); }
+  textarea#firma-texto {
+    width: 100%;
+    min-height: 110px;
+    padding: 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--blue-50);
+    resize: vertical;
+  }
+  textarea#firma-texto:focus { outline: 2px solid var(--blue-300); background: white; }
+  .firma-file-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    background: var(--blue-50);
+  }
+  .firma-file-zone .hint-small { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .firma-preview {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    display: none;
+    align-items: center;
+    gap: 12px;
+  }
+  .firma-preview.show { display: flex; }
+  .firma-preview img { max-height: 60px; max-width: 220px; }
+  .firma-preview .remove-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .firma-preview .remove-btn:hover { color: #dc2626; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="page-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Mi perfil
+  </div>
+  <a class="back-link" href="casos.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Volver a casos
+  </a>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="profile-head">
+      <span class="avatar-lg" id="perfil-avatar"></span>
+      <div>
+        <div style="font-weight:700;font-size:16px" id="perfil-nombre-display"></div>
+        <span class="rol-pill" id="perfil-rol"></span>
+      </div>
+    </div>
+
+    <p class="hint" style="margin-bottom:14px">Nombre, apellido y email los administra el rol Administrador desde "Administrador" en el menú de configuración.</p>
+    <div class="row">
+      <div class="field">
+        <label class="field-label">Nombre</label>
+        <input type="text" id="input-nombre" disabled>
+      </div>
+      <div class="field">
+        <label class="field-label">Apellido</label>
+        <input type="text" id="input-apellido" disabled>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Email</label>
+      <input type="text" id="input-email" disabled>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Bandejas con acceso</h2>
+    <p class="hint">Definidas por el administrador en la pantalla de Configuración.</p>
+    <div class="bandejas-dropdown">
+      <div class="bandejas-toggle" id="bandejas-toggle" onclick="toggleBandejasDropdown()">
+        <span id="bandejas-toggle-label">Ver mis bandejas</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="bandejas-list" id="bandejas-list"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Firma</h2>
+    <p class="hint">Elegí un modo: texto libre, o un archivo de imagen con la firma/logo de la empresa. Cambiar de modo reemplaza la firma anterior.</p>
+    <div class="signature-mode-tabs">
+      <button class="sig-tab" id="tab-texto" onclick="setModoFirma('texto')">Texto</button>
+      <button class="sig-tab" id="tab-archivo" onclick="setModoFirma('archivo')">Archivo / imagen</button>
+    </div>
+
+    <div id="panel-firma-texto">
+      <textarea id="firma-texto" placeholder="Ej. Nicolás Gravina&#10;CentralWeb — Atención al cliente"></textarea>
+    </div>
+
+    <div id="panel-firma-archivo" style="display:none">
+      <div class="firma-file-zone">
+        <input type="file" id="firma-file-input" accept="image/*" onchange="onFirmaFileSelected(event)">
+        <div class="hint-small">PNG o JPG, se guarda localmente para esta demo.</div>
+      </div>
+      <div class="firma-preview" id="firma-preview">
+        <img id="firma-preview-img" alt="Firma">
+        <button class="remove-btn" onclick="quitarFirmaArchivo()">Quitar imagen</button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;margin-top:14px">
+      <button class="btn" onclick="guardarFirma()">Guardar firma</button>
+      <span class="save-msg" id="save-firma-msg">Guardado ✓</span>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const LS_USUARIOS = 'cw_usuarios';
+  const LS_PERMISOS = 'cw_permisos';
+  const LS_BANDEJAS = 'cw_bandejas';
+  const LS_EMPRESA  = 'cw_empresa';
+  const LS_FIRMA    = 'cw_firma'; // { [userKey]: { modo: 'texto'|'archivo', texto, archivoDataUrl } }
+
+  // Usuario "logueado" simulado — el mismo concepto que en casos.html, cambia con "Ver como [usuario]".
+  const CURRENT_USER_KEY = localStorage.getItem('cw_usuario_activo') || 'user_ng';
+
+  function getUsuarios() { return JSON.parse(localStorage.getItem(LS_USUARIOS) || '[]'); }
+  function saveUsuarios(u) { localStorage.setItem(LS_USUARIOS, JSON.stringify(u)); }
+  function getPermisos() { return JSON.parse(localStorage.getItem(LS_PERMISOS) || '{}'); }
+  function getBandejas() { return JSON.parse(localStorage.getItem(LS_BANDEJAS) || '[]'); }
+  function getEmpresa() { return JSON.parse(localStorage.getItem(LS_EMPRESA) || '{}'); }
+  function getFirmas() { return JSON.parse(localStorage.getItem(LS_FIRMA) || '{}'); }
+  function saveFirmas(f) { localStorage.setItem(LS_FIRMA, JSON.stringify(f)); }
+
+  function correoDeBandeja(bandejaKey) {
+    const sigla = getEmpresa().sigla;
+    return sigla ? `${bandejaKey}.${sigla}@centralweb.com` : `${bandejaKey}@(sigla sin definir)`;
+  }
+
+  function currentUser() {
+    return getUsuarios().find(u => u.key === CURRENT_USER_KEY);
+  }
+
+  // Defensivo: si se entra a esta pantalla sin haber pasado antes por admin.html,
+  // los usuarios pueden seguir en el formato viejo (campo único "name").
+  function migrarUsuariosLegacy() {
+    const usuarios = getUsuarios();
+    let cambio = false;
+    usuarios.forEach(u => {
+      if (!u.nombre) {
+        const partes = (u.name || u.key).trim().split(/\s+/);
+        u.nombre = partes[0];
+        u.apellido = partes.slice(1).join(' ');
+        delete u.name;
+        cambio = true;
+      }
+      if (!u.email) {
+        u.email = `${(u.nombre + '.' + u.apellido).toLowerCase().replace(/[^a-z0-9.]+/g, '')}@centralweb.com`;
+        cambio = true;
+      }
+    });
+    if (cambio) saveUsuarios(usuarios);
+  }
+
+  function renderPerfil() {
+    const u = currentUser();
+    if (!u) {
+      document.querySelector('main').innerHTML = '<div class="card">No se encontró el usuario actual. Volvé a <a href="casos.html">casos</a>.</div>';
+      return;
+    }
+    document.getElementById('perfil-avatar').style.background = u.gradient;
+    document.getElementById('perfil-avatar').textContent = u.initials;
+    document.getElementById('perfil-nombre-display').textContent = `${u.nombre} ${u.apellido}`.trim();
+    document.getElementById('perfil-rol').textContent = u.rol;
+    document.getElementById('input-nombre').value = u.nombre;
+    document.getElementById('input-apellido').value = u.apellido;
+    document.getElementById('input-email').value = u.email;
+  }
+
+  function flashSaveMsg(id) {
+    const el = document.getElementById(id);
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  function toggleBandejasDropdown() {
+    const toggle = document.getElementById('bandejas-toggle');
+    const list = document.getElementById('bandejas-list');
+    const open = list.classList.contains('open');
+    if (!open) renderBandejasAcceso();
+    toggle.classList.toggle('open', !open);
+    list.classList.toggle('open', !open);
+    document.getElementById('bandejas-toggle-label').textContent = open ? 'Ver mis bandejas' : 'Mis bandejas';
+  }
+
+  function renderBandejasAcceso() {
+    const bandejas = getBandejas();
+    const permisos = getPermisos();
+    const list = document.getElementById('bandejas-list');
+    const accesibles = bandejas.filter(b => permisos[b.key]?.[CURRENT_USER_KEY]?.acceso);
+
+    if (!accesibles.length) {
+      list.innerHTML = '<div class="empty-msg">Todavía no tenés acceso a ninguna bandeja. El administrador lo configura desde "Administrar".</div>';
+      return;
+    }
+
+    list.innerHTML = accesibles.map(b => {
+      const verOtros = permisos[b.key][CURRENT_USER_KEY].verOtros;
+      return `
+        <div class="bandeja-row">
+          <span>${b.nombre}</span>
+          ${verOtros ? '<span class="ver-otros-tag">Ve casos de otros agentes</span>' : ''}
+          <span class="correo">${correoDeBandeja(b.key)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Firma ──
+  let modoFirmaActual = 'texto';
+
+  function setModoFirma(modo) {
+    modoFirmaActual = modo;
+    document.getElementById('tab-texto').classList.toggle('active', modo === 'texto');
+    document.getElementById('tab-archivo').classList.toggle('active', modo === 'archivo');
+    document.getElementById('panel-firma-texto').style.display = modo === 'texto' ? 'block' : 'none';
+    document.getElementById('panel-firma-archivo').style.display = modo === 'archivo' ? 'block' : 'none';
+  }
+
+  let firmaArchivoDataUrl = null;
+
+  function onFirmaFileSelected(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      firmaArchivoDataUrl = reader.result;
+      document.getElementById('firma-preview-img').src = firmaArchivoDataUrl;
+      document.getElementById('firma-preview').classList.add('show');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function quitarFirmaArchivo() {
+    firmaArchivoDataUrl = null;
+    document.getElementById('firma-file-input').value = '';
+    document.getElementById('firma-preview').classList.remove('show');
+  }
+
+  function guardarFirma() {
+    const firmas = getFirmas();
+    if (modoFirmaActual === 'texto') {
+      firmas[CURRENT_USER_KEY] = { modo: 'texto', texto: document.getElementById('firma-texto').value };
+    } else {
+      if (!firmaArchivoDataUrl) { flashSaveMsg('save-firma-msg'); return; }
+      firmas[CURRENT_USER_KEY] = { modo: 'archivo', archivoDataUrl: firmaArchivoDataUrl };
+    }
+    saveFirmas(firmas);
+    flashSaveMsg('save-firma-msg');
+  }
+
+  function renderFirma() {
+    const firma = getFirmas()[CURRENT_USER_KEY];
+    const modo = firma?.modo || 'texto';
+    setModoFirma(modo);
+    if (firma?.modo === 'texto') {
+      document.getElementById('firma-texto').value = firma.texto || '';
+    } else if (firma?.modo === 'archivo' && firma.archivoDataUrl) {
+      firmaArchivoDataUrl = firma.archivoDataUrl;
+      document.getElementById('firma-preview-img').src = firmaArchivoDataUrl;
+      document.getElementById('firma-preview').classList.add('show');
+    }
+  }
+
+  migrarUsuariosLegacy();
+  renderPerfil();
+  renderFirma();
+</script>
+
+</body>
+</html>

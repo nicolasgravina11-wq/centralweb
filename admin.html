@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Configuración — CentralWeb</title>
+<style>
+  :root {
+    --blue-900:  #0d2244;
+    --blue-800:  #0e3a6e;
+    --blue-700:  #1352a8;
+    --blue-600:  #1a6cd4;
+    --blue-500:  #2183f0;
+    --blue-400:  #4fa3f7;
+    --blue-300:  #7cc2fb;
+    --blue-200:  #bfdffd;
+    --blue-100:  #e8f3fe;
+    --blue-50:   #f4f9ff;
+
+    --text-primary:   #0d1f3c;
+    --text-secondary: #4a6285;
+    --text-muted:     #8ba4c4;
+    --border:         #d0e2f7;
+    --bg:             #f0f5fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+  }
+  header.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--blue-800), var(--blue-700));
+    color: white;
+  }
+  header.topbar .page-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  header.topbar .page-title svg { width: 18px; height: 18px; }
+  .back-link {
+    margin-left: auto;
+    color: white;
+    text-decoration: none;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: .9;
+  }
+  .back-link:hover { opacity: 1; }
+  .back-link svg { width: 14px; height: 14px; }
+
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .card .hint {
+    margin: 0 0 16px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  label.field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  input[type=text] {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    background: var(--blue-50);
+  }
+  input[type=text]:focus { outline: 2px solid var(--blue-300); background: white; }
+  select {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    background: var(--blue-50);
+    font-family: inherit;
+  }
+  select:focus { outline: 2px solid var(--blue-300); background: white; }
+  .row { display: flex; gap: 10px; align-items: flex-end; }
+  .row > div { flex: 1; }
+  button.btn {
+    border: none;
+    border-radius: 7px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--blue-600);
+    color: white;
+  }
+  button.btn:hover { background: var(--blue-700); }
+  button.btn.secondary {
+    background: var(--blue-100);
+    color: var(--blue-700);
+  }
+  button.btn.secondary:hover { background: var(--blue-200); }
+  .domain-preview {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+  .domain-preview b { color: var(--blue-700); }
+  .domain-preview input { font-size: 12.5px; padding: 2px 5px; border: 1px solid var(--blue-300); border-radius: 4px; }
+  .correo-editable {
+    display: inline-flex; align-items: center; gap: 4px;
+    cursor: pointer; color: var(--blue-700);
+    border-bottom: 1px dotted var(--blue-400);
+    padding-bottom: 1px;
+  }
+  .correo-editable:hover { color: var(--blue-600); border-bottom-color: var(--blue-600); }
+  .correo-editable svg { opacity: .6; }
+  .correo-editable:hover svg { opacity: 1; }
+  .correo-warning { margin-top: 4px; color: #b45309; font-size: 12px; font-weight: 600; }
+
+  table.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.admin-table th {
+    text-align: left;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.admin-table td {
+    padding: 8px;
+    border-bottom: 1px solid var(--blue-50);
+    vertical-align: middle;
+  }
+  .avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: white;
+    vertical-align: middle; margin-right: 8px;
+  }
+  input.inline-edit {
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 4px 6px;
+    font-size: 13px;
+    color: var(--text-primary);
+    background: transparent;
+    font-family: inherit;
+  }
+  input.inline-edit:hover { background: var(--blue-50); }
+  input.inline-edit:focus { outline: none; border-color: var(--blue-300); background: white; }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--blue-100);
+    color: var(--blue-700);
+    font-weight: 600;
+  }
+  .toggle {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    cursor: pointer;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider {
+    position: absolute; inset: 0;
+    background: var(--border);
+    border-radius: 20px;
+    transition: .15s;
+  }
+  .toggle .slider::before {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 2px; top: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: .15s;
+  }
+  .toggle input:checked + .slider { background: var(--blue-600); }
+  .toggle input:checked + .slider::before { transform: translateX(16px); }
+  .toggle input:disabled + .slider { opacity: .4; cursor: not-allowed; }
+
+  .bandeja-block {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .bandeja-block:last-child { margin-bottom: 0; }
+  .bandeja-block-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .bandeja-block-head .nombre { font-weight: 700; font-size: 14px; }
+  .bandeja-block-head .correo { font-size: 12px; color: var(--text-muted); }
+  .empty-msg {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    padding: 8px 0;
+  }
+  .remove-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .remove-btn:hover { color: #dc2626; }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .card-head h2 { margin: 0; }
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 13px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--blue-600);
+    color: white;
+  }
+  .btn-add:hover { background: var(--blue-700); }
+  .btn-add svg { width: 14px; height: 14px; }
+
+  .bandeja-list-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--blue-50);
+  }
+  .bandeja-list-row:last-child { border-bottom: none; }
+  .bandeja-list-row .nombre { font-weight: 700; font-size: 13.5px; }
+  .bandeja-list-row .correo { font-size: 12px; color: var(--text-muted); }
+  .bandeja-orden {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue-700);
+    background: var(--blue-100);
+    border-radius: 5px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+  .bandeja-list-row .acciones { margin-left: auto; display: flex; gap: 6px; }
+  .subbandeja-count-pill {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--blue-50);
+    border-radius: 10px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+  }
+  .btn-mini {
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--blue-700);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-mini:hover { background: var(--blue-50); }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,.5);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 12px;
+    width: 420px;
+    max-width: 92vw;
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+  .modal-body { padding: 18px 20px; }
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .btn-cancel {
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text-secondary);
+    border-radius: 7px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-cancel:hover { background: var(--blue-50); }
+
+  .modal-lg { width: 680px; max-height: 85vh; display: flex; flex-direction: column; }
+  .modal-lg .modal-header { display: flex; align-items: baseline; gap: 10px; }
+  .modal-lg .detalle-correo { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+  .modal-lg .modal-body { overflow-y: auto; flex: 1; }
+  .detalle-section { margin-bottom: 22px; }
+  .detalle-section:last-child { margin-bottom: 0; }
+  .detalle-section h3 { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; }
+  .rte-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 7px 7px 0 0;
+    background: #f8fafc;
+  }
+  .rte-sep { width: 1px; height: 16px; background: #d1d5db; margin: 0 5px; flex-shrink: 0; }
+  .rte-btn {
+    border: none;
+    background: none;
+    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .1s;
+    font-family: inherit;
+  }
+  .rte-btn:hover { background: #e2e8f0; }
+  .rte-btn.rte-insert {
+    width: auto; padding: 0 11px; font-weight: 600; font-size: 12px;
+    color: var(--blue-700); background: var(--blue-50);
+    border: 1px solid var(--blue-200); border-radius: 6px; height: 28px;
+    margin-left: 2px;
+  }
+  .rte-btn.rte-insert:hover { background: var(--blue-100); border-color: var(--blue-300); }
+  /* ── rich toolbar pickers ── */
+  .rte-font-picker,.rte-size-picker { position:relative; }
+  .rte-font-btn,.rte-size-btn {
+    display:flex; align-items:center; gap:5px;
+    padding:4px 9px; border:1px solid #d1d5db; border-radius:6px;
+    background:white; cursor:pointer; height:30px;
+    color:var(--text-primary); white-space:nowrap; user-select:none;
+    transition:border-color .1s; font-family:inherit;
+  }
+  .rte-font-btn { min-width:118px; }
+  .rte-size-btn { min-width:52px; }
+  .rte-font-btn:hover,.rte-size-btn:hover { border-color:#94a3b8; }
+  .rte-font-btn span,.rte-size-btn span { font-size:13px; flex:1; }
+  .rte-font-btn svg,.rte-size-btn svg { width:10px; height:10px; color:#94a3b8; flex-shrink:0; }
+  .rte-picker-dropdown {
+    display:none; position:fixed;
+    background:white; border:1px solid #e2e8f0; border-radius:10px;
+    box-shadow:0 6px 20px rgba(0,0,0,.13); z-index:99999;
+    overflow-y:auto; padding:5px;
+  }
+  .rte-picker-dropdown.open { display:block; }
+  .rte-picker-option {
+    padding:7px 12px; border-radius:6px; cursor:pointer;
+    color:var(--text-primary); white-space:nowrap; transition:background .1s;
+  }
+  .rte-picker-option:hover { background:#f1f5f9; }
+  .rte-picker-option.selected { background:#dbeafe; color:#1d4ed8; font-weight:600; }
+  .rte-color-wrap { position:relative; display:flex; align-items:center; }
+  .rte-color-bar { position:absolute; bottom:4px; left:5px; right:5px; height:3px; border-radius:2px; }
+  .rte-color-picker-dropdown {
+    display: none; position: fixed;
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.13); z-index: 99999;
+    padding: 12px; overflow-y: auto;
+  }
+  .rte-color-picker-dropdown.open { display: flex; gap: 16px; }
+  .rte-color-picker-col { width: 178px; }
+  .rte-color-picker-col-title {
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px;
+  }
+  .rte-color-picker-reset {
+    display: block; width: 100%; text-align: left; font-size: 12px;
+    color: var(--blue-600); background: transparent; border: none;
+    padding: 3px 0 7px; cursor: pointer; font-family: inherit;
+  }
+  .rte-color-picker-reset:hover { text-decoration: underline; }
+  .rte-color-picker-grid {
+    display: grid; grid-template-columns: repeat(10, 16px); gap: 3px; margin-bottom: 9px;
+  }
+  .rte-color-swatch {
+    width: 16px; height: 16px; border-radius: 3px; cursor: pointer;
+    border: 1px solid rgba(0,0,0,.1); padding: 0;
+  }
+  .rte-color-swatch:hover { outline: 2px solid var(--blue-500); outline-offset: 1px; }
+  .rte-color-picker-custom-btn {
+    position: relative; width: 100%; padding: 6px 0; border: 1px solid var(--border);
+    border-radius: 6px; background: white; font-size: 12px; cursor: pointer;
+    color: var(--text-primary); font-family: inherit; overflow: hidden;
+  }
+  .rte-color-picker-custom-btn:hover { background: #f1f5f9; }
+  .rte-color-picker-custom-btn input[type=color] {
+    position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: none; padding: 0;
+  }
+  .rte-color-picker-sep { width: 1px; background: #e2e8f0; align-self: stretch; }
+  .rte-attach-btn {
+    display: flex; align-items: center; gap: 6px;
+    height: 28px; padding: 0 10px; border-radius: 7px;
+    border: 1px solid var(--blue-200); background: var(--blue-50); color: var(--blue-700);
+    cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 600; white-space: nowrap;
+    transition: background .12s, border-color .12s;
+  }
+  .rte-attach-btn:hover { background: var(--blue-100); border-color: var(--blue-300); }
+  .rte-attach-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .rte-attach-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .rte-attach-list:not(:empty) { margin-top: 8px; }
+  .rte-attach-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px 4px 9px; border: 1px solid var(--border); border-radius: 16px;
+    background: white; font-size: 12px; color: var(--text-primary); max-width: 220px;
+  }
+  .rte-attach-chip svg { flex-shrink: 0; color: var(--blue-600); }
+  .rte-attach-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rte-attach-chip-size { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+  .rte-attach-chip-remove {
+    border: none; background: transparent; color: var(--text-muted); cursor: pointer;
+    width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; line-height: 1; flex-shrink: 0; padding: 0;
+  }
+  .rte-attach-chip-remove:hover { background: #fee2e2; color: #dc2626; }
+  .rte-editor {
+    width: 100%;
+    min-height: 80px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 0 0 7px 7px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--blue-50);
+  }
+  .rte-editor:focus { outline: 2px solid var(--blue-300); background: white; }
+  .rte-editor[contenteditable="false"] { color: var(--text-muted); background: var(--bg); }
+  .rte-editor:empty:before { content: attr(data-placeholder); color: var(--text-muted); }
+  .rte-editor .var-chip {
+    display: inline-block;
+    background: var(--blue-100);
+    color: var(--blue-700);
+    border-radius: 4px;
+    padding: 0 5px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .bandeja-nombre-link {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--blue-700);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+  }
+  .bandeja-nombre-link:hover { text-decoration: underline; }
+  .subbandeja-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0 8px 18px;
+    font-size: 12.5px;
+    border-top: 1px solid var(--blue-50);
+    background: var(--blue-50);
+    border-radius: 6px;
+    margin-bottom: 2px;
+  }
+  .subbandeja-row .nombre { font-weight: 600; }
+  .subbandeja-row .sub-icon { color: var(--blue-400); flex-shrink: 0; width: 13px; height: 13px; }
+  .subbandeja-row .sub-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--blue-700);
+    background: var(--blue-100);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  .subbandeja-row .correo { margin-left: auto; color: var(--text-muted); }
+  .bandejas-checklist {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .bandeja-check-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--blue-50);
+  }
+  .bandeja-check-row:last-child { border-bottom: none; }
+  .bandeja-check-row input[type=checkbox] { width: 15px; height: 15px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="page-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Configuración
+  </div>
+  <a class="back-link" href="casos.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Volver a casos
+  </a>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Empresa</h2>
+    <p class="hint">El dominio de correo es fijo de la plataforma (@centralweb.com). La sigla identifica internamente a tu empresa dentro de CentralWeb y forma parte del correo de cada bandeja. Se definieron en el alta inicial, pero podés modificarlos si lo necesitás.</p>
+    <div class="row">
+      <div>
+        <label class="field-label">Nombre formal</label>
+        <input type="text" id="empresa-nombre-input" placeholder="ej. Instituto de Seguridad Social del Neuquén">
+      </div>
+      <div>
+        <label class="field-label">Sigla</label>
+        <input type="text" id="empresa-sigla-input" placeholder="ej. issn" maxlength="12">
+      </div>
+      <button class="btn" id="guardar-empresa-btn" onclick="guardarEmpresa()">Guardar</button>
+    </div>
+    <div class="domain-preview" id="empresa-preview"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Bandejas</h2>
+      <button class="btn-add" onclick="abrirModalBandeja()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Crear bandeja
+      </button>
+    </div>
+    <p class="hint">Cada bandeja obtiene una casilla simulada propia (bandeja.sigla@centralweb.com).</p>
+    <div id="bandejas-listado"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Usuarios</h2>
+      <button class="btn-add" onclick="abrirModalUsuario()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Alta usuario
+      </button>
+    </div>
+    <p class="hint">Los permisos de cada usuario se configuran desde el detalle de cada bandeja.</p>
+    <div id="usuarios-listado"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Respuestas automáticas</h2>
+      <button class="btn-add" onclick="abrirModalRespuesta()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Crear respuesta
+      </button>
+    </div>
+    <p class="hint">Textos reutilizables para contestar un caso (ej. al escribir "@fact" en la respuesta se completa el texto, editable antes de enviar). Independientes del mensaje de bienvenida de cada bandeja.</p>
+    <div id="respuestas-listado"></div>
+  </div>
+
+</main>
+
+<div class="modal-backdrop" id="modal-usuario-backdrop">
+  <div class="modal">
+    <div class="modal-header">Alta de usuario</div>
+    <div class="modal-body">
+      <div class="row" style="margin-bottom:14px">
+        <div>
+          <label class="field-label">Nombre</label>
+          <input type="text" id="modal-usuario-nombre" placeholder="ej. Martina">
+        </div>
+        <div>
+          <label class="field-label">Apellido</label>
+          <input type="text" id="modal-usuario-apellido" placeholder="ej. González">
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="field-label">Email</label>
+        <input type="text" id="modal-usuario-email" placeholder="ej. martina.gonzalez@centralweb.com">
+      </div>
+      <div>
+        <label class="field-label">Rol</label>
+        <select id="modal-usuario-rol">
+          <option value="Agente">Agente</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+      <div style="margin-top:14px">
+        <label class="field-label">Acceso a bandejas</label>
+        <div id="modal-usuario-bandejas-checks" class="bandejas-checklist"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalUsuario()">Cancelar</button>
+      <button class="btn" onclick="confirmarCrearUsuario()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-respuesta-backdrop">
+  <div class="modal modal-lg">
+    <div class="modal-header">Crear respuesta automática</div>
+    <div class="modal-body">
+      <div class="row" style="margin-bottom:14px">
+        <div>
+          <label class="field-label">Código</label>
+          <input type="text" id="modal-respuesta-codigo" placeholder="ej. fact" maxlength="20">
+        </div>
+        <div>
+          <label class="field-label">Nombre descriptivo</label>
+          <input type="text" id="modal-respuesta-nombre" placeholder="ej. Facturación con trámite">
+        </div>
+      </div>
+      <label class="field-label">Texto</label>
+      <div class="rte-toolbar" id="toolbar-crear-respuesta"></div>
+      <div class="rte-editor" id="modal-respuesta-texto" contenteditable="true" data-placeholder="Ej. Se realizó la facturación correspondiente. N° de trámite: "></div>
+      <div class="rte-attach-list" id="rte_attach_list_toolbar_crear_respuesta"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalRespuesta()">Cancelar</button>
+      <button class="btn" onclick="confirmarCrearRespuesta()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-detalle-respuesta-backdrop">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span id="detalle-respuesta-nombre"></span>
+      <span class="detalle-correo" id="detalle-respuesta-codigo"></span>
+    </div>
+    <div class="modal-body">
+      <div class="row" style="margin-bottom:14px">
+        <div>
+          <label class="field-label">Código</label>
+          <input type="text" id="detalle-respuesta-input-codigo" maxlength="20" oninput="marcarCambiosRespuesta()">
+        </div>
+        <div>
+          <label class="field-label">Nombre descriptivo</label>
+          <input type="text" id="detalle-respuesta-input-nombre" oninput="marcarCambiosRespuesta()">
+        </div>
+      </div>
+      <label class="field-label">Texto</label>
+      <div class="rte-toolbar" id="toolbar-detalle-respuesta"></div>
+      <div class="rte-editor" id="detalle-respuesta-input-texto" contenteditable="true" oninput="marcarCambiosRespuesta()"></div>
+      <div class="rte-attach-list" id="rte_attach_list_toolbar_detalle_respuesta"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="remove-btn" id="detalle-respuesta-eliminar-btn" onclick="confirmarEliminarRespuesta()">Eliminar respuesta</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="detalle-respuesta-guardar-btn" style="display:none" onclick="guardarDatosRespuesta()">Guardar cambios</button>
+        <button class="btn-cancel" onclick="cerrarDetalleRespuesta()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-bandeja-backdrop">
+  <div class="modal modal-lg">
+    <div class="modal-header">Crear bandeja</div>
+    <div class="modal-body">
+      <label class="field-label">Nombre de la bandeja</label>
+      <input type="text" id="modal-bandeja-nombre" placeholder="ej. Prestadores" oninput="actualizarPreviewCorreoModal()">
+      <div class="domain-preview" id="modal-bandeja-correo-preview"></div>
+
+      <div class="detalle-section" style="margin-top:18px">
+        <h3>Respuesta automática</h3>
+        <p class="hint">Opcional, se puede definir ahora o más adelante desde el detalle de la bandeja.</p>
+        <div class="rte-toolbar" id="toolbar-crear-bandeja"></div>
+        <div class="rte-editor" id="modal-bandeja-mensaje" contenteditable="true" data-placeholder="Ej. Recibimos tu consulta, en breve te responderemos."></div>
+        <div class="rte-attach-list" id="rte_attach_list_toolbar_crear_bandeja"></div>
+      </div>
+
+      <div class="detalle-section">
+        <h3>Acceso a bandeja</h3>
+        <p class="hint">Quiénes van a poder ver los casos de esta bandeja.</p>
+        <div id="modal-bandeja-usuarios-checks" class="bandejas-checklist"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalBandeja()">Cancelar</button>
+      <button class="btn" onclick="confirmarCrearBandeja()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-detalle-backdrop">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span id="detalle-bandeja-nombre"></span>
+      <span class="detalle-correo" id="detalle-bandeja-correo"></span>
+    </div>
+    <div class="modal-body">
+
+      <div class="detalle-section">
+        <h3>Nombre de la bandeja</h3>
+        <p class="hint">El correo de la bandeja (<span id="detalle-bandeja-correo-hint"></span>) no cambia aunque renombres la bandeja.</p>
+        <input type="text" id="detalle-bandeja-input-nombre" oninput="marcarCambiosBandeja()">
+      </div>
+
+      <div class="detalle-section">
+        <h3>Mensaje de bienvenida</h3>
+        <p class="hint">Se envía automáticamente como acuse de recibo apenas ingresa un caso a esta bandeja.</p>
+        <div class="rte-toolbar" id="toolbar-detalle-bienvenida"></div>
+        <div class="rte-editor" id="detalle-mensaje-bienvenida" contenteditable="true" data-placeholder="Ej. Recibimos tu consulta, en breve te responderemos."></div>
+        <div class="rte-attach-list" id="rte_attach_list_toolbar_detalle_bienvenida"></div>
+        <button class="btn-mini" id="detalle-mensaje-guardar-btn" style="margin-top:8px" onclick="guardarMensajeBienvenida()">Guardar mensaje</button>
+      </div>
+
+      <div class="detalle-section">
+        <h3>Permisos</h3>
+        <p class="hint">Quién tiene acceso a esta bandeja y quién puede ver los casos de otros agentes.</p>
+        <div id="detalle-permisos-tabla"></div>
+      </div>
+
+      <div class="detalle-section">
+        <div class="card-head" style="margin-bottom:8px">
+          <h3 style="margin:0">Sub-bandejas</h3>
+          <button class="btn-mini" id="detalle-subbandeja-crear-btn" onclick="mostrarFormSubbandeja()">+ Crear sub-bandeja</button>
+        </div>
+        <p class="hint">Usan el mismo correo de la bandeja, sirven para filtrar/clasificar casos.</p>
+        <div id="detalle-subbandejas-form" style="display:none;margin-bottom:10px">
+          <div class="row">
+            <input type="text" id="input-subbandeja-nombre" placeholder="ej. Clínicas">
+            <button class="btn-mini" onclick="confirmarCrearSubbandeja()">Crear</button>
+          </div>
+        </div>
+        <div id="detalle-subbandejas-listado"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="remove-btn" id="detalle-bandeja-eliminar-btn" onclick="eliminarBandejaDesdeDetalle()">Eliminar bandeja</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-mini" id="detalle-bandeja-guardar-btn" style="display:none" onclick="guardarCambiosBandeja()">Guardar cambios</button>
+        <button class="btn-cancel" onclick="cerrarDetalleBandeja()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-detalle-usuario-backdrop">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span id="detalle-usuario-nombre"></span>
+      <span class="detalle-correo" id="detalle-usuario-email"></span>
+    </div>
+    <div class="modal-body">
+
+      <div class="detalle-section">
+        <h3>Datos</h3>
+        <div class="row" style="margin-bottom:14px">
+          <div>
+            <label class="field-label">Nombre</label>
+            <input type="text" id="detalle-usuario-input-nombre" oninput="marcarCambiosUsuario()">
+          </div>
+          <div>
+            <label class="field-label">Apellido</label>
+            <input type="text" id="detalle-usuario-input-apellido" oninput="marcarCambiosUsuario()">
+          </div>
+        </div>
+        <label class="field-label">Email</label>
+        <input type="text" id="detalle-usuario-input-email" disabled style="margin-bottom:14px">
+        <label class="field-label">Rol</label>
+        <select id="detalle-usuario-input-rol" onchange="marcarCambiosUsuario()">
+          <option value="Agente">Agente</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+
+      <div class="detalle-section">
+        <h3>Acceso a bandejas</h3>
+        <p class="hint">Qué bandejas puede ver este usuario.</p>
+        <div id="detalle-usuario-bandejas-checks" class="bandejas-checklist"></div>
+      </div>
+
+      <div class="detalle-section">
+        <h3>Firma</h3>
+        <p class="hint">Se agrega automáticamente al pie de cada respuesta enviada por este usuario.</p>
+        <div class="rte-toolbar" id="toolbar-firma-usuario"></div>
+        <div class="rte-editor" id="detalle-usuario-firma" contenteditable="true" oninput="marcarCambiosUsuario()" data-placeholder="Ej. Nicolás Gravina — Soporte CentralWeb"></div>
+        <div class="rte-attach-list" id="rte_attach_list_toolbar_firma_usuario"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="remove-btn" id="detalle-usuario-eliminar-btn" onclick="confirmarEliminarUsuario()">Eliminar usuario</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="detalle-usuario-guardar-btn" style="display:none" onclick="guardarDatosUsuario()">Guardar cambios</button>
+        <button class="btn-cancel" onclick="cerrarDetalleUsuario()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-confirmar-backdrop">
+  <div class="modal">
+    <div class="modal-header">Confirmar eliminación</div>
+    <div class="modal-body">
+      <p id="confirmar-mensaje" style="margin:0;font-size:13.5px;color:var(--text-primary)"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalConfirmar()">Cancelar</button>
+      <button class="remove-btn" id="confirmar-aceptar-btn" style="border:1px solid #fca5a5;border-radius:7px;padding:9px 16px">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const LS_EMPRESA  = 'cw_empresa';
+  const LS_USUARIOS = 'cw_usuarios';
+  const LS_BANDEJAS = 'cw_bandejas';
+  const LS_PERMISOS = 'cw_permisos';
+  const LS_RESPUESTAS = 'cw_respuestas_automaticas';
+
+  // Usuario "logueado" simulado — el mismo concepto que en casos.html/mi-perfil.html, cambia con "Ver como [usuario]".
+  const CURRENT_USER_KEY = localStorage.getItem('cw_usuario_activo') || 'user_ng';
+  let ES_ADMIN = true;
+
+  const GRADIENTES = [
+    'linear-gradient(135deg,#1a6cd4,#4fa3f7)',
+    'linear-gradient(135deg,#7c3aed,#a78bfa)',
+    'linear-gradient(135deg,#059669,#34d399)',
+    'linear-gradient(135deg,#dc2626,#f87171)',
+    'linear-gradient(135deg,#d97706,#fbbf24)',
+    'linear-gradient(135deg,#0891b2,#67e8f9)',
+  ];
+
+  function seedDefaults() {
+    if (!localStorage.getItem(LS_USUARIOS)) {
+      localStorage.setItem(LS_USUARIOS, JSON.stringify([
+        { key: 'user_ng', initials: 'NG', nombre: 'Nicolás', apellido: 'Gravina', email: 'nicolas.gravina@centralweb.com', gradient: GRADIENTES[0], rol: 'Administrador' },
+        { key: 'user_cp', initials: 'CP', nombre: 'Carlos',  apellido: 'P.',       email: 'carlos.p@centralweb.com',      gradient: GRADIENTES[1], rol: 'Agente' },
+        { key: 'user_lm', initials: 'LM', nombre: 'Laura',   apellido: 'M.',       email: 'laura.m@centralweb.com',       gradient: GRADIENTES[2], rol: 'Agente' },
+        { key: 'user_sr', initials: 'SR', nombre: 'Sofía',   apellido: 'R.',       email: 'sofia.r@centralweb.com',       gradient: GRADIENTES[3], rol: 'Agente' },
+        { key: 'user_jf', initials: 'JF', nombre: 'Jorge',   apellido: 'F.',       email: 'jorge.f@centralweb.com',       gradient: GRADIENTES[4], rol: 'Agente' },
+      ]));
+    }
+    if (!localStorage.getItem(LS_BANDEJAS)) {
+      localStorage.setItem(LS_BANDEJAS, JSON.stringify([
+        { key: 'facturacion', nombre: 'Facturación' },
+        { key: 'consultas',   nombre: 'Consultas' },
+      ]));
+    }
+    if (!localStorage.getItem(LS_PERMISOS)) {
+      localStorage.setItem(LS_PERMISOS, JSON.stringify({}));
+    }
+    migrarUsuariosLegacy();
+  }
+
+  // Sesiones previas guardaron los usuarios con un solo campo "name".
+  // Acá se completan nombre/apellido/email si faltan, sin perder lo ya creado.
+  function migrarUsuariosLegacy() {
+    const usuarios = getUsuarios();
+    let cambio = false;
+    usuarios.forEach(u => {
+      if (!u.nombre) {
+        const partes = (u.name || '').trim().split(/\s+/);
+        u.nombre = partes[0] || u.key;
+        u.apellido = partes.slice(1).join(' ') || '';
+        delete u.name;
+        cambio = true;
+      }
+      if (!u.email) {
+        u.email = `${slugify(u.nombre + ' ' + u.apellido)}@centralweb.com`;
+        cambio = true;
+      }
+    });
+    if (cambio) saveUsuarios(usuarios);
+  }
+
+  function getUsuarios()  { return JSON.parse(localStorage.getItem(LS_USUARIOS)  || '[]'); }
+  function getBandejas()  { return JSON.parse(localStorage.getItem(LS_BANDEJAS)  || '[]'); }
+  function getPermisos()  { return JSON.parse(localStorage.getItem(LS_PERMISOS)  || '{}'); }
+  function getEmpresa()   { return JSON.parse(localStorage.getItem(LS_EMPRESA) || '{}'); }
+  function getRespuestas() { return JSON.parse(localStorage.getItem(LS_RESPUESTAS) || '[]'); }
+  function saveEmpresa(e) { localStorage.setItem(LS_EMPRESA, JSON.stringify(e)); }
+
+  function saveUsuarios(u) { localStorage.setItem(LS_USUARIOS, JSON.stringify(u)); }
+  function saveBandejas(b) { localStorage.setItem(LS_BANDEJAS, JSON.stringify(b)); }
+  function savePermisos(p) { localStorage.setItem(LS_PERMISOS, JSON.stringify(p)); }
+  function saveRespuestas(r) { localStorage.setItem(LS_RESPUESTAS, JSON.stringify(r)); }
+
+  // ── Editor de texto enriquecido (negrita, cursiva, subrayado, mayúsculas, variable de caso) ──
+  // Los botones usan onmousedown con preventDefault para no perder la selección
+  // del editor contenteditable antes de ejecutar el comando.
+  function rteCmd(comando) {
+    document.execCommand(comando, false, null);
+  }
+
+  function rteUppercase() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return;
+    const texto = sel.toString();
+    document.execCommand('insertText', false, texto.toUpperCase());
+  }
+
+  function rteInsertCaso() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+
+    const chip = document.createElement('span');
+    chip.className = 'var-chip';
+    chip.setAttribute('contenteditable', 'false');
+    chip.textContent = 'N° de caso';
+    const space = document.createTextNode(' ');
+
+    const frag = document.createDocumentFragment();
+    frag.appendChild(chip);
+    frag.appendChild(space);
+    range.insertNode(frag);
+
+    // Cursor justo después del espacio, fuera del chip, para que lo que se
+    // siga escribiendo no herede el estilo del chip.
+    const newRange = document.createRange();
+    newRange.setStartAfter(space);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+  }
+
+  // ── Rich toolbar ──────────────────────────────────────────────────────
+  const _RTE_FONTS = ['Inter','Arial','Georgia','Times New Roman','Courier New','Trebuchet MS','Verdana'];
+  const _RTE_SIZES = ['11','12','13','14','15','16','18','20','24','28','32'];
+  let _rteActiveToolbar = null;
+
+  function _buildRteToolbar(id, showInsertCaso = true, showAttach = true) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const tid = id.replace(/-/g,'_');
+    el.innerHTML = `
+      <div class="rte-font-picker" id="rfp_${tid}">
+        <div class="rte-font-btn" onmousedown="event.preventDefault()" onclick="_rteTogglePicker('rfp_${tid}',event)">
+          <span id="rfp_label_${tid}" style="font-family:Inter,sans-serif">Inter</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="rte-picker-dropdown" id="rfp_dd_${tid}" style="min-width:160px;max-height:280px"></div>
+      </div>
+      <div class="rte-size-picker" id="rsp_${tid}">
+        <div class="rte-size-btn" onmousedown="event.preventDefault()" onclick="_rteTogglePicker('rsp_${tid}',event)">
+          <span id="rsp_label_${tid}">13</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="rte-picker-dropdown" id="rsp_dd_${tid}" style="min-width:70px;max-height:240px"></div>
+      </div>
+      <div class="rte-sep"></div>
+      <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="rteCmd('bold')" title="Negrita"><b>B</b></button>
+      <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="rteCmd('italic')" title="Cursiva"><i>I</i></button>
+      <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="rteCmd('underline')" title="Subrayado"><u>U</u></button>
+      <div class="rte-sep"></div>
+      <div class="rte-color-wrap" title="Color de fondo y de texto">
+        <button type="button" class="rte-btn" style="position:relative" onclick="_rteToggleColorPicker('${tid}',event)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><text x="2" y="18" font-size="18" font-weight="700" font-family="serif">A</text></svg>
+          <span class="rte-color-bar" id="rte_fgbar_${tid}" style="background:#0d1f3c"></span>
+        </button>
+      </div>
+      <div class="rte-color-picker-dropdown" id="rte_color_dd_${tid}" onclick="event.stopPropagation()">
+        <div class="rte-color-picker-col">
+          <div class="rte-color-picker-col-title">Color de fondo</div>
+          <button type="button" class="rte-color-picker-reset" onmousedown="event.preventDefault();_rteSelectBgColor('${tid}','transparent')">Transparente</button>
+          <div class="rte-color-picker-grid" id="rte_bgcolor_grid_${tid}"></div>
+          <button type="button" class="rte-color-picker-custom-btn">
+            Seleccionar
+            <input type="color" value="#ffffff" onchange="_rteSelectBgColor('${tid}',this.value)" title="Color de fondo personalizado">
+          </button>
+        </div>
+        <div class="rte-color-picker-sep"></div>
+        <div class="rte-color-picker-col">
+          <div class="rte-color-picker-col-title">Color del texto</div>
+          <button type="button" class="rte-color-picker-reset" onmousedown="event.preventDefault();_rteSelectFgColor('${tid}','#0d1f3c')">Restablecer a los valores predeterminados</button>
+          <div class="rte-color-picker-grid" id="rte_fgcolor_grid_${tid}"></div>
+          <button type="button" class="rte-color-picker-custom-btn">
+            Seleccionar
+            <input type="color" value="#0d1f3c" onchange="_rteSelectFgColor('${tid}',this.value)" title="Color de texto personalizado">
+          </button>
+        </div>
+      </div>
+      <div class="rte-sep"></div>
+      <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="rteCmd('insertUnorderedList')" title="Lista con viñetas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="rteCmd('insertOrderedList')" title="Lista numerada">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4M4 10h2" stroke="currentColor" stroke-width="1.8"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" stroke="currentColor" stroke-width="1.8"/></svg>
+      </button>
+      <div class="rte-sep"></div>
+      <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="rteCmd('justifyLeft')" title="Alinear izquierda">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+      </button>
+      <button type="button" class="rte-btn" onmousedown="event.preventDefault()" onclick="rteCmd('justifyCenter')" title="Centrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      </button>
+      ${showAttach ? `<div class="rte-sep"></div>
+      <button type="button" class="rte-attach-btn" onmousedown="event.preventDefault()" onclick="document.getElementById('rte_file_input_${tid}').click()" title="Adjuntar archivo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        Adjuntar archivo
+      </button>
+      <input type="file" id="rte_file_input_${tid}" multiple style="display:none" onchange="_rteOnAttachFiles('${tid}', this)">` : ''}
+      ${showInsertCaso ? `<div class="rte-sep"></div><button type="button" class="rte-btn rte-insert" onmousedown="event.preventDefault()" onclick="rteInsertCaso()">+ N° de caso</button>` : ''}
+    `;
+    // Poblar font dropdown
+    const fontDd = document.getElementById(`rfp_dd_${tid}`);
+    fontDd.innerHTML = _RTE_FONTS.map(f =>
+      `<div class="rte-picker-option${f==='Inter'?' selected':''}" style="font-family:${f},sans-serif" onmousedown="event.preventDefault()" onclick="_rteSelectFont('${f}','rfp_label_${tid}','rfp_dd_${tid}')">${f}</div>`
+    ).join('');
+    // Poblar size dropdown
+    const sizeDd = document.getElementById(`rsp_dd_${tid}`);
+    sizeDd.innerHTML = _RTE_SIZES.map(s =>
+      `<div class="rte-picker-option${s==='13'?' selected':''}" onmousedown="event.preventDefault()" onclick="_rteSelectSize('${s}','rsp_label_${tid}','rsp_dd_${tid}')">${s}</div>`
+    ).join('');
+  }
+
+  function _rteTogglePicker(wrapperId, e) {
+    e.stopPropagation();
+    const wrapper = document.getElementById(wrapperId);
+    const dd = wrapper.querySelector('.rte-picker-dropdown');
+    const isOpen = dd.classList.contains('open');
+    document.querySelectorAll('.rte-picker-dropdown.open').forEach(d => d.classList.remove('open'));
+    _rteCloseColorPicker();
+    if (!isOpen) {
+      const btn = wrapper.querySelector('.rte-font-btn, .rte-size-btn');
+      const rect = btn.getBoundingClientRect();
+      dd.style.left = rect.left + 'px';
+      dd.style.top  = (rect.bottom + 4) + 'px';
+      dd.classList.add('open');
+    }
+  }
+
+  function _rteSelectFont(font, labelId, ddId) {
+    document.getElementById(labelId).textContent = font;
+    document.getElementById(labelId).style.fontFamily = font + ',sans-serif';
+    document.querySelectorAll(`#${ddId} .rte-picker-option`).forEach(o => o.classList.toggle('selected', o.textContent === font));
+    document.execCommand('fontName', false, font);
+    document.getElementById(ddId).classList.remove('open');
+  }
+
+  function _rteSelectSize(size, labelId, ddId) {
+    document.getElementById(labelId).textContent = size;
+    document.querySelectorAll(`#${ddId} .rte-picker-option`).forEach(o => o.classList.toggle('selected', o.textContent === size));
+    document.execCommand('fontSize', false, '7');
+    document.querySelectorAll('.rte-editor [size="7"]').forEach(el => { el.removeAttribute('size'); el.style.fontSize = size + 'px'; });
+    document.getElementById(ddId).classList.remove('open');
+  }
+
+  // ── Color picker (fondo + texto) ──
+  const _RTE_COLOR_PALETTE = [
+    ['#000000','#434343','#666666','#999999','#b7b7b7','#cccccc','#d9d9d9','#efefef','#f3f3f3','#ffffff'],
+    ['#980000','#ff0000','#ff9900','#ffff00','#00ff00','#00ffff','#4a86e8','#0000ff','#9900ff','#ff00ff'],
+    ['#e6b8af','#f4cccc','#fce5cd','#fff2cc','#d9ead3','#d0e0e3','#c9daf8','#cfe2f3','#d9d2e9','#ead1dc'],
+    ['#dd7e6b','#ea9999','#f9cb9c','#ffe599','#b6d7a8','#a2c4c9','#a4c2f4','#9fc5e8','#b4a7d6','#d5a6bd'],
+    ['#cc4125','#e06666','#f6b26b','#ffd966','#93c47d','#76a5af','#6d9eeb','#6fa8dc','#8e7cc3','#c27ba0'],
+    ['#a61c00','#cc0000','#e69138','#f1c232','#6aa84f','#45818e','#3c78d8','#3d85c6','#674ea7','#a64d79'],
+  ];
+
+  let _rteCpScroller = null;
+  let _rteCpScrollerOrigPadding = '';
+
+  function _rteBuildColorGrid(gridId, onPick) {
+    const grid = document.getElementById(gridId);
+    if (!grid || grid.childElementCount) return;
+    grid.innerHTML = _RTE_COLOR_PALETTE.flat().map(c =>
+      `<button type="button" class="rte-color-swatch" style="background:${c}" title="${c}" onmousedown="event.preventDefault();${onPick}('${c}')"></button>`
+    ).join('');
+  }
+
+  function _rteCloseColorPicker() {
+    document.querySelectorAll('.rte-color-picker-dropdown.open').forEach(d => d.classList.remove('open'));
+    if (_rteCpScroller) {
+      _rteCpScroller.style.paddingBottom = _rteCpScrollerOrigPadding;
+      _rteCpScroller = null;
+    }
+  }
+
+  function _rteToggleColorPicker(tid, e) {
+    e.stopPropagation();
+    document.querySelectorAll('.rte-picker-dropdown.open').forEach(d => d.classList.remove('open'));
+    const dd = document.getElementById(`rte_color_dd_${tid}`);
+    if (!dd) return;
+    const isOpen = dd.classList.contains('open');
+    if (isOpen) { _rteCloseColorPicker(); return; }
+    _rteCloseColorPicker();
+    _rteBuildColorGrid(`rte_bgcolor_grid_${tid}`, `_rteSelectBgColor.bind(null,'${tid}')`);
+    _rteBuildColorGrid(`rte_fgcolor_grid_${tid}`, `_rteSelectFgColor.bind(null,'${tid}')`);
+    dd.classList.add('open');
+    dd.style.bottom = '';
+    dd.style.maxHeight = '';
+    const btn = e.currentTarget;
+    const needed = dd.offsetHeight;
+    let rect = btn.getBoundingClientRect();
+    const deficit = (rect.bottom + 4 + needed + 8) - window.innerHeight;
+    if (deficit > 0) {
+      const scroller = btn.closest('.modal-body') || document.scrollingElement;
+      _rteCpScroller = scroller;
+      _rteCpScrollerOrigPadding = scroller.style.paddingBottom || '';
+      const currentPad = parseFloat(getComputedStyle(scroller).paddingBottom) || 0;
+      scroller.style.paddingBottom = (currentPad + deficit) + 'px';
+      scroller.scrollTop += deficit;
+      rect = btn.getBoundingClientRect();
+    }
+    const spaceBelow = window.innerHeight - rect.bottom - 8;
+    dd.style.top       = (rect.bottom + 4) + 'px';
+    dd.style.maxHeight = Math.min(needed, Math.max(spaceBelow, 120)) + 'px';
+    dd.style.left       = Math.min(rect.left, window.innerWidth - dd.offsetWidth - 8) + 'px';
+  }
+
+  function _rteSelectFgColor(tid, color) {
+    document.execCommand('foreColor', false, color);
+    const bar = document.getElementById(`rte_fgbar_${tid}`);
+    if (bar) bar.style.background = color === 'transparent' ? '#0d1f3c' : color;
+  }
+
+  function _rteSelectBgColor(tid, color) {
+    document.execCommand('hiliteColor', false, color);
+  }
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.rte-picker-dropdown.open').forEach(d => d.classList.remove('open'));
+    _rteCloseColorPicker();
+  });
+
+  // ── Adjuntar archivos (respuestas automáticas / mensajes de bienvenida) ──
+  let _rteAttachments = {};
+
+  function _rteFormatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  function _rteOnAttachFiles(tid, input) {
+    const list = _rteAttachments[tid] || (_rteAttachments[tid] = []);
+    Array.from(input.files).forEach(f => {
+      if (list.some(x => x.name === f.name)) return;
+      list.push({ name: f.name, size: _rteFormatSize(f.size) });
+    });
+    input.value = '';
+    _rteRenderAttachList(tid);
+    _rteMarkChanges(tid);
+  }
+
+  function _rteRemoveAttachment(tid, index) {
+    (_rteAttachments[tid] || []).splice(index, 1);
+    _rteRenderAttachList(tid);
+    _rteMarkChanges(tid);
+  }
+
+  function _rteMarkChanges(tid) {
+    if (tid === 'toolbar_detalle_respuesta') marcarCambiosRespuesta();
+    if (tid === 'toolbar_firma_usuario') marcarCambiosUsuario();
+  }
+
+  function _rteRenderAttachList(tid) {
+    const cont = document.getElementById(`rte_attach_list_${tid}`);
+    if (!cont) return;
+    const list = _rteAttachments[tid] || [];
+    cont.innerHTML = list.map((f, i) => `
+      <span class="rte-attach-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" width="12" height="12"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        <span class="rte-attach-chip-name" title="${f.name}">${f.name}</span>
+        <span class="rte-attach-chip-size">${f.size}</span>
+        <button type="button" class="rte-attach-chip-remove" onclick="_rteRemoveAttachment('${tid}',${i})" title="Quitar">×</button>
+      </span>
+    `).join('');
+  }
+
+  function _rteSetAttachments(tid, files) {
+    _rteAttachments[tid] = (files || []).map(f => ({ name: f.name, size: f.size }));
+    _rteRenderAttachList(tid);
+  }
+
+  function _rteGetAttachments(tid) {
+    return (_rteAttachments[tid] || []).map(f => ({ name: f.name, size: f.size }));
+  }
+
+  function _initRteToolbars() {
+    _buildRteToolbar('toolbar-crear-respuesta', true);
+    _buildRteToolbar('toolbar-detalle-respuesta', true);
+    _buildRteToolbar('toolbar-crear-bandeja', true);
+    _buildRteToolbar('toolbar-detalle-bienvenida', true);
+    _buildRteToolbar('toolbar-firma-usuario', false, true);
+  }
+  // ── /Rich toolbar ─────────────────────────────────────────────────────
+
+  function slugify(str) {
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  function correoDeBandeja(bandejaKey) {
+    const sigla = getEmpresa().sigla;
+    return sigla ? `${bandejaKey}.${sigla}@centralweb.com` : `${bandejaKey}@(sigla sin definir)`;
+  }
+
+  function renderEmpresa() {
+    const empresa = getEmpresa();
+    document.getElementById('empresa-nombre-input').value = empresa.nombreFormal || '';
+    document.getElementById('empresa-sigla-input').value = empresa.sigla || '';
+    document.getElementById('empresa-preview').innerHTML = empresa.sigla
+      ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@centralweb.com</b>`
+      : 'Definí la sigla para previsualizar los correos de cada bandeja.';
+  }
+
+  function guardarEmpresa() {
+    if (!ES_ADMIN) return;
+    const nombreFormal = document.getElementById('empresa-nombre-input').value.trim();
+    const sigla = document.getElementById('empresa-sigla-input').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!nombreFormal || !sigla) return;
+    saveEmpresa({ nombreFormal, sigla });
+    renderEmpresa();
+    renderBandejas();
+  }
+
+  function renderBandejas() {
+    renderBandejasListado();
+  }
+
+  // Número de orden visual (01, 02, 03...) para que sea fácil decir "transferilo a la bandeja 06".
+  // Se recalcula siempre por posición en el array, así nunca quedan huecos al eliminar una bandeja.
+  function ordenVisual(index) {
+    return String(index + 1).padStart(2, '0');
+  }
+
+  function renderBandejasListado() {
+    const bandejas = getBandejas();
+    const listado = document.getElementById('bandejas-listado');
+    if (!bandejas.length) {
+      listado.innerHTML = '<div class="empty-msg">Todavía no creaste ninguna bandeja.</div>';
+      return;
+    }
+    listado.innerHTML = bandejas.map((b, i) => {
+      const nSub = (b.subbandejas || []).length;
+      return `
+      <div class="bandeja-list-row">
+        <span class="bandeja-orden">${ordenVisual(i)}</span>
+        <button class="bandeja-nombre-link" onclick="abrirDetalleBandeja('${b.key}')">${b.nombre}</button>
+        ${nSub ? `<span class="subbandeja-count-pill">${nSub} sub-bandeja${nSub > 1 ? 's' : ''}</span>` : ''}
+        <span class="correo">${correoDeBandeja(b.key)}</span>
+      </div>
+    `;
+    }).join('');
+  }
+
+  function renderUsuariosListado() {
+    const usuarios = getUsuarios();
+    const listado = document.getElementById('usuarios-listado');
+    if (!usuarios.length) {
+      listado.innerHTML = '<div class="empty-msg">Todavía no creaste ningún usuario.</div>';
+      return;
+    }
+    listado.innerHTML = usuarios.map(u => `
+      <div class="bandeja-list-row">
+        <span class="avatar" style="background:${u.gradient}">${u.initials}</span>
+        <button class="bandeja-nombre-link" onclick="abrirDetalleUsuario('${u.key}')">${u.nombre} ${u.apellido}</button>
+        <span class="pill">${u.rol}</span>
+        <span class="correo">${u.email}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderBandejasChecklist(containerId, marcadas, onToggle) {
+    const bandejas = getBandejas();
+    const container = document.getElementById(containerId);
+    if (!bandejas.length) {
+      container.innerHTML = '<div class="empty-msg">Todavía no hay bandejas creadas.</div>';
+      return;
+    }
+    container.innerHTML = bandejas.map(b => `
+      <label class="bandeja-check-row">
+        <input type="checkbox" value="${b.key}" ${marcadas.includes(b.key) ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'}
+          onchange="${onToggle}('${b.key}', this.checked)">
+        ${b.nombre}
+      </label>
+    `).join('');
+  }
+
+  function abrirModalUsuario() {
+    document.getElementById('modal-usuario-nombre').value = '';
+    document.getElementById('modal-usuario-apellido').value = '';
+    document.getElementById('modal-usuario-email').value = '';
+    document.getElementById('modal-usuario-rol').value = 'Agente';
+    renderBandejasChecklist('modal-usuario-bandejas-checks', [], 'noop');
+    document.getElementById('modal-usuario-backdrop').classList.add('open');
+  }
+
+  function noop() {}
+
+  function cerrarModalUsuario() {
+    document.getElementById('modal-usuario-backdrop').classList.remove('open');
+  }
+
+  function confirmarCrearUsuario() {
+    if (!ES_ADMIN) return;
+    const nombre = document.getElementById('modal-usuario-nombre').value.trim();
+    const apellido = document.getElementById('modal-usuario-apellido').value.trim();
+    const email = document.getElementById('modal-usuario-email').value.trim();
+    const rol = document.getElementById('modal-usuario-rol').value;
+    if (!nombre || !apellido || !email) return;
+
+    const usuarios = getUsuarios();
+    let key = 'user_' + slugify(nombre + apellido).slice(0, 8);
+    let i = 1;
+    while (usuarios.some(u => u.key === key)) key = `user_${slugify(nombre + apellido).slice(0,8)}${i++}`;
+    usuarios.push({
+      key,
+      nombre,
+      apellido,
+      email,
+      rol,
+      initials: (nombre[0] + (apellido[0] || '')).toUpperCase(),
+      gradient: GRADIENTES[usuarios.length % GRADIENTES.length],
+    });
+    saveUsuarios(usuarios);
+
+    const bandejasMarcadas = Array.from(document.querySelectorAll('#modal-usuario-bandejas-checks input:checked')).map(c => c.value);
+    if (bandejasMarcadas.length) {
+      const permisos = getPermisos();
+      bandejasMarcadas.forEach(bKey => {
+        if (!permisos[bKey]) permisos[bKey] = {};
+        permisos[bKey][key] = { acceso: true, verOtros: false };
+      });
+      savePermisos(permisos);
+    }
+
+    cerrarModalUsuario();
+    renderUsuariosListado();
+  }
+
+  function eliminarUsuario(key) {
+    if (!ES_ADMIN) return;
+    saveUsuarios(getUsuarios().filter(u => u.key !== key));
+    const permisos = getPermisos();
+    Object.keys(permisos).forEach(b => delete permisos[b][key]);
+    savePermisos(permisos);
+    renderUsuariosListado();
+  }
+
+  // ── Detalle de usuario ──
+  let detalleUsuarioActualKey = null;
+
+  function abrirDetalleUsuario(key) {
+    detalleUsuarioActualKey = key;
+    renderDetalleUsuario();
+    document.getElementById('modal-detalle-usuario-backdrop').classList.add('open');
+  }
+
+  function renderDetalleUsuario() {
+    const u = getUsuarios().find(x => x.key === detalleUsuarioActualKey);
+    if (!u) return;
+    document.getElementById('detalle-usuario-nombre').textContent = `${u.nombre} ${u.apellido}`;
+    document.getElementById('detalle-usuario-email').textContent = u.email;
+    document.getElementById('detalle-usuario-input-nombre').value = u.nombre;
+    document.getElementById('detalle-usuario-input-apellido').value = u.apellido;
+    document.getElementById('detalle-usuario-input-email').value = u.email;
+    document.getElementById('detalle-usuario-input-rol').value = u.rol;
+    document.getElementById('detalle-usuario-input-nombre').disabled = !ES_ADMIN;
+    document.getElementById('detalle-usuario-input-apellido').disabled = !ES_ADMIN;
+    document.getElementById('detalle-usuario-input-rol').disabled = !ES_ADMIN;
+    document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && u.key !== 'user_ng') ? '' : 'none';
+    document.getElementById('detalle-usuario-guardar-btn').style.display = 'none';
+
+    const permisos = getPermisos();
+    const bandejasConAcceso = Object.keys(permisos).filter(bKey => permisos[bKey][u.key]?.acceso);
+    renderBandejasChecklist('detalle-usuario-bandejas-checks', bandejasConAcceso, 'toggleAccesoUsuarioDetalle');
+    const firmaEl = document.getElementById('detalle-usuario-firma');
+    if (firmaEl) { firmaEl.innerHTML = u.firma || ''; firmaEl.contentEditable = ES_ADMIN ? 'true' : 'false'; }
+    _rteSetAttachments('toolbar_firma_usuario', u.firmaAdjuntos || []);
+  }
+
+  function marcarCambiosUsuario() {
+    if (!ES_ADMIN) return;
+    document.getElementById('detalle-usuario-guardar-btn').style.display = '';
+  }
+
+  function toggleAccesoUsuarioDetalle(bandejaKey, checked) {
+    if (!ES_ADMIN) return;
+    marcarCambiosUsuario();
+  }
+
+  function guardarDatosUsuario() {
+    if (!ES_ADMIN) return;
+    const usuarios = getUsuarios();
+    const u = usuarios.find(x => x.key === detalleUsuarioActualKey);
+    if (!u) return;
+    const nombre = document.getElementById('detalle-usuario-input-nombre').value.trim();
+    const apellido = document.getElementById('detalle-usuario-input-apellido').value.trim();
+    if (!nombre || !apellido) { renderDetalleUsuario(); return; }
+    u.nombre = nombre;
+    u.apellido = apellido;
+    u.rol = document.getElementById('detalle-usuario-input-rol').value;
+    u.initials = (u.nombre[0] + (u.apellido[0] || '')).toUpperCase();
+    u.firma = document.getElementById('detalle-usuario-firma')?.innerHTML || '';
+    u.firmaAdjuntos = _rteGetAttachments('toolbar_firma_usuario');
+    saveUsuarios(usuarios);
+
+    const permisos = getPermisos();
+    document.querySelectorAll('#detalle-usuario-bandejas-checks input[type=checkbox]').forEach(c => {
+      const bandejaKey = c.value;
+      if (!permisos[bandejaKey]) permisos[bandejaKey] = {};
+      if (!permisos[bandejaKey][u.key]) permisos[bandejaKey][u.key] = { acceso: false, verOtros: false };
+      permisos[bandejaKey][u.key].acceso = c.checked;
+      if (!c.checked) permisos[bandejaKey][u.key].verOtros = false;
+    });
+    savePermisos(permisos);
+    renderDetalleUsuario();
+    renderUsuariosListado();
+    const btn = document.getElementById('detalle-usuario-guardar-btn');
+    btn.textContent = '✓ Guardado';
+    btn.style.display = '';
+    clearTimeout(btn._restoreTimeout);
+    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar cambios'; btn.style.display = 'none'; }, 1200);
+  }
+
+  function cerrarDetalleUsuario() {
+    document.getElementById('modal-detalle-usuario-backdrop').classList.remove('open');
+    detalleUsuarioActualKey = null;
+  }
+
+  function confirmarEliminarUsuario() {
+    if (!ES_ADMIN) return;
+    const u = getUsuarios().find(x => x.key === detalleUsuarioActualKey);
+    if (!u) return;
+    abrirModalConfirmar(`¿Eliminar a "${u.nombre} ${u.apellido}"? Esta acción no se puede deshacer.`, () => {
+      eliminarUsuario(detalleUsuarioActualKey);
+      cerrarDetalleUsuario();
+    });
+  }
+
+  function renderUsuariosChecklist(containerId) {
+    const usuarios = getUsuarios();
+    const container = document.getElementById(containerId);
+    if (!usuarios.length) {
+      container.innerHTML = '<div class="empty-msg">Todavía no hay usuarios creados.</div>';
+      return;
+    }
+    container.innerHTML = usuarios.map(u => `
+      <label class="bandeja-check-row">
+        <input type="checkbox" value="${u.key}" ${ES_ADMIN ? '' : 'disabled'}>
+        ${u.nombre} ${u.apellido}
+      </label>
+    `).join('');
+  }
+
+  let _aliasManualBandeja = null;
+
+  const _pencilIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
+
+  function actualizarPreviewCorreoModal() {
+    const nombre = document.getElementById('modal-bandeja-nombre').value.trim();
+    const preview = document.getElementById('modal-bandeja-correo-preview');
+    if (!nombre) { preview.innerHTML = ''; _aliasManualBandeja = null; return; }
+    const alias = _aliasManualBandeja || slugify(nombre);
+    const yaExiste = getBandejas().some(b => b.key === alias);
+    preview.innerHTML = `El correo va a quedar como:
+      <span id="modal-bandeja-correo-valor" class="correo-editable" title="Click para editar el alias del correo" onclick="_editarAliasBandejaModal()">
+        <b>${correoDeBandeja(alias)}</b>${_pencilIconSvg}
+      </span>
+      ${yaExiste ? '<div class="correo-warning">⚠ Ya hay una bandeja con este correo — elegí otro alias.</div>' : ''}`;
+  }
+
+  function _editarAliasBandejaModal() {
+    if (!ES_ADMIN) return;
+    const nombre = document.getElementById('modal-bandeja-nombre').value.trim();
+    const alias = _aliasManualBandeja || slugify(nombre);
+    const sigla = getEmpresa().sigla || '';
+    const preview = document.getElementById('modal-bandeja-correo-preview');
+    preview.innerHTML = `El correo va a quedar como:
+      <input type="text" id="modal-bandeja-alias-input" value="${alias}">.${sigla}@centralweb.com`;
+    const input = document.getElementById('modal-bandeja-alias-input');
+    input.focus();
+    input.select();
+    const confirmarAlias = () => {
+      _aliasManualBandeja = slugify(input.value.trim()) || slugify(nombre);
+      actualizarPreviewCorreoModal();
+    };
+    input.addEventListener('blur', confirmarAlias);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmarAlias(); } });
+  }
+
+  function abrirModalBandeja() {
+    document.getElementById('modal-bandeja-nombre').value = '';
+    document.getElementById('modal-bandeja-mensaje').innerHTML = '';
+    document.getElementById('modal-bandeja-correo-preview').textContent = '';
+    _aliasManualBandeja = null;
+    renderUsuariosChecklist('modal-bandeja-usuarios-checks');
+    _rteSetAttachments('toolbar_crear_bandeja', []);
+    document.getElementById('modal-bandeja-backdrop').classList.add('open');
+  }
+
+  function cerrarModalBandeja() {
+    document.getElementById('modal-bandeja-backdrop').classList.remove('open');
+  }
+
+  function confirmarCrearBandeja() {
+    if (!ES_ADMIN) return;
+    const input = document.getElementById('modal-bandeja-nombre');
+    const nombre = input.value.trim();
+    if (!nombre) return;
+    const mensajeBienvenida = document.getElementById('modal-bandeja-mensaje').innerHTML;
+    const bandejas = getBandejas();
+    const key = _aliasManualBandeja || slugify(nombre);
+    if (bandejas.some(b => b.key === key)) {
+      alert(`Ya existe una bandeja con el correo "${correoDeBandeja(key)}". Cambiá el alias antes de crearla (click sobre el correo de la vista previa).`);
+      return;
+    }
+    bandejas.push({ key, nombre, mensajeBienvenida, archivosAdjuntos: _rteGetAttachments('toolbar_crear_bandeja') });
+    saveBandejas(bandejas);
+
+    const usuariosMarcados = Array.from(document.querySelectorAll('#modal-bandeja-usuarios-checks input:checked')).map(c => c.value);
+    if (usuariosMarcados.length) {
+      const permisos = getPermisos();
+      permisos[key] = {};
+      usuariosMarcados.forEach(uKey => {
+        permisos[key][uKey] = { acceso: true, verOtros: false };
+      });
+      savePermisos(permisos);
+    }
+
+    cerrarModalBandeja();
+    renderBandejas();
+  }
+
+  function eliminarBandeja(key) {
+    if (!ES_ADMIN) return;
+    saveBandejas(getBandejas().filter(b => b.key !== key));
+    const permisos = getPermisos();
+    delete permisos[key];
+    savePermisos(permisos);
+    renderBandejas();
+  }
+
+  // ── Detalle de bandeja ──
+  let detalleActualKey = null;
+
+  function abrirDetalleBandeja(key) {
+    detalleActualKey = key;
+    renderDetalleBandeja();
+    document.getElementById('modal-detalle-backdrop').classList.add('open');
+  }
+
+  function cerrarDetalleBandeja() {
+    document.getElementById('modal-detalle-backdrop').classList.remove('open');
+    document.getElementById('detalle-subbandejas-form').style.display = 'none';
+    detalleActualKey = null;
+    _permisosPendientes = null;
+  }
+
+  function bandejaActual() {
+    return getBandejas().find(b => b.key === detalleActualKey);
+  }
+
+  function renderDetalleBandeja() {
+    const bandejas = getBandejas();
+    const index = bandejas.findIndex(x => x.key === detalleActualKey);
+    const b = bandejas[index];
+    if (!b) return;
+    document.getElementById('detalle-bandeja-nombre').textContent = `${ordenVisual(index)} ${b.nombre}`;
+    document.getElementById('detalle-bandeja-correo').textContent = correoDeBandeja(b.key);
+    document.getElementById('detalle-bandeja-correo-hint').textContent = correoDeBandeja(b.key);
+    document.getElementById('detalle-bandeja-input-nombre').value = b.nombre;
+    document.getElementById('detalle-bandeja-input-nombre').disabled = !ES_ADMIN;
+    document.getElementById('detalle-bandeja-guardar-btn').style.display = 'none';
+    document.getElementById('detalle-mensaje-bienvenida').innerHTML = b.mensajeBienvenida || '';
+    document.getElementById('detalle-mensaje-bienvenida').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
+    _rteSetAttachments('toolbar_detalle_bienvenida', b.archivosAdjuntos || []);
+    document.getElementById('detalle-mensaje-guardar-btn').style.display = ES_ADMIN ? '' : 'none';
+    document.getElementById('detalle-subbandeja-crear-btn').style.display = ES_ADMIN ? '' : 'none';
+    document.getElementById('detalle-bandeja-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
+    _permisosPendientes = JSON.parse(JSON.stringify(getPermisos()));
+    renderDetallePermisos();
+    renderSubbandejasListado();
+  }
+
+  function marcarCambiosBandeja() {
+    if (!ES_ADMIN) return;
+    document.getElementById('detalle-bandeja-guardar-btn').style.display = '';
+  }
+
+  function guardarCambiosBandeja() {
+    if (!ES_ADMIN) return;
+    const bandejas = getBandejas();
+    const b = bandejas.find(x => x.key === detalleActualKey);
+    if (!b) return;
+    const nombre = document.getElementById('detalle-bandeja-input-nombre').value.trim();
+    if (nombre) b.nombre = nombre; // la key (y por lo tanto el correo) nunca cambia
+    saveBandejas(bandejas);
+    if (_permisosPendientes) savePermisos(_permisosPendientes);
+    renderDetalleBandeja();
+    renderBandejasListado();
+    const btn = document.getElementById('detalle-bandeja-guardar-btn');
+    btn.textContent = '✓ Guardado';
+    btn.style.display = '';
+    clearTimeout(btn._restoreTimeout);
+    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar cambios'; btn.style.display = 'none'; }, 1200);
+  }
+
+  function guardarMensajeBienvenida() {
+    if (!ES_ADMIN) return;
+    const bandejas = getBandejas();
+    const b = bandejas.find(x => x.key === detalleActualKey);
+    if (!b) return;
+    b.mensajeBienvenida = document.getElementById('detalle-mensaje-bienvenida').innerHTML;
+    b.archivosAdjuntos = _rteGetAttachments('toolbar_detalle_bienvenida');
+    saveBandejas(bandejas);
+    const btn = document.getElementById('detalle-mensaje-guardar-btn');
+    document.getElementById('detalle-mensaje-bienvenida').blur();
+    window.getSelection()?.removeAllRanges();
+    btn.focus();
+    btn.textContent = '✓ Guardado';
+    btn.disabled = true;
+    clearTimeout(btn._restoreTimeout);
+    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar mensaje'; btn.disabled = false; }, 1500);
+  }
+
+  let _permisosPendientes = null;
+
+  function renderDetallePermisos() {
+    const usuarios = getUsuarios();
+    const permisos = _permisosPendientes || getPermisos();
+    const permB = permisos[detalleActualKey] || {};
+    const tabla = document.getElementById('detalle-permisos-tabla');
+
+    if (!usuarios.length) {
+      tabla.innerHTML = '<div class="empty-msg">Todavía no hay usuarios creados.</div>';
+      return;
+    }
+
+    tabla.innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>Usuario</th><th>Acceso</th><th>Ver casos de otros agentes</th></tr></thead>
+        <tbody>
+          ${usuarios.map(u => {
+            const p = permB[u.key] || { acceso: false, verOtros: false };
+            return `
+              <tr>
+                <td><span class="avatar" style="background:${u.gradient}">${u.initials}</span>${u.nombre} ${u.apellido}</td>
+                <td>
+                  <label class="toggle">
+                    <input type="checkbox" ${p.acceso ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.key}','acceso', this.checked)">
+                    <span class="slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <label class="toggle">
+                    <input type="checkbox" ${p.verOtros ? 'checked' : ''} ${(p.acceso && ES_ADMIN) ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.key}','verOtros', this.checked)">
+                    <span class="slider"></span>
+                  </label>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function togglePermisoDetalle(userKey, campo, checked) {
+    if (!ES_ADMIN) return;
+    const permisos = _permisosPendientes;
+    if (!permisos[detalleActualKey]) permisos[detalleActualKey] = {};
+    if (!permisos[detalleActualKey][userKey]) permisos[detalleActualKey][userKey] = { acceso: false, verOtros: false };
+    permisos[detalleActualKey][userKey][campo] = checked;
+    if (campo === 'acceso' && !checked) permisos[detalleActualKey][userKey].verOtros = false;
+    marcarCambiosBandeja();
+    if (campo === 'acceso') renderDetallePermisos();
+  }
+
+  function mostrarFormSubbandeja() {
+    document.getElementById('input-subbandeja-nombre').value = '';
+    document.getElementById('detalle-subbandejas-form').style.display = 'block';
+  }
+
+  function confirmarCrearSubbandeja() {
+    if (!ES_ADMIN) return;
+    const input = document.getElementById('input-subbandeja-nombre');
+    const nombre = input.value.trim();
+    if (!nombre) return;
+    const bandejas = getBandejas();
+    const b = bandejas.find(x => x.key === detalleActualKey);
+    if (!b) return;
+    if (!b.subbandejas) b.subbandejas = [];
+    let key = slugify(nombre);
+    let i = 1;
+    while (b.subbandejas.some(s => s.key === key)) key = `${slugify(nombre)}_${i++}`;
+    b.subbandejas.push({ key, nombre });
+    saveBandejas(bandejas);
+    document.getElementById('detalle-subbandejas-form').style.display = 'none';
+    renderSubbandejasListado();
+  }
+
+  function confirmarEliminarSubbandeja(subKey) {
+    if (!ES_ADMIN) return;
+    const b = bandejaActual();
+    const sub = b?.subbandejas?.find(s => s.key === subKey);
+    if (!sub) return;
+    abrirModalConfirmar(`¿Eliminar la sub-bandeja "${sub.nombre}"? Esta acción no se puede deshacer.`, () => {
+      eliminarSubbandeja(subKey);
+    });
+  }
+
+  function eliminarSubbandeja(subKey) {
+    if (!ES_ADMIN) return;
+    const bandejas = getBandejas();
+    const b = bandejas.find(x => x.key === detalleActualKey);
+    if (!b) return;
+    b.subbandejas = (b.subbandejas || []).filter(s => s.key !== subKey);
+    saveBandejas(bandejas);
+    renderSubbandejasListado();
+  }
+
+  function renderSubbandejasListado() {
+    const b = bandejaActual();
+    const listado = document.getElementById('detalle-subbandejas-listado');
+    const subbandejas = b?.subbandejas || [];
+    if (!subbandejas.length) {
+      listado.innerHTML = '<div class="empty-msg">Sin sub-bandejas todavía.</div>';
+      return;
+    }
+    listado.innerHTML = subbandejas.map(s => `
+      <div class="subbandeja-row">
+        <svg class="sub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        <span class="sub-tag">Sub-bandeja</span>
+        <span class="nombre">${s.nombre}</span>
+        <span class="correo">${correoDeBandeja(b.key)}</span>
+        ${ES_ADMIN ? `<button class="remove-btn" onclick="confirmarEliminarSubbandeja('${s.key}')">Eliminar</button>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function eliminarBandejaDesdeDetalle() {
+    if (!ES_ADMIN) return;
+    const b = bandejaActual();
+    if (!b) return;
+    abrirModalConfirmar(`¿Eliminar la bandeja "${b.nombre}"? Se va a borrar junto con sus sub-bandejas y permisos. Esta acción no se puede deshacer.`, () => {
+      eliminarBandeja(detalleActualKey);
+      cerrarDetalleBandeja();
+    });
+  }
+
+  // ── Confirmación genérica de eliminación ──
+  function abrirModalConfirmar(mensaje, onConfirmar) {
+    document.getElementById('confirmar-mensaje').textContent = mensaje;
+    const btn = document.getElementById('confirmar-aceptar-btn');
+    btn.onclick = () => {
+      cerrarModalConfirmar();
+      onConfirmar();
+    };
+    document.getElementById('modal-confirmar-backdrop').classList.add('open');
+  }
+
+  function cerrarModalConfirmar() {
+    document.getElementById('modal-confirmar-backdrop').classList.remove('open');
+  }
+
+  // ── Respuestas automáticas ──
+  function renderRespuestasListado() {
+    const respuestas = getRespuestas();
+    const listado = document.getElementById('respuestas-listado');
+    if (!respuestas.length) {
+      listado.innerHTML = '<div class="empty-msg">Todavía no creaste ninguna respuesta automática.</div>';
+      return;
+    }
+    listado.innerHTML = respuestas.map(r => `
+      <div class="bandeja-list-row">
+        <span class="bandeja-orden">@${r.codigo}</span>
+        <button class="bandeja-nombre-link" onclick="abrirDetalleRespuesta('${r.codigo}')">${r.nombre}</button>
+      </div>
+    `).join('');
+  }
+
+  function abrirModalRespuesta() {
+    document.getElementById('modal-respuesta-codigo').value = '';
+    document.getElementById('modal-respuesta-nombre').value = '';
+    document.getElementById('modal-respuesta-texto').innerHTML = '';
+    _rteSetAttachments('toolbar_crear_respuesta', []);
+    document.getElementById('modal-respuesta-backdrop').classList.add('open');
+  }
+
+  function cerrarModalRespuesta() {
+    document.getElementById('modal-respuesta-backdrop').classList.remove('open');
+  }
+
+  function confirmarCrearRespuesta() {
+    if (!ES_ADMIN) return;
+    const codigo = document.getElementById('modal-respuesta-codigo').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nombre = document.getElementById('modal-respuesta-nombre').value.trim();
+    const texto = document.getElementById('modal-respuesta-texto').innerHTML;
+    if (!codigo || !nombre) return;
+    const respuestas = getRespuestas();
+    if (respuestas.some(r => r.codigo === codigo)) {
+      alert(`Ya existe una respuesta con el código "@${codigo}".`);
+      return;
+    }
+    respuestas.push({ codigo, nombre, texto, archivosAdjuntos: _rteGetAttachments('toolbar_crear_respuesta') });
+    saveRespuestas(respuestas);
+    cerrarModalRespuesta();
+    renderRespuestasListado();
+  }
+
+  let detalleRespuestaActualCodigo = null;
+
+  function abrirDetalleRespuesta(codigo) {
+    detalleRespuestaActualCodigo = codigo;
+    renderDetalleRespuesta();
+    document.getElementById('modal-detalle-respuesta-backdrop').classList.add('open');
+  }
+
+  function renderDetalleRespuesta() {
+    const r = getRespuestas().find(x => x.codigo === detalleRespuestaActualCodigo);
+    if (!r) return;
+    document.getElementById('detalle-respuesta-nombre').textContent = r.nombre;
+    document.getElementById('detalle-respuesta-codigo').textContent = `@${r.codigo}`;
+    document.getElementById('detalle-respuesta-input-codigo').value = r.codigo;
+    document.getElementById('detalle-respuesta-input-nombre').value = r.nombre;
+    document.getElementById('detalle-respuesta-input-texto').innerHTML = r.texto;
+    _rteSetAttachments('toolbar_detalle_respuesta', r.archivosAdjuntos || []);
+    document.getElementById('detalle-respuesta-input-codigo').disabled = !ES_ADMIN;
+    document.getElementById('detalle-respuesta-input-nombre').disabled = !ES_ADMIN;
+    document.getElementById('detalle-respuesta-input-texto').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
+    document.getElementById('detalle-respuesta-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
+    document.getElementById('detalle-respuesta-guardar-btn').style.display = 'none';
+  }
+
+  function marcarCambiosRespuesta() {
+    if (!ES_ADMIN) return;
+    document.getElementById('detalle-respuesta-guardar-btn').style.display = '';
+  }
+
+  function guardarDatosRespuesta() {
+    if (!ES_ADMIN) return;
+    const respuestas = getRespuestas();
+    const r = respuestas.find(x => x.codigo === detalleRespuestaActualCodigo);
+    if (!r) return;
+    const nuevoCodigo = document.getElementById('detalle-respuesta-input-codigo').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nombre = document.getElementById('detalle-respuesta-input-nombre').value.trim();
+    if (!nuevoCodigo || !nombre) { renderDetalleRespuesta(); return; }
+    if (nuevoCodigo !== r.codigo && respuestas.some(x => x.codigo === nuevoCodigo)) {
+      alert(`Ya existe una respuesta con el código "@${nuevoCodigo}".`);
+      renderDetalleRespuesta();
+      return;
+    }
+    r.codigo = nuevoCodigo;
+    r.nombre = nombre;
+    r.texto = document.getElementById('detalle-respuesta-input-texto').innerHTML;
+    r.archivosAdjuntos = _rteGetAttachments('toolbar_detalle_respuesta');
+    saveRespuestas(respuestas);
+    detalleRespuestaActualCodigo = nuevoCodigo;
+    renderDetalleRespuesta();
+    renderRespuestasListado();
+    const btn = document.getElementById('detalle-respuesta-guardar-btn');
+    ['detalle-respuesta-input-codigo', 'detalle-respuesta-input-nombre', 'detalle-respuesta-input-texto'].forEach(id => document.getElementById(id).blur());
+    window.getSelection()?.removeAllRanges();
+    btn.style.display = '';
+    btn.focus();
+    btn.textContent = '✓ Guardado';
+    clearTimeout(btn._restoreTimeout);
+    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar cambios'; btn.style.display = 'none'; }, 1200);
+  }
+
+  function cerrarDetalleRespuesta() {
+    document.getElementById('modal-detalle-respuesta-backdrop').classList.remove('open');
+    detalleRespuestaActualCodigo = null;
+  }
+
+  function confirmarEliminarRespuesta() {
+    if (!ES_ADMIN) return;
+    const r = getRespuestas().find(x => x.codigo === detalleRespuestaActualCodigo);
+    if (!r) return;
+    abrirModalConfirmar(`¿Eliminar la respuesta "${r.nombre}" (@${r.codigo})? Esta acción no se puede deshacer.`, () => {
+      saveRespuestas(getRespuestas().filter(x => x.codigo !== detalleRespuestaActualCodigo));
+      cerrarDetalleRespuesta();
+      renderRespuestasListado();
+    });
+  }
+
+  function aplicarPermisosUI() {
+    const actual = getUsuarios().find(u => u.key === CURRENT_USER_KEY);
+    ES_ADMIN = actual ? actual.rol === 'Administrador' : true;
+    if (ES_ADMIN) return;
+    document.querySelectorAll('.btn-add').forEach(b => b.style.display = 'none');
+    document.getElementById('guardar-empresa-btn').style.display = 'none';
+    document.getElementById('empresa-nombre-input').disabled = true;
+    document.getElementById('empresa-sigla-input').disabled = true;
+  }
+
+  seedDefaults();
+  aplicarPermisosUI();
+  renderEmpresa();
+  renderUsuariosListado();
+  renderBandejasListado();
+  renderRespuestasListado();
+  _initRteToolbars();
+
+  // A propósito: clickear afuera de un modal NO lo cierra. Solo se cierra con
+  // los botones explícitos (Cancelar/Cerrar/Guardar), para evitar perder cambios por error.
+</script>
+
+</body>
+</html>

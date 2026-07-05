@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Configuración inicial — CentralWeb</title>
+<style>
+  :root {
+    --blue-900:  #0d2244;
+    --blue-800:  #0e3a6e;
+    --blue-700:  #1352a8;
+    --blue-600:  #1a6cd4;
+    --blue-500:  #2183f0;
+    --blue-400:  #4fa3f7;
+    --blue-300:  #7cc2fb;
+    --blue-200:  #bfdffd;
+    --blue-100:  #e8f3fe;
+    --blue-50:   #f4f9ff;
+
+    --text-primary:   #0d1f3c;
+    --text-secondary: #4a6285;
+    --text-muted:     #8ba4c4;
+    --border:         #d0e2f7;
+    --bg:             #f0f5fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wrap { width: 560px; max-width: 92vw; padding: 24px 0; }
+  .header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .header .brand {
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--blue-800);
+  }
+  .header .sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 26px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .card .hint {
+    margin: 0 0 16px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  label.field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .field { margin-bottom: 14px; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  input[type=text], input[type=email], input[type=password] {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    background: var(--blue-50);
+  }
+  input:focus { outline: 2px solid var(--blue-300); background: white; }
+  .sigla-preview {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+  .sigla-preview b { color: var(--blue-700); }
+  .error-msg {
+    font-size: 12px;
+    color: #b91c1c;
+    margin-top: 10px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+  button.btn-primary {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--blue-600);
+    color: white;
+  }
+  button.btn-primary:hover { background: var(--blue-700); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="brand">CentralWeb</div>
+    <div class="sub">Antes de empezar, configuremos tu cuenta</div>
+  </div>
+
+  <div class="card">
+    <h2>Tu empresa</h2>
+    <p class="hint">El nombre formal aparece como remitente cuando un caso recibe una respuesta desde la plataforma.</p>
+    <div class="field">
+      <label class="field-label">Nombre formal de la empresa</label>
+      <input type="text" id="input-empresa-nombre" placeholder="ej. Instituto de Seguridad Social del Neuquén">
+    </div>
+    <div class="field">
+      <label class="field-label">Sigla / abreviación</label>
+      <input type="text" id="input-empresa-sigla" placeholder="ej. issn" maxlength="12">
+      <div class="sigla-preview" id="sigla-preview">Se usará para armar los correos de tus bandejas.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Usuario administrador</h2>
+    <p class="hint">Vas a usar estos datos para ingresar a CentralWeb.</p>
+    <div class="row">
+      <div class="field">
+        <label class="field-label">Nombre</label>
+        <input type="text" id="input-admin-nombre" placeholder="ej. Nicolás">
+      </div>
+      <div class="field">
+        <label class="field-label">Apellido</label>
+        <input type="text" id="input-admin-apellido" placeholder="ej. Gravina">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Email</label>
+      <input type="email" id="input-admin-email" placeholder="ej. nicolas@issn.gob.ar">
+    </div>
+    <div class="field">
+      <label class="field-label">Contraseña</label>
+      <input type="password" id="input-admin-password" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <button class="btn-primary" onclick="finalizarAlta()">Empezar a usar CentralWeb</button>
+</div>
+
+<script>
+  const LS_EMPRESA  = 'cw_empresa';
+  const LS_USUARIOS = 'cw_usuarios';
+
+  function slugify(str) {
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '')
+      .slice(0, 12);
+  }
+
+  const siglaInput = document.getElementById('input-empresa-sigla');
+  siglaInput.addEventListener('input', () => {
+    siglaInput.value = slugify(siglaInput.value);
+    actualizarPreviewSigla();
+  });
+
+  function actualizarPreviewSigla() {
+    const sigla = siglaInput.value;
+    document.getElementById('sigla-preview').innerHTML = sigla
+      ? `Ejemplo: la bandeja "Facturación" tendría el correo <b>facturacion.${sigla}@centralweb.com</b>`
+      : 'Se usará para armar los correos de tus bandejas.';
+  }
+
+  function mostrarError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function finalizarAlta() {
+    const empresaNombre = document.getElementById('input-empresa-nombre').value.trim();
+    const sigla = document.getElementById('input-empresa-sigla').value.trim();
+    const nombre = document.getElementById('input-admin-nombre').value.trim();
+    const apellido = document.getElementById('input-admin-apellido').value.trim();
+    const email = document.getElementById('input-admin-email').value.trim();
+    const password = document.getElementById('input-admin-password').value;
+
+    if (!empresaNombre || !sigla || !nombre || !apellido || !email || !password) {
+      mostrarError('Completá todos los campos para continuar.');
+      return;
+    }
+    if (password.length < 6) {
+      mostrarError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    localStorage.setItem(LS_EMPRESA, JSON.stringify({ nombreFormal: empresaNombre, sigla }));
+
+    const usuarios = JSON.parse(localStorage.getItem(LS_USUARIOS) || '[]');
+    let admin = usuarios.find(u => u.key === 'user_ng');
+    if (!admin) {
+      admin = { key: 'user_ng', gradient: 'linear-gradient(135deg,#1a6cd4,#4fa3f7)', rol: 'Administrador' };
+      usuarios.push(admin);
+    }
+    admin.nombre = nombre;
+    admin.apellido = apellido;
+    admin.email = email;
+    admin.initials = (nombre[0] + (apellido[0] || '')).toUpperCase();
+    admin.rol = 'Administrador';
+    localStorage.setItem(LS_USUARIOS, JSON.stringify(usuarios));
+    localStorage.setItem('cw_admin_password', password); // solo demo — sin backend no hay hashing real
+
+    window.location.href = 'casos.html';
+  }
+</script>
+
+</body>
+</html>
