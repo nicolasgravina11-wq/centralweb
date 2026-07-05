@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Iniciar sesión — CentralWeb</title>
+<style>
+  :root {
+    --blue-900:  #0d2244;
+    --blue-800:  #0e3a6e;
+    --blue-700:  #1352a8;
+    --blue-600:  #1a6cd4;
+    --blue-500:  #2183f0;
+    --blue-400:  #4fa3f7;
+    --blue-300:  #7cc2fb;
+    --blue-200:  #bfdffd;
+    --blue-100:  #e8f3fe;
+    --blue-50:   #f4f9ff;
+
+    --text-primary:   #0d1f3c;
+    --text-secondary: #4a6285;
+    --text-muted:     #8ba4c4;
+    --border:         #d0e2f7;
+    --bg:             #f0f5fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wrap { width: 420px; max-width: 92vw; padding: 24px 0; }
+  .header { text-align: center; margin-bottom: 22px; }
+  .header .brand { font-weight: 800; font-size: 20px; color: var(--blue-800); }
+  .header .sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 26px;
+    margin-bottom: 16px;
+  }
+  label.field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .field { margin-bottom: 14px; }
+  input[type=email], input[type=password] {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    background: var(--blue-50);
+  }
+  input:focus { outline: 2px solid var(--blue-300); background: white; }
+  .error-msg {
+    font-size: 12px;
+    color: #b91c1c;
+    margin-top: 10px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+  button.btn-primary {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--blue-600);
+    color: white;
+  }
+  button.btn-primary:hover { background: var(--blue-700); }
+  .alt-link { text-align: center; font-size: 12.5px; color: var(--text-muted); }
+  .alt-link a { color: var(--blue-600); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="brand">CentralWeb</div>
+    <div class="sub">Iniciá sesión para continuar</div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label class="field-label">Email</label>
+      <input type="email" id="input-email" placeholder="tu@empresa.com">
+    </div>
+    <div class="field">
+      <label class="field-label">Contraseña</label>
+      <input type="password" id="input-password" placeholder="Tu contraseña">
+    </div>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <button class="btn-primary" onclick="iniciarSesion()">Iniciar sesión</button>
+  <p class="alt-link">¿Todavía no tenés cuenta? <a href="alta-inicial.html">Creá tu empresa acá</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+  function mostrarError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  async function iniciarSesion() {
+    const email = document.getElementById('input-email').value.trim();
+    const password = document.getElementById('input-password').value;
+
+    if (!email || !password) {
+      mostrarError('Completá email y contraseña.');
+      return;
+    }
+
+    const boton = document.querySelector('.btn-primary');
+    boton.disabled = true;
+    boton.textContent = 'Ingresando...';
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      boton.disabled = false;
+      boton.textContent = 'Iniciar sesión';
+      mostrarError(error.message === 'Email not confirmed'
+        ? 'Todavía no confirmaste tu email. Revisá tu correo.'
+        : 'Email o contraseña incorrectos.');
+      return;
+    }
+
+    window.location.href = 'casos.html';
+  }
+
+  // Si ya hay sesion activa, no hace falta loguearse de nuevo
+  supabaseClient.auth.getSession().then(({ data }) => {
+    if (data.session) window.location.href = 'casos.html';
+  });
+</script>
+
+</body>
+</html>

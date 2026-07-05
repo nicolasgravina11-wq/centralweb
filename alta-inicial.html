@@ -161,10 +161,9 @@
   <button class="btn-primary" onclick="finalizarAlta()">Empezar a usar CentralWeb</button>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 <script>
-  const LS_EMPRESA  = 'cw_empresa';
-  const LS_USUARIOS = 'cw_usuarios';
-
   function slugify(str) {
     return str.toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -191,7 +190,12 @@
     el.classList.add('show');
   }
 
-  function finalizarAlta() {
+  function ocultarError() {
+    const el = document.getElementById('error-msg');
+    el.classList.remove('show');
+  }
+
+  async function finalizarAlta() {
     const empresaNombre = document.getElementById('input-empresa-nombre').value.trim();
     const sigla = document.getElementById('input-empresa-sigla').value.trim();
     const nombre = document.getElementById('input-admin-nombre').value.trim();
@@ -208,21 +212,45 @@
       return;
     }
 
-    localStorage.setItem(LS_EMPRESA, JSON.stringify({ nombreFormal: empresaNombre, sigla }));
+    ocultarError();
+    const boton = document.querySelector('.btn-primary');
+    boton.disabled = true;
+    boton.textContent = 'Creando tu cuenta...';
 
-    const usuarios = JSON.parse(localStorage.getItem(LS_USUARIOS) || '[]');
-    let admin = usuarios.find(u => u.key === 'user_ng');
-    if (!admin) {
-      admin = { key: 'user_ng', gradient: 'linear-gradient(135deg,#1a6cd4,#4fa3f7)', rol: 'Administrador' };
-      usuarios.push(admin);
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          empresa_nombre: empresaNombre,
+          empresa_sigla: sigla,
+          nombre,
+          apellido
+        }
+      }
+    });
+
+    if (error) {
+      boton.disabled = false;
+      boton.textContent = 'Empezar a usar CentralWeb';
+      mostrarError(error.message || 'No se pudo crear la cuenta. Probá de nuevo.');
+      return;
     }
-    admin.nombre = nombre;
-    admin.apellido = apellido;
-    admin.email = email;
-    admin.initials = (nombre[0] + (apellido[0] || '')).toUpperCase();
-    admin.rol = 'Administrador';
-    localStorage.setItem(LS_USUARIOS, JSON.stringify(usuarios));
-    localStorage.setItem('cw_admin_password', password); // solo demo — sin backend no hay hashing real
+
+    // Si el proyecto pide confirmar el email, todavia no hay sesion activa
+    if (!data.session) {
+      document.querySelector('.wrap').innerHTML = `
+        <div class="header">
+          <div class="brand">CentralWeb</div>
+          <div class="sub">Falta un paso</div>
+        </div>
+        <div class="card">
+          <h2>Confirmá tu email</h2>
+          <p class="hint">Te mandamos un correo a <b>${email}</b> con un link para confirmar tu cuenta. Una vez confirmada, entrá desde <a href="login.html">login.html</a>.</p>
+        </div>
+      `;
+      return;
+    }
 
     window.location.href = 'casos.html';
   }
