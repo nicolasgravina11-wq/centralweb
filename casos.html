@@ -1124,8 +1124,27 @@
   // ════════════════════════════════
   //  SESION REAL (Supabase) — reemplaza el viejo gate de localStorage
   // ════════════════════════════════
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) { window.location.href = 'login.html'; return; }
+  // getSession() puede devolver null por una carrera interna del cliente justo
+  // despues de venir de login.html (todavia no termino de leer el storage).
+  // Por eso reintentamos una vez antes de mandar a login, y ademas guardamos
+  // un "guard" para no quedar rebotando en loop entre casos.html <-> login.html
+  // si de verdad no hay sesion.
+  let { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    await new Promise(r => setTimeout(r, 400));
+    ({ data: { session } } = await supabaseClient.auth.getSession());
+  }
+  if (!session) {
+    if (sessionStorage.getItem('cw_redirect_guard') === '1') {
+      sessionStorage.removeItem('cw_redirect_guard');
+      document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif">No pudimos confirmar tu sesión. <a href="login.html">Volvé a iniciar sesión</a>.</div>';
+      return;
+    }
+    sessionStorage.setItem('cw_redirect_guard', '1');
+    window.location.href = 'login.html';
+    return;
+  }
+  sessionStorage.removeItem('cw_redirect_guard');
 
   const { data: perfil, error: errorPerfil } = await supabaseClient
     .from('profiles')
