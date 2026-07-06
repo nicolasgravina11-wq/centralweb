@@ -1828,10 +1828,10 @@
     updateBandejaCounts();
     clearSelection();
     _persistAllCases();
-    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} devuelto${checked.length > 1 ? 's' : ''} a bandeja anterior`);
+    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} devuelto${checked.length > 1 ? 's' : ''} a bandeja anterior`); _syncBandejaCambios(checked);
   }
 
-  function transferCases(targetBandeja) {
+  function _syncBandejaCambios(checked) { const porDestino = {}; checked.forEach(c => { const tr = c.closest('tr'); const ticket = tr && tr.dataset.ticket; if (!ticket) return; const destino = tr.dataset.bandeja; (porDestino[destino] = porDestino[destino] || []).push(ticket); }); Object.entries(porDestino).forEach(([destino, tks]) => { const resuelto = _bandejaIdPorKey[destino]; const patch = resuelto ? { bandeja_id: resuelto.id, sub_bandeja_id: resuelto.subId, asignado_user_id: null } : { asignado_user_id: destino }; supabaseClient.from('centralweb_casos').update(patch).eq('empresa_id', EMPRESA_ID).in('ticket', tks).then(({ error }) => { if (error) console.error('No se pudo sincronizar la bandeja en Supabase:', error); }); }); } function transferCases(targetBandeja) {
     const checked = getRowChecks().filter(c => c.checked);
     if (!checked.length) { showToast('Seleccioná al menos un caso'); return; }
     const map = getBandejaMap();
@@ -1875,7 +1875,7 @@
     updateBandejaCounts();
     clearSelection();
     _persistAllCases();
-    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} transferido${checked.length > 1 ? 's' : ''} a ${bandejaLabels[targetBandeja]}`);
+    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} transferido${checked.length > 1 ? 's' : ''} a ${bandejaLabels[targetBandeja]}`); _syncBandejaCambios(checked);
   }
 
   function bulkEstado(newStatus) {
