@@ -3859,7 +3859,7 @@ function openNote() {
     } catch(e) {}
   }
 
-  function sendReply() {
+  async function _syncSentEmailToSupabase(toStr, ccStr, html) { try { if (!window._casoActualDB) return; const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) return; const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}'); const resp = await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ casoId: window._casoActualDB.id, to: toStr, cc: ccStr || undefined, asunto: 'Re: ' + (c.asunto || window._casoActualDB.asunto || ''), cuerpoHtml: html }) }); const json = await resp.json().catch(() => ({})); if (!resp.ok || !json.ok) console.error('No se pudo enviar el correo real:', json.error || resp.status); } catch (e) { console.error('Error sincronizando envio de correo:', e); } } function sendReply() {
     const html = _getComposeHTML();
     if (!html) return;
     const now      = new Date();
@@ -3870,7 +3870,7 @@ function openNote() {
     const to       = [..._toChips];
     const cc       = [..._ccChips];
     _removeInlineCompose();
-    const entry = _buildSentCard('Respuesta enviada', '#7c3aed', 'var(--blue-600)',
+    _syncSentEmailToSupabase(to.join(','), cc.join(','), html); const entry = _buildSentCard('Respuesta enviada', '#7c3aed', 'var(--blue-600)',
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 21 12 15 6"/></svg>',
       fecha, hora, html, files, conv, to, cc);
     document.getElementById('action-bar').closest('.timeline-entry').before(entry);
@@ -3888,7 +3888,7 @@ function openNote() {
     const to       = [..._toChips];
     const cc       = [..._ccChips];
     _removeInlineCompose();
-    const entry = _buildSentCard('Correo saliente', '#16a34a', '#16a34a',
+    _syncSentEmailToSupabase(to.join(','), cc.join(','), html); const entry = _buildSentCard('Correo saliente', '#16a34a', '#16a34a',
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
       fecha, hora, html, files, conv, to, cc);
     document.getElementById('action-bar').closest('.timeline-entry').before(entry);
