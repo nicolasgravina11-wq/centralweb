@@ -883,15 +883,12 @@
   </div>
 </div>
 
-<script>
-  const LS_EMPRESA  = 'cw_empresa';
-  const LS_USUARIOS = 'cw_usuarios';
-  const LS_BANDEJAS = 'cw_bandejas';
-  const LS_PERMISOS = 'cw_permisos';
-  const LS_RESPUESTAS = 'cw_respuestas_automaticas';
-
-  // Usuario "logueado" simulado — el mismo concepto que en casos.html/mi-perfil.html, cambia con "Ver como [usuario]".
-  const CURRENT_USER_KEY = localStorage.getItem('cw_usuario_activo') || 'user_ng';
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+  let EMPRESA_ID = null;
+  let EMPRESA_SIGLA = '';
+  let CURRENT_USER = null;
   let ES_ADMIN = true;
 
   const GRADIENTES = [
@@ -903,60 +900,62 @@
     'linear-gradient(135deg,#0891b2,#67e8f9)',
   ];
 
-  function seedDefaults() {
-    if (!localStorage.getItem(LS_USUARIOS)) {
-      localStorage.setItem(LS_USUARIOS, JSON.stringify([
-        { key: 'user_ng', initials: 'NG', nombre: 'Nicolás', apellido: 'Gravina', email: 'nicolas.gravina@novadgt.com', gradient: GRADIENTES[0], rol: 'Administrador' },
-        { key: 'user_cp', initials: 'CP', nombre: 'Carlos',  apellido: 'P.',       email: 'carlos.p@novadgt.com',      gradient: GRADIENTES[1], rol: 'Agente' },
-        { key: 'user_lm', initials: 'LM', nombre: 'Laura',   apellido: 'M.',       email: 'laura.m@novadgt.com',       gradient: GRADIENTES[2], rol: 'Agente' },
-        { key: 'user_sr', initials: 'SR', nombre: 'Sofía',   apellido: 'R.',       email: 'sofia.r@novadgt.com',       gradient: GRADIENTES[3], rol: 'Agente' },
-        { key: 'user_jf', initials: 'JF', nombre: 'Jorge',   apellido: 'F.',       email: 'jorge.f@novadgt.com',       gradient: GRADIENTES[4], rol: 'Agente' },
-      ]));
-    }
-    if (!localStorage.getItem(LS_BANDEJAS)) {
-      localStorage.setItem(LS_BANDEJAS, JSON.stringify([
-        { key: 'facturacion', nombre: 'Facturación' },
-        { key: 'consultas',   nombre: 'Consultas' },
-      ]));
-    }
-    if (!localStorage.getItem(LS_PERMISOS)) {
-      localStorage.setItem(LS_PERMISOS, JSON.stringify({}));
-    }
-    migrarUsuariosLegacy();
+  // ── Cache en memoria (se recarga desde Supabase en cada operación relevante) ──
+  let _usuariosCache = [];
+  let _bandejasCache = []; // solo bandejas de primer nivel, cada una con .subbandejas anidadas
+  let _permisosCache = [];
+  let _respuestasCache = [];
+
+  async function cargarSesion() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { document.querySelector('main').innerHTML = '<div class="card">Sesión no encontrada. Volvé a <a href="login.html">iniciar sesión</a>.</div>'; return false; }
+    const { data: perfil, error } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+    if (error || !perfil) { document.querySelector('main').innerHTML = '<div class="card">No se encontró tu perfil.</div>'; return false; }
+    CURRENT_USER = perfil;
+    EMPRESA_ID = perfil.empresa_id;
+    ES_ADMIN = perfil.rol === 'Administrador';
+    return true;
   }
 
-  // Sesiones previas guardaron los usuarios con un solo campo "name".
-  // Acá se completan nombre/apellido/email si faltan, sin perder lo ya creado.
-  function migrarUsuariosLegacy() {
-    const usuarios = getUsuarios();
-    let cambio = false;
-    usuarios.forEach(u => {
-      if (!u.nombre) {
-        const partes = (u.name || '').trim().split(/\s+/);
-        u.nombre = partes[0] || u.key;
-        u.apellido = partes.slice(1).join(' ') || '';
-        delete u.name;
-        cambio = true;
-      }
-      if (!u.email) {
-        u.email = `${slugify(u.nombre + ' ' + u.apellido)}@novadgt.com`;
-        cambio = true;
-      }
+  async function cargarTodo() {
+    const [{ data: usuarios }, { data: bandejasFlat }, { data: permisos }, { data: respuestas }, { data: empresa }] = await Promise.all([
+      supabaseClient.from('profiles').select('*').eq('empresa_id', EMPRESA_ID).order('created_at', { ascending: true }),
+      supabaseClient.from('centralweb_bandejas').select('*').eq('empresa_id', EMPRESA_ID).order('created_at', { ascending: true }),
+      supabaseClient.from('centralweb_permisos').select('*').eq('empresa_id', EMPRESA_ID),
+      supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }),
+      supabaseClient.from('empresas').select('*').eq('id', EMPRESA_ID).single(),
+    ]);
+    _usuariosCache = usuarios || [];
+    _permisosCache = permisos || [];
+    _respuestasCache = respuestas || [];
+    window.__empresaActual = empresa || {};
+    EMPRESA_SIGLA = empresa?.sigla || '';
+    const flat = bandejasFlat || [];
+    const byId = {};
+    flat.forEach(b => { b.subbandejas = []; byId[b.id] = b; });
+    _bandejasCache = [];
+    flat.forEach(b => {
+      if (b.parent_id && byId[b.parent_id]) byId[b.parent_id].subbandejas.push(b);
+      else _bandejasCache.push(b);
     });
-    if (cambio) saveUsuarios(usuarios);
   }
 
-  function getUsuarios()  { return JSON.parse(localStorage.getItem(LS_USUARIOS)  || '[]'); }
-  function getBandejas()  { return JSON.parse(localStorage.getItem(LS_BANDEJAS)  || '[]'); }
-  function getPermisos()  { return JSON.parse(localStorage.getItem(LS_PERMISOS)  || '{}'); }
-  function getEmpresa()   { return JSON.parse(localStorage.getItem(LS_EMPRESA) || '{}'); }
-  function getRespuestas() { return JSON.parse(localStorage.getItem(LS_RESPUESTAS) || '[]'); }
-  function saveEmpresa(e) { localStorage.setItem(LS_EMPRESA, JSON.stringify(e)); }
+  function permisoDe(bandejaId, userId) {
+    const p = _permisosCache.find(x => x.bandeja_id === bandejaId && x.user_id === userId);
+    return p ? { acceso: p.acceso, ver_otros: p.ver_otros } : { acceso: false, ver_otros: false };
+  }
 
-  function saveUsuarios(u) { localStorage.setItem(LS_USUARIOS, JSON.stringify(u)); }
-  function saveBandejas(b) { localStorage.setItem(LS_BANDEJAS, JSON.stringify(b)); }
-  function savePermisos(p) { localStorage.setItem(LS_PERMISOS, JSON.stringify(p)); }
-  function saveRespuestas(r) { localStorage.setItem(LS_RESPUESTAS, JSON.stringify(r)); }
+  async function guardarPermiso(bandejaId, userId, campos) {
+    const existing = _permisosCache.find(p => p.bandeja_id === bandejaId && p.user_id === userId);
+    if (existing) {
+      const { error } = await supabaseClient.from('centralweb_permisos').update(campos).eq('id', existing.id);
+      if (!error) Object.assign(existing, campos);
+      return error;
+    }
+    const { data, error } = await supabaseClient.from('centralweb_permisos').insert({ empresa_id: EMPRESA_ID, bandeja_id: bandejaId, user_id: userId, acceso: true, ver_otros: false, ...campos }).select().single();
+    if (!error && data) _permisosCache.push(data);
+    return error;
+  }
 
   // ── Editor de texto enriquecido (negrita, cursiva, subrayado, mayúsculas, variable de caso) ──
   // Los botones usan onmousedown con preventDefault para no perder la selección
@@ -982,15 +981,13 @@
     chip.className = 'var-chip';
     chip.setAttribute('contenteditable', 'false');
     chip.textContent = 'N° de caso';
-    const space = document.createTextNode(' ');
+    const space = document.createTextNode(' ');
 
     const frag = document.createDocumentFragment();
     frag.appendChild(chip);
     frag.appendChild(space);
     range.insertNode(frag);
 
-    // Cursor justo después del espacio, fuera del chip, para que lo que se
-    // siga escribiendo no herede el estilo del chip.
     const newRange = document.createRange();
     newRange.setStartAfter(space);
     newRange.collapse(true);
@@ -1076,12 +1073,10 @@
       <input type="file" id="rte_file_input_${tid}" multiple style="display:none" onchange="_rteOnAttachFiles('${tid}', this)">` : ''}
       ${showInsertCaso ? `<div class="rte-sep"></div><button type="button" class="rte-btn rte-insert" onmousedown="event.preventDefault()" onclick="rteInsertCaso()">+ N° de caso</button>` : ''}
     `;
-    // Poblar font dropdown
     const fontDd = document.getElementById(`rfp_dd_${tid}`);
     fontDd.innerHTML = _RTE_FONTS.map(f =>
       `<div class="rte-picker-option${f==='Inter'?' selected':''}" style="font-family:${f},sans-serif" onmousedown="event.preventDefault()" onclick="_rteSelectFont('${f}','rfp_label_${tid}','rfp_dd_${tid}')">${f}</div>`
     ).join('');
-    // Poblar size dropdown
     const sizeDd = document.getElementById(`rsp_dd_${tid}`);
     sizeDd.innerHTML = _RTE_SIZES.map(s =>
       `<div class="rte-picker-option${s==='13'?' selected':''}" onmousedown="event.preventDefault()" onclick="_rteSelectSize('${s}','rsp_label_${tid}','rsp_dd_${tid}')">${s}</div>`
@@ -1124,10 +1119,10 @@
   const _RTE_COLOR_PALETTE = [
     ['#000000','#434343','#666666','#999999','#b7b7b7','#cccccc','#d9d9d9','#efefef','#f3f3f3','#ffffff'],
     ['#980000','#ff0000','#ff9900','#ffff00','#00ff00','#00ffff','#4a86e8','#0000ff','#9900ff','#ff00ff'],
-    ['#e6b8af','#f4cccc','#fce5cd','#fff2cc','#d9ead3','#d0e0e3','#c9daf8','#cfe2f3','#d9d2e9','#ead1dc'],
-    ['#dd7e6b','#ea9999','#f9cb9c','#ffe599','#b6d7a8','#a2c4c9','#a4c2f4','#9fc5e8','#b4a7d6','#d5a6bd'],
-    ['#cc4125','#e06666','#f6b26b','#ffd966','#93c47d','#76a5af','#6d9eeb','#6fa8dc','#8e7cc3','#c27ba0'],
-    ['#a61c00','#cc0000','#e69138','#f1c232','#6aa84f','#45818e','#3c78d8','#3d85c6','#674ea7','#a64d79'],
+    ["#e6b8af","#f4cccc","#fce5cd","#fff2cc","#d9ead3","#d0e0e3","#c9daf8","#cfe2f3","#d9d2e9","#ead1dc"],
+    ["#dd7e6b","#ea9999","#f9cb9c","#ffe599","#b6d7a8","#a2c4c9","#a4c2f4","#9fc5e8","#b4a7d6","#d5a6bd"],
+    ["#cc4125","#e06666","#f6b26b","#ffd966","#93c47d","#76a5af","#6d9eeb","#6fa8dc","#8e7cc3","#c27ba0"],
+    ["#a61c00","#cc0000","#e69138","#f1c232","#6aa84f","#45818e","#3c78d8","#3d85c6","#674ea7","#a64d79"],
   ];
 
   let _rteCpScroller = null;
@@ -1196,7 +1191,7 @@
     _rteCloseColorPicker();
   });
 
-  // ── Adjuntar archivos (respuestas automáticas / mensajes de bienvenida) ──
+  // ── Adjuntar archivos reales (respuestas automáticas / mensajes de bienvenida) ──
   let _rteAttachments = {};
 
   function _rteFormatSize(bytes) {
@@ -1209,7 +1204,7 @@
     const list = _rteAttachments[tid] || (_rteAttachments[tid] = []);
     Array.from(input.files).forEach(f => {
       if (list.some(x => x.name === f.name)) return;
-      list.push({ name: f.name, size: _rteFormatSize(f.size) });
+      list.push({ name: f.name, size: f.size, file: f });
     });
     input.value = '';
     _rteRenderAttachList(tid);
@@ -1224,7 +1219,6 @@
 
   function _rteMarkChanges(tid) {
     if (tid === 'toolbar_detalle_respuesta') marcarCambiosRespuesta();
-    if (tid === 'toolbar_firma_usuario') marcarCambiosUsuario();
   }
 
   function _rteRenderAttachList(tid) {
@@ -1235,27 +1229,40 @@
       <span class="rte-attach-chip">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" width="12" height="12"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
         <span class="rte-attach-chip-name" title="${f.name}">${f.name}</span>
-        <span class="rte-attach-chip-size">${f.size}</span>
+        <span class="rte-attach-chip-size">${_rteFormatSize(f.size)}</span>
         <button type="button" class="rte-attach-chip-remove" onclick="_rteRemoveAttachment('${tid}',${i})" title="Quitar">×</button>
       </span>
     `).join('');
   }
 
   function _rteSetAttachments(tid, files) {
-    _rteAttachments[tid] = (files || []).map(f => ({ name: f.name, size: f.size }));
+    _rteAttachments[tid] = (files || []).map(f => ({ name: f.name, size: f.size, url: f.url }));
     _rteRenderAttachList(tid);
   }
 
-  function _rteGetAttachments(tid) {
-    return (_rteAttachments[tid] || []).map(f => ({ name: f.name, size: f.size }));
+  async function _rteGetAttachments(tid, carpeta) {
+    const list = _rteAttachments[tid] || [];
+    const out = [];
+    for (const item of list) {
+      if (item.file) {
+        const ext = (item.file.name.split('.').pop() || 'bin').toLowerCase();
+        const path = `${carpeta}/${Date.now()}_${slugify(item.file.name.split('.')[0] || 'archivo')}.${ext}`;
+        const { error } = await supabaseClient.storage.from('adjuntos').upload(path, item.file, { upsert: true });
+        if (error) { console.error('Error subiendo adjunto:', error); continue; }
+        const { data } = supabaseClient.storage.from('adjuntos').getPublicUrl(path);
+        out.push({ name: item.file.name, size: item.file.size, url: data.publicUrl });
+      } else {
+        out.push({ name: item.name, size: item.size, url: item.url });
+      }
+    }
+    return out;
   }
 
   function _initRteToolbars() {
-    _buildRteToolbar('toolbar-crear-respuesta', true);
-    _buildRteToolbar('toolbar-detalle-respuesta', true);
-    _buildRteToolbar('toolbar-crear-bandeja', true);
-    _buildRteToolbar('toolbar-detalle-bienvenida', true);
-    _buildRteToolbar('toolbar-firma-usuario', false, true);
+    _buildRteToolbar('toolbar-crear-respuesta', true, false);
+    _buildRteToolbar('toolbar-detalle-respuesta', true, false);
+    _buildRteToolbar('toolbar-crear-bandeja', true, true);
+    _buildRteToolbar('toolbar-detalle-bienvenida', true, true);
   }
   // ── /Rich toolbar ─────────────────────────────────────────────────────
 
@@ -1266,25 +1273,27 @@
   }
 
   function correoDeBandeja(bandejaKey) {
-    const sigla = getEmpresa().sigla;
-    return sigla ? `${bandejaKey}.${sigla}@novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
+    return EMPRESA_SIGLA ? `${bandejaKey}.${EMPRESA_SIGLA}@novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
   }
 
   function renderEmpresa() {
-    const empresa = getEmpresa();
-    document.getElementById('empresa-nombre-input').value = empresa.nombreFormal || '';
+    const empresa = window.__empresaActual || {};
+    document.getElementById('empresa-nombre-input').value = empresa.nombre_formal || '';
     document.getElementById('empresa-sigla-input').value = empresa.sigla || '';
     document.getElementById('empresa-preview').innerHTML = empresa.sigla
       ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@novadgt.com</b>`
       : 'Definí la sigla para previsualizar los correos de cada bandeja.';
   }
 
-  function guardarEmpresa() {
+  async function guardarEmpresa() {
     if (!ES_ADMIN) return;
     const nombreFormal = document.getElementById('empresa-nombre-input').value.trim();
     const sigla = document.getElementById('empresa-sigla-input').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     if (!nombreFormal || !sigla) return;
-    saveEmpresa({ nombreFormal, sigla });
+    const { data, error } = await supabaseClient.from('empresas').update({ nombre_formal: nombreFormal, sigla }).eq('id', EMPRESA_ID).select().single();
+    if (error) { alert('No se pudo guardar la empresa: ' + error.message); return; }
+    window.__empresaActual = data;
+    EMPRESA_SIGLA = data.sigla;
     renderEmpresa();
     renderBandejas();
   }
@@ -1293,14 +1302,12 @@
     renderBandejasListado();
   }
 
-  // Número de orden visual (01, 02, 03...) para que sea fácil decir "transferilo a la bandeja 06".
-  // Se recalcula siempre por posición en el array, así nunca quedan huecos al eliminar una bandeja.
   function ordenVisual(index) {
     return String(index + 1).padStart(2, '0');
   }
 
   function renderBandejasListado() {
-    const bandejas = getBandejas();
+    const bandejas = _bandejasCache;
     const listado = document.getElementById('bandejas-listado');
     if (!bandejas.length) {
       listado.innerHTML = '<div class="empty-msg">Todavía no creaste ninguna bandeja.</div>';
@@ -1311,7 +1318,7 @@
       return `
       <div class="bandeja-list-row">
         <span class="bandeja-orden">${ordenVisual(i)}</span>
-        <button class="bandeja-nombre-link" onclick="abrirDetalleBandeja('${b.key}')">${b.nombre}</button>
+        <button class="bandeja-nombre-link" onclick="abrirDetalleBandeja('${b.id}')">${b.nombre}</button>
         ${nSub ? `<span class="subbandeja-count-pill">${nSub} sub-bandeja${nSub > 1 ? 's' : ''}</span>` : ''}
         <span class="correo">${correoDeBandeja(b.key)}</span>
       </div>
@@ -1320,7 +1327,7 @@
   }
 
   function renderUsuariosListado() {
-    const usuarios = getUsuarios();
+    const usuarios = _usuariosCache;
     const listado = document.getElementById('usuarios-listado');
     if (!usuarios.length) {
       listado.innerHTML = '<div class="empty-msg">Todavía no creaste ningún usuario.</div>';
@@ -1328,16 +1335,16 @@
     }
     listado.innerHTML = usuarios.map(u => `
       <div class="bandeja-list-row">
-        <span class="avatar" style="background:${u.gradient}">${u.initials}</span>
-        <button class="bandeja-nombre-link" onclick="abrirDetalleUsuario('${u.key}')">${u.nombre} ${u.apellido}</button>
+        <span class="avatar" style="background:${u.gradiente}">${u.iniciales}</span>
+        <button class="bandeja-nombre-link" onclick="abrirDetalleUsuario('${u.id}')">${u.nombre} ${u.apellido}</button>
         <span class="pill">${u.rol}</span>
         <span class="correo">${u.email}</span>
       </div>
     `).join('');
   }
 
-  function renderBandejasChecklist(containerId, marcadas, onToggle) {
-    const bandejas = getBandejas();
+  function renderBandejasChecklist(containerId, marcadasIds, onToggle) {
+    const bandejas = _bandejasCache;
     const container = document.getElementById(containerId);
     if (!bandejas.length) {
       container.innerHTML = '<div class="empty-msg">Todavía no hay bandejas creadas.</div>';
@@ -1345,8 +1352,8 @@
     }
     container.innerHTML = bandejas.map(b => `
       <label class="bandeja-check-row">
-        <input type="checkbox" value="${b.key}" ${marcadas.includes(b.key) ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'}
-          onchange="${onToggle}('${b.key}', this.checked)">
+        <input type="checkbox" value="${b.id}" ${marcadasIds.includes(b.id) ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'}
+          onchange="${onToggle}('${b.id}', this.checked)">
         ${b.nombre}
       </label>
     `).join('');
@@ -1367,7 +1374,7 @@
     document.getElementById('modal-usuario-backdrop').classList.remove('open');
   }
 
-  function confirmarCrearUsuario() {
+  async function confirmarCrearUsuario() {
     if (!ES_ADMIN) return;
     const nombre = document.getElementById('modal-usuario-nombre').value.trim();
     const apellido = document.getElementById('modal-usuario-apellido').value.trim();
@@ -1375,55 +1382,40 @@
     const rol = document.getElementById('modal-usuario-rol').value;
     if (!nombre || !apellido || !email) return;
 
-    const usuarios = getUsuarios();
-    let key = 'user_' + slugify(nombre + apellido).slice(0, 8);
-    let i = 1;
-    while (usuarios.some(u => u.key === key)) key = `user_${slugify(nombre + apellido).slice(0,8)}${i++}`;
-    usuarios.push({
-      key,
-      nombre,
-      apellido,
-      email,
-      rol,
-      initials: (nombre[0] + (apellido[0] || '')).toUpperCase(),
-      gradient: GRADIENTES[usuarios.length % GRADIENTES.length],
-    });
-    saveUsuarios(usuarios);
+    const iniciales = (nombre[0] + (apellido[0] || '')).toUpperCase();
+    const gradiente = GRADIENTES[_usuariosCache.length % GRADIENTES.length];
+    const { data: nuevo, error } = await supabaseClient.from('profiles').insert({ empresa_id: EMPRESA_ID, nombre, apellido, email, rol, iniciales, gradiente }).select().single();
+    if (error) { alert('No se pudo crear el usuario: ' + error.message); return; }
+    _usuariosCache.push(nuevo);
 
     const bandejasMarcadas = Array.from(document.querySelectorAll('#modal-usuario-bandejas-checks input:checked')).map(c => c.value);
-    if (bandejasMarcadas.length) {
-      const permisos = getPermisos();
-      bandejasMarcadas.forEach(bKey => {
-        if (!permisos[bKey]) permisos[bKey] = {};
-        permisos[bKey][key] = { acceso: true, verOtros: false };
-      });
-      savePermisos(permisos);
-    }
+    for (const bId of bandejasMarcadas) { await guardarPermiso(bId, nuevo.id, { acceso: true, ver_otros: false }); }
 
     cerrarModalUsuario();
     renderUsuariosListado();
   }
 
-  function eliminarUsuario(key) {
+  async function eliminarUsuario(id) {
     if (!ES_ADMIN) return;
-    saveUsuarios(getUsuarios().filter(u => u.key !== key));
-    const permisos = getPermisos();
-    Object.keys(permisos).forEach(b => delete permisos[b][key]);
-    savePermisos(permisos);
+    await supabaseClient.from('profiles').delete().eq('id', id);
+    _usuariosCache = _usuariosCache.filter(u => u.id !== id);
+    const relacionados = _permisosCache.filter(p => p.user_id === id);
+    for (const p of relacionados) { await supabaseClient.from('centralweb_permisos').delete().eq('id', p.id); }
+    _permisosCache = _permisosCache.filter(p => p.user_id !== id);
     renderUsuariosListado();
   }
 
   // ── Detalle de usuario ──
-  let detalleUsuarioActualKey = null;
+  let detalleUsuarioActualId = null;
 
-  function abrirDetalleUsuario(key) {
-    detalleUsuarioActualKey = key;
+  function abrirDetalleUsuario(id) {
+    detalleUsuarioActualId = id;
     renderDetalleUsuario();
     document.getElementById('modal-detalle-usuario-backdrop').classList.add('open');
   }
 
   function renderDetalleUsuario() {
-    const u = getUsuarios().find(x => x.key === detalleUsuarioActualKey);
+    const u = _usuariosCache.find(x => x.id === detalleUsuarioActualId);
     if (!u) return;
     document.getElementById('detalle-usuario-nombre').textContent = `${u.nombre} ${u.apellido}`;
     document.getElementById('detalle-usuario-email').textContent = u.email;
@@ -1434,15 +1426,11 @@
     document.getElementById('detalle-usuario-input-nombre').disabled = !ES_ADMIN;
     document.getElementById('detalle-usuario-input-apellido').disabled = !ES_ADMIN;
     document.getElementById('detalle-usuario-input-rol').disabled = !ES_ADMIN;
-    document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && u.key !== 'user_ng') ? '' : 'none';
+    document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && u.id !== CURRENT_USER.id) ? '' : 'none';
     document.getElementById('detalle-usuario-guardar-btn').style.display = 'none';
 
-    const permisos = getPermisos();
-    const bandejasConAcceso = Object.keys(permisos).filter(bKey => permisos[bKey][u.key]?.acceso);
+    const bandejasConAcceso = _permisosCache.filter(p => p.user_id === u.id && p.acceso).map(p => p.bandeja_id);
     renderBandejasChecklist('detalle-usuario-bandejas-checks', bandejasConAcceso, 'toggleAccesoUsuarioDetalle');
-    const firmaEl = document.getElementById('detalle-usuario-firma');
-    if (firmaEl) { firmaEl.innerHTML = u.firma || ''; firmaEl.contentEditable = ES_ADMIN ? 'true' : 'false'; }
-    _rteSetAttachments('toolbar_firma_usuario', u.firmaAdjuntos || []);
   }
 
   function marcarCambiosUsuario() {
@@ -1450,36 +1438,32 @@
     document.getElementById('detalle-usuario-guardar-btn').style.display = '';
   }
 
-  function toggleAccesoUsuarioDetalle(bandejaKey, checked) {
+  function toggleAccesoUsuarioDetalle(bandejaId, checked) {
     if (!ES_ADMIN) return;
     marcarCambiosUsuario();
   }
 
-  function guardarDatosUsuario() {
+  async function guardarDatosUsuario() {
     if (!ES_ADMIN) return;
-    const usuarios = getUsuarios();
-    const u = usuarios.find(x => x.key === detalleUsuarioActualKey);
+    const u = _usuariosCache.find(x => x.id === detalleUsuarioActualId);
     if (!u) return;
     const nombre = document.getElementById('detalle-usuario-input-nombre').value.trim();
     const apellido = document.getElementById('detalle-usuario-input-apellido').value.trim();
     if (!nombre || !apellido) { renderDetalleUsuario(); return; }
-    u.nombre = nombre;
-    u.apellido = apellido;
-    u.rol = document.getElementById('detalle-usuario-input-rol').value;
-    u.initials = (u.nombre[0] + (u.apellido[0] || '')).toUpperCase();
-    u.firma = document.getElementById('detalle-usuario-firma')?.innerHTML || '';
-    u.firmaAdjuntos = _rteGetAttachments('toolbar_firma_usuario');
-    saveUsuarios(usuarios);
+    const rol = document.getElementById('detalle-usuario-input-rol').value;
+    const iniciales = (nombre[0] + (apellido[0] || '')).toUpperCase();
 
-    const permisos = getPermisos();
-    document.querySelectorAll('#detalle-usuario-bandejas-checks input[type=checkbox]').forEach(c => {
-      const bandejaKey = c.value;
-      if (!permisos[bandejaKey]) permisos[bandejaKey] = {};
-      if (!permisos[bandejaKey][u.key]) permisos[bandejaKey][u.key] = { acceso: false, verOtros: false };
-      permisos[bandejaKey][u.key].acceso = c.checked;
-      if (!c.checked) permisos[bandejaKey][u.key].verOtros = false;
-    });
-    savePermisos(permisos);
+    const { error } = await supabaseClient.from('profiles').update({ nombre, apellido, rol, iniciales }).eq('id', u.id);
+    if (error) { alert('No se pudo guardar: ' + error.message); return; }
+    Object.assign(u, { nombre, apellido, rol, iniciales });
+
+    const checks = document.querySelectorAll('#detalle-usuario-bandejas-checks input[type=checkbox]');
+    for (const c of checks) {
+      const bandejaId = c.value;
+      const campos = c.checked ? { acceso: true } : { acceso: false, ver_otros: false };
+      await guardarPermiso(bandejaId, u.id, campos);
+    }
+
     renderDetalleUsuario();
     renderUsuariosListado();
     const btn = document.getElementById('detalle-usuario-guardar-btn');
@@ -1491,21 +1475,21 @@
 
   function cerrarDetalleUsuario() {
     document.getElementById('modal-detalle-usuario-backdrop').classList.remove('open');
-    detalleUsuarioActualKey = null;
+    detalleUsuarioActualId = null;
   }
 
   function confirmarEliminarUsuario() {
     if (!ES_ADMIN) return;
-    const u = getUsuarios().find(x => x.key === detalleUsuarioActualKey);
+    const u = _usuariosCache.find(x => x.id === detalleUsuarioActualId);
     if (!u) return;
-    abrirModalConfirmar(`¿Eliminar a "${u.nombre} ${u.apellido}"? Esta acción no se puede deshacer.`, () => {
-      eliminarUsuario(detalleUsuarioActualKey);
+    abrirModalConfirmar(`¿Eliminar a "${u.nombre} ${u.apellido}"? Esta acción no se puede deshacer.`, async () => {
+      await eliminarUsuario(detalleUsuarioActualId);
       cerrarDetalleUsuario();
     });
   }
 
   function renderUsuariosChecklist(containerId) {
-    const usuarios = getUsuarios();
+    const usuarios = _usuariosCache;
     const container = document.getElementById(containerId);
     if (!usuarios.length) {
       container.innerHTML = '<div class="empty-msg">Todavía no hay usuarios creados.</div>';
@@ -1513,7 +1497,7 @@
     }
     container.innerHTML = usuarios.map(u => `
       <label class="bandeja-check-row">
-        <input type="checkbox" value="${u.key}" ${ES_ADMIN ? '' : 'disabled'}>
+        <input type="checkbox" value="${u.id}" ${ES_ADMIN ? '' : 'disabled'}>
         ${u.nombre} ${u.apellido}
       </label>
     `).join('');
@@ -1528,7 +1512,7 @@
     const preview = document.getElementById('modal-bandeja-correo-preview');
     if (!nombre) { preview.innerHTML = ''; _aliasManualBandeja = null; return; }
     const alias = _aliasManualBandeja || slugify(nombre);
-    const yaExiste = getBandejas().some(b => b.key === alias);
+    const yaExiste = _bandejasCache.some(b => b.key === alias);
     preview.innerHTML = `El correo va a quedar como:
       <span id="modal-bandeja-correo-valor" class="correo-editable" title="Click para editar el alias del correo" onclick="_editarAliasBandejaModal()">
         <b>${correoDeBandeja(alias)}</b>${_pencilIconSvg}
@@ -1540,10 +1524,9 @@
     if (!ES_ADMIN) return;
     const nombre = document.getElementById('modal-bandeja-nombre').value.trim();
     const alias = _aliasManualBandeja || slugify(nombre);
-    const sigla = getEmpresa().sigla || '';
     const preview = document.getElementById('modal-bandeja-correo-preview');
     preview.innerHTML = `El correo va a quedar como:
-      <input type="text" id="modal-bandeja-alias-input" value="${alias}">.${sigla}@novadgt.com`;
+      <input type="text" id="modal-bandeja-alias-input" value="${alias}">.${EMPRESA_SIGLA}@novadgt.com`;
     const input = document.getElementById('modal-bandeja-alias-input');
     input.focus();
     input.select();
@@ -1569,49 +1552,49 @@
     document.getElementById('modal-bandeja-backdrop').classList.remove('open');
   }
 
-  function confirmarCrearBandeja() {
+  async function confirmarCrearBandeja() {
     if (!ES_ADMIN) return;
     const input = document.getElementById('modal-bandeja-nombre');
     const nombre = input.value.trim();
     if (!nombre) return;
     const mensajeBienvenida = document.getElementById('modal-bandeja-mensaje').innerHTML;
-    const bandejas = getBandejas();
     const key = _aliasManualBandeja || slugify(nombre);
-    if (bandejas.some(b => b.key === key)) {
+    if (_bandejasCache.some(b => b.key === key)) {
       alert(`Ya existe una bandeja con el correo "${correoDeBandeja(key)}". Cambiá el alias antes de crearla (click sobre el correo de la vista previa).`);
       return;
     }
-    bandejas.push({ key, nombre, mensajeBienvenida, archivosAdjuntos: _rteGetAttachments('toolbar_crear_bandeja') });
-    saveBandejas(bandejas);
+    const archivosAdjuntos = await _rteGetAttachments('toolbar_crear_bandeja', 'bandejas');
+    const { data: nueva, error } = await supabaseClient.from('centralweb_bandejas').insert({ empresa_id: EMPRESA_ID, key, nombre, mensaje_bienvenida: mensajeBienvenida, archivos_adjuntos: archivosAdjuntos, parent_id: null }).select().single();
+    if (error) { alert('No se pudo crear la bandeja: ' + error.message); return; }
+    nueva.subbandejas = [];
+    _bandejasCache.push(nueva);
 
     const usuariosMarcados = Array.from(document.querySelectorAll('#modal-bandeja-usuarios-checks input:checked')).map(c => c.value);
-    if (usuariosMarcados.length) {
-      const permisos = getPermisos();
-      permisos[key] = {};
-      usuariosMarcados.forEach(uKey => {
-        permisos[key][uKey] = { acceso: true, verOtros: false };
-      });
-      savePermisos(permisos);
-    }
+    for (const uId of usuariosMarcados) { await guardarPermiso(nueva.id, uId, { acceso: true, ver_otros: false }); }
 
     cerrarModalBandeja();
     renderBandejas();
   }
 
-  function eliminarBandeja(key) {
+  async function eliminarBandeja(id) {
     if (!ES_ADMIN) return;
-    saveBandejas(getBandejas().filter(b => b.key !== key));
-    const permisos = getPermisos();
-    delete permisos[key];
-    savePermisos(permisos);
+    const b = _bandejasCache.find(x => x.id === id);
+    const subIds = (b?.subbandejas || []).map(s => s.id);
+    for (const sid of subIds) { await supabaseClient.from('centralweb_bandejas').delete().eq('id', sid); }
+    await supabaseClient.from('centralweb_bandejas').delete().eq('id', id);
+    const relacionados = _permisosCache.filter(p => p.bandeja_id === id || subIds.includes(p.bandeja_id));
+    for (const p of relacionados) { await supabaseClient.from('centralweb_permisos').delete().eq('id', p.id); }
+    _permisosCache = _permisosCache.filter(p => p.bandeja_id !== id && !subIds.includes(p.bandeja_id));
+    _bandejasCache = _bandejasCache.filter(x => x.id !== id);
     renderBandejas();
   }
 
   // ── Detalle de bandeja ──
-  let detalleActualKey = null;
+  let detalleActualId = null;
 
-  function abrirDetalleBandeja(key) {
-    detalleActualKey = key;
+  function abrirDetalleBandeja(id) {
+    detalleActualId = id;
+    _permisosPendientes = null;
     renderDetalleBandeja();
     document.getElementById('modal-detalle-backdrop').classList.add('open');
   }
@@ -1619,18 +1602,17 @@
   function cerrarDetalleBandeja() {
     document.getElementById('modal-detalle-backdrop').classList.remove('open');
     document.getElementById('detalle-subbandejas-form').style.display = 'none';
-    detalleActualKey = null;
+    detalleActualId = null;
     _permisosPendientes = null;
   }
 
   function bandejaActual() {
-    return getBandejas().find(b => b.key === detalleActualKey);
+    return _bandejasCache.find(b => b.id === detalleActualId);
   }
 
   function renderDetalleBandeja() {
-    const bandejas = getBandejas();
-    const index = bandejas.findIndex(x => x.key === detalleActualKey);
-    const b = bandejas[index];
+    const index = _bandejasCache.findIndex(x => x.id === detalleActualId);
+    const b = _bandejasCache[index];
     if (!b) return;
     document.getElementById('detalle-bandeja-nombre').textContent = `${ordenVisual(index)} ${b.nombre}`;
     document.getElementById('detalle-bandeja-correo').textContent = correoDeBandeja(b.key);
@@ -1638,13 +1620,12 @@
     document.getElementById('detalle-bandeja-input-nombre').value = b.nombre;
     document.getElementById('detalle-bandeja-input-nombre').disabled = !ES_ADMIN;
     document.getElementById('detalle-bandeja-guardar-btn').style.display = 'none';
-    document.getElementById('detalle-mensaje-bienvenida').innerHTML = b.mensajeBienvenida || '';
+    document.getElementById('detalle-mensaje-bienvenida').innerHTML = b.mensaje_bienvenida || '';
     document.getElementById('detalle-mensaje-bienvenida').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
-    _rteSetAttachments('toolbar_detalle_bienvenida', b.archivosAdjuntos || []);
+    _rteSetAttachments('toolbar_detalle_bienvenida', b.archivos_adjuntos || []);
     document.getElementById('detalle-mensaje-guardar-btn').style.display = ES_ADMIN ? '' : 'none';
     document.getElementById('detalle-subbandeja-crear-btn').style.display = ES_ADMIN ? '' : 'none';
     document.getElementById('detalle-bandeja-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
-    _permisosPendientes = JSON.parse(JSON.stringify(getPermisos()));
     renderDetallePermisos();
     renderSubbandejasListado();
   }
@@ -1654,15 +1635,22 @@
     document.getElementById('detalle-bandeja-guardar-btn').style.display = '';
   }
 
-  function guardarCambiosBandeja() {
+  async function guardarCambiosBandeja() {
     if (!ES_ADMIN) return;
-    const bandejas = getBandejas();
-    const b = bandejas.find(x => x.key === detalleActualKey);
+    const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
     const nombre = document.getElementById('detalle-bandeja-input-nombre').value.trim();
-    if (nombre) b.nombre = nombre; // la key (y por lo tanto el correo) nunca cambia
-    saveBandejas(bandejas);
-    if (_permisosPendientes) savePermisos(_permisosPendientes);
+    if (nombre) {
+      const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre }).eq('id', b.id);
+      if (!error) b.nombre = nombre;
+    }
+    if (_permisosPendientes) {
+      for (const uId of Object.keys(_permisosPendientes)) {
+        const p = _permisosPendientes[uId];
+        await guardarPermiso(detalleActualId, uId, { acceso: p.acceso, ver_otros: p.verOtros });
+      }
+      _permisosPendientes = null;
+    }
     renderDetalleBandeja();
     renderBandejasListado();
     const btn = document.getElementById('detalle-bandeja-guardar-btn');
@@ -1672,20 +1660,24 @@
     btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar cambios'; btn.style.display = 'none'; }, 1200);
   }
 
-  function guardarMensajeBienvenida() {
+  async function guardarMensajeBienvenida() {
     if (!ES_ADMIN) return;
-    const bandejas = getBandejas();
-    const b = bandejas.find(x => x.key === detalleActualKey);
+    const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
-    b.mensajeBienvenida = document.getElementById('detalle-mensaje-bienvenida').innerHTML;
-    b.archivosAdjuntos = _rteGetAttachments('toolbar_detalle_bienvenida');
-    saveBandejas(bandejas);
     const btn = document.getElementById('detalle-mensaje-guardar-btn');
+    btn.disabled = true;
+    const mensajeBienvenida = document.getElementById('detalle-mensaje-bienvenida').innerHTML;
+    const archivosAdjuntos = await _rteGetAttachments('toolbar_detalle_bienvenida', 'bandejas');
+    const { error } = await supabaseClient.from('centralweb_bandejas').update({ mensaje_bienvenida: mensajeBienvenida, archivos_adjuntos: archivosAdjuntos }).eq('id', b.id);
+    if (!error) {
+      b.mensaje_bienvenida = mensajeBienvenida;
+      b.archivos_adjuntos = archivosAdjuntos;
+      _rteSetAttachments('toolbar_detalle_bienvenida', archivosAdjuntos);
+    }
     document.getElementById('detalle-mensaje-bienvenida').blur();
     window.getSelection()?.removeAllRanges();
     btn.focus();
     btn.textContent = '✓ Guardado';
-    btn.disabled = true;
     clearTimeout(btn._restoreTimeout);
     btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar mensaje'; btn.disabled = false; }, 1500);
   }
@@ -1693,34 +1685,35 @@
   let _permisosPendientes = null;
 
   function renderDetallePermisos() {
-    const usuarios = getUsuarios();
-    const permisos = _permisosPendientes || getPermisos();
-    const permB = permisos[detalleActualKey] || {};
+    const usuarios = _usuariosCache;
     const tabla = document.getElementById('detalle-permisos-tabla');
 
     if (!usuarios.length) {
       tabla.innerHTML = '<div class="empty-msg">Todavía no hay usuarios creados.</div>';
       return;
     }
+    if (!_permisosPendientes) _permisosPendientes = {};
 
     tabla.innerHTML = `
       <table class="admin-table">
         <thead><tr><th>Usuario</th><th>Acceso</th><th>Ver casos de otros agentes</th></tr></thead>
         <tbody>
           ${usuarios.map(u => {
-            const p = permB[u.key] || { acceso: false, verOtros: false };
+            const pend = _permisosPendientes[u.id];
+            const real = permisoDe(detalleActualId, u.id);
+            const p = pend || { acceso: real.acceso, verOtros: real.ver_otros };
             return `
               <tr>
-                <td><span class="avatar" style="background:${u.gradient}">${u.initials}</span>${u.nombre} ${u.apellido}</td>
+                <td><span class="avatar" style="background:${u.gradiente}">${u.iniciales}</span>${u.nombre} ${u.apellido}</td>
                 <td>
                   <label class="toggle">
-                    <input type="checkbox" ${p.acceso ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.key}','acceso', this.checked)">
+                    <input type="checkbox" ${p.acceso ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.id}','acceso', this.checked)">
                     <span class="slider"></span>
                   </label>
                 </td>
                 <td>
                   <label class="toggle">
-                    <input type="checkbox" ${p.verOtros ? 'checked' : ''} ${(p.acceso && ES_ADMIN) ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.key}','verOtros', this.checked)">
+                    <input type="checkbox" ${p.verOtros ? 'checked' : ''} ${(p.acceso && ES_ADMIN) ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.id}','verOtros', this.checked)">
                     <span class="slider"></span>
                   </label>
                 </td>
@@ -1732,13 +1725,13 @@
     `;
   }
 
-  function togglePermisoDetalle(userKey, campo, checked) {
+  function togglePermisoDetalle(userId, campo, checked) {
     if (!ES_ADMIN) return;
-    const permisos = _permisosPendientes;
-    if (!permisos[detalleActualKey]) permisos[detalleActualKey] = {};
-    if (!permisos[detalleActualKey][userKey]) permisos[detalleActualKey][userKey] = { acceso: false, verOtros: false };
-    permisos[detalleActualKey][userKey][campo] = checked;
-    if (campo === 'acceso' && !checked) permisos[detalleActualKey][userKey].verOtros = false;
+    if (!_permisosPendientes) _permisosPendientes = {};
+    const real = permisoDe(detalleActualId, userId);
+    if (!_permisosPendientes[userId]) _permisosPendientes[userId] = { acceso: real.acceso, verOtros: real.ver_otros };
+    _permisosPendientes[userId][campo] = checked;
+    if (campo === 'acceso' && !checked) _permisosPendientes[userId].verOtros = false;
     marcarCambiosBandeja();
     if (campo === 'acceso') renderDetallePermisos();
   }
@@ -1748,41 +1741,43 @@
     document.getElementById('detalle-subbandejas-form').style.display = 'block';
   }
 
-  function confirmarCrearSubbandeja() {
+  async function confirmarCrearSubbandeja() {
     if (!ES_ADMIN) return;
     const input = document.getElementById('input-subbandeja-nombre');
     const nombre = input.value.trim();
     if (!nombre) return;
-    const bandejas = getBandejas();
-    const b = bandejas.find(x => x.key === detalleActualKey);
+    const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
     if (!b.subbandejas) b.subbandejas = [];
     let key = slugify(nombre);
     let i = 1;
     while (b.subbandejas.some(s => s.key === key)) key = `${slugify(nombre)}_${i++}`;
-    b.subbandejas.push({ key, nombre });
-    saveBandejas(bandejas);
+    const { data: nueva, error } = await supabaseClient.from('centralweb_bandejas').insert({ empresa_id: EMPRESA_ID, key, nombre, parent_id: b.id }).select().single();
+    if (error) { alert('No se pudo crear la sub-bandeja: ' + error.message); return; }
+    b.subbandejas.push(nueva);
     document.getElementById('detalle-subbandejas-form').style.display = 'none';
     renderSubbandejasListado();
   }
 
-  function confirmarEliminarSubbandeja(subKey) {
+  function confirmarEliminarSubbandeja(subId) {
     if (!ES_ADMIN) return;
     const b = bandejaActual();
-    const sub = b?.subbandejas?.find(s => s.key === subKey);
+    const sub = b?.subbandejas?.find(s => s.id === subId);
     if (!sub) return;
     abrirModalConfirmar(`¿Eliminar la sub-bandeja "${sub.nombre}"? Esta acción no se puede deshacer.`, () => {
-      eliminarSubbandeja(subKey);
+      eliminarSubbandeja(subId);
     });
   }
 
-  function eliminarSubbandeja(subKey) {
+  async function eliminarSubbandeja(subId) {
     if (!ES_ADMIN) return;
-    const bandejas = getBandejas();
-    const b = bandejas.find(x => x.key === detalleActualKey);
+    const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
-    b.subbandejas = (b.subbandejas || []).filter(s => s.key !== subKey);
-    saveBandejas(bandejas);
+    await supabaseClient.from('centralweb_bandejas').delete().eq('id', subId);
+    const relacionados = _permisosCache.filter(p => p.bandeja_id === subId);
+    for (const p of relacionados) { await supabaseClient.from('centralweb_permisos').delete().eq('id', p.id); }
+    _permisosCache = _permisosCache.filter(p => p.bandeja_id !== subId);
+    b.subbandejas = (b.subbandejas || []).filter(s => s.id !== subId);
     renderSubbandejasListado();
   }
 
@@ -1800,7 +1795,7 @@
         <span class="sub-tag">Sub-bandeja</span>
         <span class="nombre">${s.nombre}</span>
         <span class="correo">${correoDeBandeja(b.key)}</span>
-        ${ES_ADMIN ? `<button class="remove-btn" onclick="confirmarEliminarSubbandeja('${s.key}')">Eliminar</button>` : ''}
+        ${ES_ADMIN ? `<button class="remove-btn" onclick="confirmarEliminarSubbandeja('${s.id}')">Eliminar</button>` : ''}
       </div>
     `).join('');
   }
@@ -1809,8 +1804,8 @@
     if (!ES_ADMIN) return;
     const b = bandejaActual();
     if (!b) return;
-    abrirModalConfirmar(`¿Eliminar la bandeja "${b.nombre}"? Se va a borrar junto con sus sub-bandejas y permisos. Esta acción no se puede deshacer.`, () => {
-      eliminarBandeja(detalleActualKey);
+    abrirModalConfirmar(`¿Eliminar la bandeja "${b.nombre}"? Se va a borrar junto con sus sub-bandejas y permisos. Esta acción no se puede deshacer.`, async () => {
+      await eliminarBandeja(detalleActualId);
       cerrarDetalleBandeja();
     });
   }
@@ -1832,7 +1827,7 @@
 
   // ── Respuestas automáticas ──
   function renderRespuestasListado() {
-    const respuestas = getRespuestas();
+    const respuestas = _respuestasCache;
     const listado = document.getElementById('respuestas-listado');
     if (!respuestas.length) {
       listado.innerHTML = '<div class="empty-msg">Todavía no creaste ninguna respuesta automática.</div>';
@@ -1841,7 +1836,7 @@
     listado.innerHTML = respuestas.map(r => `
       <div class="bandeja-list-row">
         <span class="bandeja-orden">@${r.codigo}</span>
-        <button class="bandeja-nombre-link" onclick="abrirDetalleRespuesta('${r.codigo}')">${r.nombre}</button>
+        <button class="bandeja-nombre-link" onclick="abrirDetalleRespuesta('${r.id}')">${r.nombre}</button>
       </div>
     `).join('');
   }
@@ -1850,7 +1845,6 @@
     document.getElementById('modal-respuesta-codigo').value = '';
     document.getElementById('modal-respuesta-nombre').value = '';
     document.getElementById('modal-respuesta-texto').innerHTML = '';
-    _rteSetAttachments('toolbar_crear_respuesta', []);
     document.getElementById('modal-respuesta-backdrop').classList.add('open');
   }
 
@@ -1858,40 +1852,39 @@
     document.getElementById('modal-respuesta-backdrop').classList.remove('open');
   }
 
-  function confirmarCrearRespuesta() {
+  async function confirmarCrearRespuesta() {
     if (!ES_ADMIN) return;
     const codigo = document.getElementById('modal-respuesta-codigo').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     const nombre = document.getElementById('modal-respuesta-nombre').value.trim();
     const texto = document.getElementById('modal-respuesta-texto').innerHTML;
     if (!codigo || !nombre) return;
-    const respuestas = getRespuestas();
-    if (respuestas.some(r => r.codigo === codigo)) {
+    if (_respuestasCache.some(r => r.codigo === codigo)) {
       alert(`Ya existe una respuesta con el código "@${codigo}".`);
       return;
     }
-    respuestas.push({ codigo, nombre, texto, archivosAdjuntos: _rteGetAttachments('toolbar_crear_respuesta') });
-    saveRespuestas(respuestas);
+    const { data: nueva, error } = await supabaseClient.from('centralweb_respuestas_automaticas').insert({ empresa_id: EMPRESA_ID, codigo, nombre, texto }).select().single();
+    if (error) { alert('No se pudo crear: ' + error.message); return; }
+    _respuestasCache.push(nueva);
     cerrarModalRespuesta();
     renderRespuestasListado();
   }
 
-  let detalleRespuestaActualCodigo = null;
+  let detalleRespuestaActualId = null;
 
-  function abrirDetalleRespuesta(codigo) {
-    detalleRespuestaActualCodigo = codigo;
+  function abrirDetalleRespuesta(id) {
+    detalleRespuestaActualId = id;
     renderDetalleRespuesta();
     document.getElementById('modal-detalle-respuesta-backdrop').classList.add('open');
   }
 
   function renderDetalleRespuesta() {
-    const r = getRespuestas().find(x => x.codigo === detalleRespuestaActualCodigo);
+    const r = _respuestasCache.find(x => x.id === detalleRespuestaActualId);
     if (!r) return;
     document.getElementById('detalle-respuesta-nombre').textContent = r.nombre;
     document.getElementById('detalle-respuesta-codigo').textContent = `@${r.codigo}`;
     document.getElementById('detalle-respuesta-input-codigo').value = r.codigo;
     document.getElementById('detalle-respuesta-input-nombre').value = r.nombre;
     document.getElementById('detalle-respuesta-input-texto').innerHTML = r.texto;
-    _rteSetAttachments('toolbar_detalle_respuesta', r.archivosAdjuntos || []);
     document.getElementById('detalle-respuesta-input-codigo').disabled = !ES_ADMIN;
     document.getElementById('detalle-respuesta-input-nombre').disabled = !ES_ADMIN;
     document.getElementById('detalle-respuesta-input-texto').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
@@ -1904,25 +1897,25 @@
     document.getElementById('detalle-respuesta-guardar-btn').style.display = '';
   }
 
-  function guardarDatosRespuesta() {
+  async function guardarDatosRespuesta() {
     if (!ES_ADMIN) return;
-    const respuestas = getRespuestas();
-    const r = respuestas.find(x => x.codigo === detalleRespuestaActualCodigo);
+    const r = _respuestasCache.find(x => x.id === detalleRespuestaActualId);
     if (!r) return;
     const nuevoCodigo = document.getElementById('detalle-respuesta-input-codigo').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     const nombre = document.getElementById('detalle-respuesta-input-nombre').value.trim();
     if (!nuevoCodigo || !nombre) { renderDetalleRespuesta(); return; }
-    if (nuevoCodigo !== r.codigo && respuestas.some(x => x.codigo === nuevoCodigo)) {
+    if (nuevoCodigo !== r.codigo && _respuestasCache.some(x => x.codigo === nuevoCodigo)) {
       alert(`Ya existe una respuesta con el código "@${nuevoCodigo}".`);
       renderDetalleRespuesta();
       return;
     }
+    const texto = document.getElementById('detalle-respuesta-input-texto').innerHTML;
+    const { error } = await supabaseClient.from('centralweb_respuestas_automaticas').update({ codigo: nuevoCodigo, nombre, texto }).eq('id', r.id);
+    if (error) { alert('No se pudo guardar: ' + error.message); return; }
     r.codigo = nuevoCodigo;
     r.nombre = nombre;
-    r.texto = document.getElementById('detalle-respuesta-input-texto').innerHTML;
-    r.archivosAdjuntos = _rteGetAttachments('toolbar_detalle_respuesta');
-    saveRespuestas(respuestas);
-    detalleRespuestaActualCodigo = nuevoCodigo;
+    r.texto = texto;
+    detalleRespuestaActualId = r.id;
     renderDetalleRespuesta();
     renderRespuestasListado();
     const btn = document.getElementById('detalle-respuesta-guardar-btn');
@@ -1937,23 +1930,22 @@
 
   function cerrarDetalleRespuesta() {
     document.getElementById('modal-detalle-respuesta-backdrop').classList.remove('open');
-    detalleRespuestaActualCodigo = null;
+    detalleRespuestaActualId = null;
   }
 
   function confirmarEliminarRespuesta() {
     if (!ES_ADMIN) return;
-    const r = getRespuestas().find(x => x.codigo === detalleRespuestaActualCodigo);
+    const r = _respuestasCache.find(x => x.id === detalleRespuestaActualId);
     if (!r) return;
-    abrirModalConfirmar(`¿Eliminar la respuesta "${r.nombre}" (@${r.codigo})? Esta acción no se puede deshacer.`, () => {
-      saveRespuestas(getRespuestas().filter(x => x.codigo !== detalleRespuestaActualCodigo));
+    abrirModalConfirmar(`¿Eliminar la respuesta "${r.nombre}" (@${r.codigo})? Esta acción no se puede deshacer.`, async () => {
+      await supabaseClient.from('centralweb_respuestas_automaticas').delete().eq('id', r.id);
+      _respuestasCache = _respuestasCache.filter(x => x.id !== r.id);
       cerrarDetalleRespuesta();
       renderRespuestasListado();
     });
   }
 
   function aplicarPermisosUI() {
-    const actual = getUsuarios().find(u => u.key === CURRENT_USER_KEY);
-    ES_ADMIN = actual ? actual.rol === 'Administrador' : true;
     if (ES_ADMIN) return;
     document.querySelectorAll('.btn-add').forEach(b => b.style.display = 'none');
     document.getElementById('guardar-empresa-btn').style.display = 'none';
@@ -1961,16 +1953,22 @@
     document.getElementById('empresa-sigla-input').disabled = true;
   }
 
-  seedDefaults();
-  aplicarPermisosUI();
-  renderEmpresa();
-  renderUsuariosListado();
-  renderBandejasListado();
-  renderRespuestasListado();
-  _initRteToolbars();
+  (async function initAdmin() {
+    const ok = await cargarSesion();
+    if (!ok) return;
+    await cargarTodo();
+    document.getElementById('toolbar-firma-usuario')?.closest('.detalle-section')?.remove();
+    aplicarPermisosUI();
+    renderEmpresa();
+    renderUsuariosListado();
+    renderBandejasListado();
+    renderRespuestasListado();
+    _initRteToolbars();
+  })();
 
   // A propósito: clickear afuera de un modal NO lo cierra. Solo se cierra con
   // los botones explícitos (Cancelar/Cerrar/Guardar), para evitar perder cambios por error.
+
 </script>
 
 </body>
