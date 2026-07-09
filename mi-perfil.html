@@ -115,7 +115,7 @@
   .row { display: flex; gap: 10px; }
   .row > div { flex: 1; }
   .field { margin-bottom: 14px; }
-  input[type=text] {
+  input[type=text], input[type=password] {
     width: 100%;
     padding: 9px 11px;
     border: 1px solid var(--border);
@@ -124,7 +124,7 @@
     color: var(--text-primary);
     background: var(--blue-50);
   }
-  input[type=text]:focus { outline: 2px solid var(--blue-300); background: white; }
+  input[type=text]:focus, input[type=password]:focus { outline: 2px solid var(--blue-300); background: white; }
   input[disabled] {
     background: var(--bg);
     color: var(--text-muted);
@@ -342,6 +342,24 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>Cambiar contraseña</h2>
+    <p class="hint" style="margin-bottom:14px">Elegí una contraseña nueva para tu cuenta.</p>
+    <div class="field">
+      <label class="field-label">Nueva contraseña</label>
+      <input type="password" id="input-nueva-pass" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="field">
+      <label class="field-label">Repetir contraseña</label>
+      <input type="password" id="input-nueva-pass2" placeholder="Repetí la contraseña">
+    </div>
+    <div style="display:flex;align-items:center;margin-top:14px">
+      <button class="btn" onclick="cambiarPassword()">Guardar contraseña</button>
+      <span class="save-msg" id="save-pass-msg">Guardada ✓</span>
+      <span class="save-msg" id="error-pass-msg" style="color:#dc2626"></span>
+    </div>
+  </div>
+
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -379,6 +397,38 @@
         const el = document.getElementById(id);
         el.classList.add('show');
         setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+    async function cambiarPassword() {
+    const p1 = document.getElementById('input-nueva-pass').value;
+    const p2 = document.getElementById('input-nueva-pass2').value;
+    const errEl = document.getElementById('error-pass-msg');
+    errEl.classList.remove('show');
+    errEl.textContent = '';
+    if (!p1 || !p2) {
+      errEl.textContent = 'Completá ambos campos.';
+      errEl.classList.add('show');
+      return;
+    }
+    if (p1.length < 6) {
+      errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      errEl.classList.add('show');
+      return;
+    }
+    if (p1 !== p2) {
+      errEl.textContent = 'Las contraseñas no coinciden.';
+      errEl.classList.add('show');
+      return;
+    }
+    const { error } = await supabaseClient.auth.updateUser({ password: p1 });
+    if (error) {
+      errEl.textContent = error.message;
+      errEl.classList.add('show');
+      return;
+    }
+    document.getElementById('input-nueva-pass').value = '';
+    document.getElementById('input-nueva-pass2').value = '';
+    flashSaveMsg('save-pass-msg');
   }
 
   async function toggleBandejasDropdown() {
