@@ -1374,7 +1374,7 @@
     document.getElementById('modal-usuario-backdrop').classList.remove('open');
   }
 
-  async function confirmarCrearUsuario() {
+    async function confirmarCrearUsuario() {
     if (!ES_ADMIN) return;
     const nombre = document.getElementById('modal-usuario-nombre').value.trim();
     const apellido = document.getElementById('modal-usuario-apellido').value.trim();
@@ -1382,20 +1382,34 @@
     const rol = document.getElementById('modal-usuario-rol').value;
     if (!nombre || !apellido || !email) return;
 
-    const iniciales = (nombre[0] + (apellido[0] || '')).toUpperCase();
-    const gradiente = GRADIENTES[_usuariosCache.length % GRADIENTES.length];
-    const { data: nuevo, error } = await supabaseClient.from('profiles').insert({ empresa_id: EMPRESA_ID, nombre, apellido, email, rol, iniciales, gradiente }).select().single();
-    if (error) { alert('No se pudo crear el usuario: ' + error.message); return; }
-    _usuariosCache.push(nuevo);
-
     const bandejasMarcadas = Array.from(document.querySelectorAll('#modal-usuario-bandejas-checks input:checked')).map(c => c.value);
-    for (const bId of bandejasMarcadas) { await guardarPermiso(bId, nuevo.id, { acceso: true, ver_otros: false }); }
+    const btn = document.querySelector('#modal-usuario-backdrop button.btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
 
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    let resultado;
+    try {
+      const respuesta = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ nombre, apellido, email, rol, bandejas: bandejasMarcadas })
+      });
+      resultado = await respuesta.json();
+    } catch (e) {
+      resultado = { ok: false, error: e.message };
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = 'Crear'; }
+    if (!resultado.ok) { alert('No se pudo crear el usuario: ' + resultado.error); return; }
+
+    await cargarTodo();
     cerrarModalUsuario();
     renderUsuariosListado();
+    alert(`Usuario creado. Contraseña temporal: ${resultado.tempPassword}\n\nCompartísela con ${nombre} para que inicie sesión (y después la cambie desde su perfil).`);
   }
 
-  async function eliminarUsuario(id) {
+  
+async function eliminarUsuario(id) {
     if (!ES_ADMIN) return;
     await supabaseClient.from('profiles').delete().eq('id', id);
     _usuariosCache = _usuariosCache.filter(u => u.id !== id);
