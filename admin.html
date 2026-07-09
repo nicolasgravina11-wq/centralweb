@@ -1245,17 +1245,34 @@
     const out = [];
     for (const item of list) {
       if (item.file) {
-        const ext = (item.file.name.split('.').pop() || 'bin').toLowerCase();
-        const path = `${carpeta}/${Date.now()}_${slugify(item.file.name.split('.')[0] || 'archivo')}.${ext}`;
-        const { error } = await supabaseClient.storage.from('adjuntos').upload(path, item.file, { upsert: true });
-        if (error) { console.error('Error subiendo adjunto:', error); continue; }
-        const { data } = supabaseClient.storage.from('adjuntos').getPublicUrl(path);
-        out.push({ name: item.file.name, size: item.file.size, url: data.publicUrl });
+        try {
+          const contenidoBase64 = await _fileToBase64(item.file);
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          const respuesta = await fetch('/api/upload-attachment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ carpeta, nombre: item.file.name, contenidoBase64, tipo: item.file.type })
+          });
+          const resultado = await respuesta.json();
+          if (!resultado.ok) { console.error('Error subiendo adjunto:', resultado.error); continue; }
+          out.push({ name: item.file.name, size: item.file.size, url: resultado.url });
+        } catch (e) {
+          console.error('Error subiendo adjunto:', e.message);
+        }
       } else {
         out.push({ name: item.name, size: item.size, url: item.url });
       }
     }
     return out;
+  }
+
+  function _fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   function _initRteToolbars() {
