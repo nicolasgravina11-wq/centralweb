@@ -24,16 +24,13 @@ const config = {
 // Mailgun manda el correo parseado como multipart/form-data (puede incluir adjuntos).
 function parseMultipart(req) {
   return new Promise((resolve, reject) => {
-    const fields = {};
+    const fields = {}; const files = [];
     const bb = busboy({ headers: req.headers });
     bb.on('field', (name, val) => {
       fields[name] = val;
     });
-    bb.on('file', (_name, file) => {
-      // Por ahora no guardamos adjuntos, solo consumimos el stream para no colgar la request.
-      file.resume();
-    });
-    bb.on('finish', () => resolve(fields));
+    bb.on('file', (_name, file, info) => { const { filename, mimeType } = info || {}; const chunks = []; file.on('data', (chunk) => chunks.push(chunk)); file.on('end', () => { if (filename) files.push({ nombre: filename, tipo: mimeType || 'application/octet-stream', buffer: Buffer.concat(chunks) }); }); });
+    bb.on('finish', () => resolve({ fields, files }));
     bb.on('error', reject);
     req.pipe(bb);
   });
@@ -73,7 +70,7 @@ async function supabaseFetch(path, options = {}) {
   return respuesta.json();
 }
 
-function partirRemitente(remitenteCrudo) {
+async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } function partirRemitente(remitenteCrudo) {
   const conNombre = (remitenteCrudo || '').match(/^(.*?)\s*<(.+)>$/);
   if (conNombre) {
     return { nombre: conNombre[1].trim().replace(/^"|"$/g, ''), email: conNombre[2].trim() };
@@ -93,9 +90,9 @@ module.exports = async (req, res) => {
     return;
   }
 
-  let fields;
+  let fields, files;
   try {
-    fields = await parseMultipart(req);
+    ({ fields, files } = await parseMultipart(req));
   } catch (e) {
     console.error('Error parseando el correo entrante:', e);
     res.status(400).send('Bad request');
@@ -156,7 +153,7 @@ module.exports = async (req, res) => {
     });
     const ticket = `#${numeroTicket}`;
 
-    const { nombre: fromName, email: fromEmail } = partirRemitente(fields.from || fields.sender);
+    const { nombre: fromName, email: fromEmail } = partirRemitente(fields.from || fields.sender); const adjuntos = []; for (const f of files) { try { const path = `${sigla}/${String(numeroTicket)}/${Date.now()}-${f.nombre}`; const url = await subirAdjunto(path, f.buffer, f.tipo); adjuntos.push({ nombre: f.nombre, url, tamano: f.buffer.length }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
 
     const casos = await supabaseFetch('centralweb_casos', {
       method: 'POST',
@@ -169,7 +166,7 @@ module.exports = async (req, res) => {
         asunto,
         from_name: fromName,
         from_email: fromEmail,
-        mensaje_inicial: cuerpo
+        mensaje_inicial: cuerpo, adjuntos
       })
     });
     const caso = casos[0];
