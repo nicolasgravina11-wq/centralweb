@@ -51,7 +51,7 @@ async function getUsuarioDesdeToken(token) {
   return respuesta.json();
 }
 
-module.exports = async (req, res) => {
+async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'Method not allowed' });
     return;
@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { casoId, to, cc, asunto, cuerpoHtml } = req.body || {};
+  const { casoId, to, cc, asunto, cuerpoHtml, adjuntos } = req.body || {};
   if (!casoId || !to || !cuerpoHtml) {
     res.status(400).json({ ok: false, error: 'Faltan campos: casoId, to y cuerpoHtml son obligatorios' });
     return;
@@ -124,24 +124,9 @@ module.exports = async (req, res) => {
     partes.push(sigla);
     const fromAddress = `${partes.join('.')}@${MAILGUN_DOMAIN}`;
     const fromDisplay = `${perfil.nombre || 'Soporte'} <${fromAddress}>`;
-    const asuntoFinal = asunto || `Re: ${caso.asunto || ''}`.trim();
+    const asuntoFinal = asunto || `Re: ${caso.asunto || ''}`.trim(); const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
 
-    const form = new URLSearchParams();
-    form.append('from', fromDisplay);
-    form.append('to', to);
-    if (cc) form.append('cc', cc);
-    form.append('subject', asuntoFinal);
-    form.append('html', cuerpoHtml);
-    form.append('h:Reply-To', fromAddress);
-
-    const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: form
-    });
+    const form = new FormData(); form.append('from', fromDisplay); form.append('to', to); if (cc) form.append('cc', cc); form.append('subject', asuntoFinal); form.append('html', cuerpoHtml); form.append('h:Reply-To', fromAddress); for (const a of adjuntosFinal) { if (a.buffer) form.append('attachment', new Blob([a.buffer], { type: a.tipo || 'application/octet-stream' }), a.nombre); } const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form });
 
     const mgJson = await mgResp.json().catch(() => ({}));
     if (!mgResp.ok) {
@@ -162,7 +147,7 @@ module.exports = async (req, res) => {
         cc: cc || null,
         asunto: asuntoFinal,
         cuerpo_html: cuerpoHtml,
-        mailgun_id: mgJson.id || null
+        mailgun_id: mgJson.id || null, adjuntos: adjuntosFinal.map(a => ({ nombre: a.nombre, url: a.url, tamano: a.tamano }))
       })
     }).catch(e => console.error('No se pudo guardar el mensaje enviado en Supabase:', e.message));
 
