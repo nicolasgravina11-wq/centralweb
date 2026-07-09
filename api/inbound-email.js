@@ -15,7 +15,7 @@ const crypto = require('crypto');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const MAILGUN_SIGNING_KEY = process.env.MAILGUN_SIGNING_KEY;
+const MAILGUN_SIGNING_KEY = process.env.MAILGUN_SIGNING_KEY;const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY; const MAILGUN_DOMAIN = 'cweb.novadgt.com';
 
 const config = {
   api: { bodyParser: false }
@@ -70,7 +70,7 @@ async function supabaseFetch(path, options = {}) {
   return respuesta.json();
 }
 
-async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } function partirRemitente(remitenteCrudo) {
+async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } async function enviarAutoRespuesta(fromAddress, toEmail, ticket) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`; const asuntoAuto = `Respuesta Automática — Caso ${ticket}`; const form = new FormData(); form.append('from', `CentralWeb <${fromAddress}>`); form.append('to', toEmail); form.append('subject', asuntoAuto); form.append('html', cuerpoHtml); form.append('h:Reply-To', fromAddress); const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form }); const mgJson = await mgResp.json().catch(() => ({})); if (!mgResp.ok) throw new Error(mgJson.message || 'Error enviando auto-respuesta'); return { mailgunId: mgJson.id || null, cuerpoHtml, asunto: asuntoAuto }; } function partirRemitente(remitenteCrudo) {
   const conNombre = (remitenteCrudo || '').match(/^(.*?)\s*<(.+)>$/);
   if (conNombre) {
     return { nombre: conNombre[1].trim().replace(/^"|"$/g, ''), email: conNombre[2].trim() };
@@ -178,11 +178,7 @@ module.exports = async (req, res) => {
         empresa_id: empresaId,
         caso_id: caso.id,
         tipo: 'caso_creado_por_email',
-        data: { from: fromEmail, asunto }
-      })
-    });
-
-    console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
+        data: { from: fromEmail, asunto } }) }); try { const autoResp = await enviarAutoRespuesta(recipient, fromEmail, ticket); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
     res.status(200).send('OK');
   } catch (e) {
     console.error('Error creando el caso desde el correo entrante:', e.message);
