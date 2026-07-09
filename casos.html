@@ -1800,22 +1800,22 @@
       const current = tr.dataset.bandeja;
       // Usar bandeja previa guardada, o la bandeja display (original antes de asignar a usuario), o la primera bandeja real
       const prev = _prevBandejaMap[ticket]
-        || (current.startsWith('user_') ? (_bandejaDisplayMap[ticket] || getBandejasDinamicas()[0]?.key) : null);
+        || (_esUsuarioKey(current) ? (_bandejaDisplayMap[ticket] || getBandejasDinamicas()[0]?.key) : null);
       if (!prev) return;
       _prevBandejaMap[ticket] = current;
       map[ticket] = prev;
       tr.dataset.bandeja = prev;
-      const isUser = prev.startsWith('user_');
+      const isUser = _esUsuarioKey(prev);
       if (isUser) {
         _asignadoMap[ticket] = prev;
-        if (!current.startsWith('user_')) _bandejaDisplayMap[ticket] = current;
+        if (!_esUsuarioKey(current)) _bandejaDisplayMap[ticket] = current;
       } else {
         delete _asignadoMap[ticket];
         _bandejaDisplayMap[ticket] = prev;
       }
       const cell = tr.querySelector('.td-asignado');
       if (cell) cell.innerHTML = buildAsignadoCell(ticket);
-      const prevLabel = prev.startsWith('user_') ? getUserInfoMap()[prev]?.name : bandejaLabels[prev];
+      const prevLabel = _esUsuarioKey(prev) ? getUserInfoMap()[prev]?.name : bandejaLabels[prev];
       _saveTransferEventBandeja(ticket, prevLabel);
     });
     saveBandejaMap(map);
@@ -1831,11 +1831,11 @@
     showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} devuelto${checked.length > 1 ? 's' : ''} a bandeja anterior`); _syncBandejaCambios(checked);
   }
 
-  function _syncBandejaCambios(checked) { const porDestino = {}; checked.forEach(c => { const tr = c.closest('tr'); const ticket = tr && tr.dataset.ticket; if (!ticket) return; const destino = tr.dataset.bandeja; (porDestino[destino] = porDestino[destino] || []).push(ticket); }); Object.entries(porDestino).forEach(([destino, tks]) => { const resuelto = _bandejaIdPorKey[destino]; const patch = resuelto ? { bandeja_id: resuelto.id, sub_bandeja_id: resuelto.subId, asignado_user_id: null } : (destino === 'user_ng' ? { asignado_user_id: CURRENT_USER_ID } : null); if (!patch) return; supabaseClient.from('centralweb_casos').update(patch).eq('empresa_id', EMPRESA_ID).in('ticket', tks).then(({ error }) => { if (error) console.error('No se pudo sincronizar la bandeja en Supabase:', error); }); }); } function transferCases(targetBandeja) {
+  function _syncBandejaCambios(checked) { const porDestino = {}; checked.forEach(c => { const tr = c.closest('tr'); const ticket = tr && tr.dataset.ticket; if (!ticket) return; const destino = tr.dataset.bandeja; (porDestino[destino] = porDestino[destino] || []).push(ticket); }); Object.entries(porDestino).forEach(([destino, tks]) => { const resuelto = _bandejaIdPorKey[destino]; const patch = resuelto ? { bandeja_id: resuelto.id, sub_bandeja_id: resuelto.subId, asignado_user_id: null } : (_esUsuarioKey(destino) ? { asignado_user_id: destino === 'user_ng' ? CURRENT_USER_ID : destino } : null); if (!patch) return; supabaseClient.from('centralweb_casos').update(patch).eq('empresa_id', EMPRESA_ID).in('ticket', tks).then(({ error }) => { if (error) console.error('No se pudo sincronizar la bandeja en Supabase:', error); }); }); } function transferCases(targetBandeja) {
     const checked = getRowChecks().filter(c => c.checked);
     if (!checked.length) { showToast('Seleccioná al menos un caso'); return; }
     const map = getBandejaMap();
-    const isUser = targetBandeja.startsWith('user_');
+    const isUser = _esUsuarioKey(targetBandeja);
     checked.forEach(c => {
       const tr = c.closest('tr');
       const ticket = tr.dataset.ticket;
@@ -1847,7 +1847,7 @@
       if (isUser) {
         _asignadoMap[ticket] = targetBandeja;
         // Guardar bandeja actual como display solo si no es un usuario
-        if (!currentBandeja.startsWith('user_')) {
+        if (!_esUsuarioKey(currentBandeja)) {
           _bandejaDisplayMap[ticket] = currentBandeja;
         }
       } else {
@@ -1856,7 +1856,7 @@
       }
       // Margen de error: si lo estabas viendo en esa bandeja, sigue apareciendo ahí (apagado)
       // hasta que cambies de bandeja o filtres "Abierto".
-      if (!currentBandeja.startsWith('user_') && currentBandeja === activeBandeja) {
+      if (!_esUsuarioKey(currentBandeja) && currentBandeja === activeBandeja) {
         _marcarEnGracia(ticket, currentBandeja);
       }
       const cell = tr.querySelector('.td-asignado');
@@ -2105,7 +2105,7 @@
     }));
   }
 
-  // ── Permisos por bandeja (tabla centralweb_permisos) ──
+  function _esUsuarioKey(k) { return !!k && (k === 'user_ng' || getUsuariosDinamicos().some(u => u.key === k)); } // ── Permisos por bandeja (tabla centralweb_permisos) ──
   function getPermisos() {
     return PERMISOS_DINAMICOS;
   }
@@ -2316,7 +2316,7 @@
       const tr = c.closest('tr');
       const ticket = tr?.dataset.ticket;
       const bandeja = tr?.dataset.bandeja || '';
-      return ticket && (bandeja.startsWith('user_') || _prevBandejaMap[ticket]);
+      return ticket && (_esUsuarioKey(bandeja) || _prevBandejaMap[ticket]);
     });
     document.getElementById('tm-revert-section').style.display = hasRevert ? 'block' : 'none';
     document.getElementById('transfer-modal-backdrop').classList.add('open');
@@ -2741,7 +2741,7 @@
   sortRows();
   const _savedSel = localStorage.getItem('cw_selection');
   // Si el usuario activo (simulado con "Ver como") no tiene acceso a la bandeja guardada, redirigir a la primera accesible
-  if (activeBandeja !== 'asignados' && !activeBandeja.startsWith('user_') && !tieneAccesoBandeja(activeBandeja)) {
+  if (activeBandeja !== 'asignados' && !_esUsuarioKey(activeBandeja) && !tieneAccesoBandeja(activeBandeja)) {
     activeBandeja = getBandejasAccesibles()[0]?.key || getSubbandejasAccesibles()[0]?.key || 'asignados';
   }
   setBandeja(activeBandeja);
