@@ -345,166 +345,153 @@
 </main>
 
 <script>
-  const LS_USUARIOS = 'cw_usuarios';
-  const LS_PERMISOS = 'cw_permisos';
-  const LS_BANDEJAS = 'cw_bandejas';
-  const LS_EMPRESA  = 'cw_empresa';
-  const LS_FIRMA    = 'cw_firma'; // { [userKey]: { modo: 'texto'|'archivo', texto, archivoDataUrl } }
+  let EMPRESA_ID = null;
+  let CURRENT_USER = null;
 
-  // Usuario "logueado" simulado — el mismo concepto que en casos.html, cambia con "Ver como [usuario]".
-  const CURRENT_USER_KEY = localStorage.getItem('cw_usuario_activo') || 'user_ng';
-
-  function getUsuarios() { return JSON.parse(localStorage.getItem(LS_USUARIOS) || '[]'); }
-  function saveUsuarios(u) { localStorage.setItem(LS_USUARIOS, JSON.stringify(u)); }
-  function getPermisos() { return JSON.parse(localStorage.getItem(LS_PERMISOS) || '{}'); }
-  function getBandejas() { return JSON.parse(localStorage.getItem(LS_BANDEJAS) || '[]'); }
-  function getEmpresa() { return JSON.parse(localStorage.getItem(LS_EMPRESA) || '{}'); }
-  function getFirmas() { return JSON.parse(localStorage.getItem(LS_FIRMA) || '{}'); }
-  function saveFirmas(f) { localStorage.setItem(LS_FIRMA, JSON.stringify(f)); }
-
-  function correoDeBandeja(bandejaKey) {
-    const sigla = getEmpresa().sigla;
-    return sigla ? `${bandejaKey}.${sigla}@novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
+  async function cargarUsuarioActual() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { document.querySelector('main').innerHTML = '<div class="card">Sesión no encontrada. Volvé a <a href="login.html">iniciar sesión</a>.</div>'; return null; }
+        const { data: perfil, error } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+        if (error || !perfil) { document.querySelector('main').innerHTML = '<div class="card">No se encontró tu perfil. Contactá a un administrador.</div>'; return null; }
+        EMPRESA_ID = perfil.empresa_id;
+        CURRENT_USER = perfil;
+        return perfil;
   }
 
-  function currentUser() {
-    return getUsuarios().find(u => u.key === CURRENT_USER_KEY);
-  }
-
-  // Defensivo: si se entra a esta pantalla sin haber pasado antes por admin.html,
-  // los usuarios pueden seguir en el formato viejo (campo único "name").
-  function migrarUsuariosLegacy() {
-    const usuarios = getUsuarios();
-    let cambio = false;
-    usuarios.forEach(u => {
-      if (!u.nombre) {
-        const partes = (u.name || u.key).trim().split(/\s+/);
-        u.nombre = partes[0];
-        u.apellido = partes.slice(1).join(' ');
-        delete u.name;
-        cambio = true;
-      }
-      if (!u.email) {
-        u.email = `${(u.nombre + '.' + u.apellido).toLowerCase().replace(/[^a-z0-9.]+/g, '')}@novadgt.com`;
-        cambio = true;
-      }
-    });
-    if (cambio) saveUsuarios(usuarios);
+  function correoDeBandeja(bandejaKey, sigla) {
+        return sigla ? `${bandejaKey}.${sigla}@novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
   }
 
   function renderPerfil() {
-    const u = currentUser();
-    if (!u) {
-      document.querySelector('main').innerHTML = '<div class="card">No se encontró el usuario actual. Volvé a <a href="casos.html">casos</a>.</div>';
-      return;
-    }
-    document.getElementById('perfil-avatar').style.background = u.gradient;
-    document.getElementById('perfil-avatar').textContent = u.initials;
-    document.getElementById('perfil-nombre-display').textContent = `${u.nombre} ${u.apellido}`.trim();
-    document.getElementById('perfil-rol').textContent = u.rol;
-    document.getElementById('input-nombre').value = u.nombre;
-    document.getElementById('input-apellido').value = u.apellido;
-    document.getElementById('input-email').value = u.email;
+        const u = CURRENT_USER;
+        document.getElementById('perfil-avatar').style.background = u.gradiente;
+        document.getElementById('perfil-avatar').textContent = u.iniciales;
+        document.getElementById('perfil-nombre-display').textContent = `${u.nombre} ${u.apellido}`.trim();
+        document.getElementById('perfil-rol').textContent = u.rol;
+        document.getElementById('input-nombre').value = u.nombre;
+        document.getElementById('input-apellido').value = u.apellido;
+        document.getElementById('input-email').value = u.email;
   }
 
   function flashSaveMsg(id) {
-    const el = document.getElementById(id);
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 1800);
+        const el = document.getElementById(id);
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 1800);
   }
 
-  function toggleBandejasDropdown() {
-    const toggle = document.getElementById('bandejas-toggle');
-    const list = document.getElementById('bandejas-list');
-    const open = list.classList.contains('open');
-    if (!open) renderBandejasAcceso();
-    toggle.classList.toggle('open', !open);
-    list.classList.toggle('open', !open);
-    document.getElementById('bandejas-toggle-label').textContent = open ? 'Ver mis bandejas' : 'Mis bandejas';
+  async function toggleBandejasDropdown() {
+        const toggle = document.getElementById('bandejas-toggle');
+        const list = document.getElementById('bandejas-list');
+        const open = list.classList.contains('open');
+        if (!open) await renderBandejasAcceso();
+        toggle.classList.toggle('open', !open);
+        list.classList.toggle('open', !open);
+        document.getElementById('bandejas-toggle-label').textContent = open ? 'Ver mis bandejas' : 'Mis bandejas';
   }
 
-  function renderBandejasAcceso() {
-    const bandejas = getBandejas();
-    const permisos = getPermisos();
-    const list = document.getElementById('bandejas-list');
-    const accesibles = bandejas.filter(b => permisos[b.key]?.[CURRENT_USER_KEY]?.acceso);
-
-    if (!accesibles.length) {
-      list.innerHTML = '<div class="empty-msg">Todavía no tenés acceso a ninguna bandeja. El administrador lo configura desde "Administrar".</div>';
-      return;
-    }
-
-    list.innerHTML = accesibles.map(b => {
-      const verOtros = permisos[b.key][CURRENT_USER_KEY].verOtros;
-      return `
-        <div class="bandeja-row">
-          <span>${b.nombre}</span>
-          ${verOtros ? '<span class="ver-otros-tag">Ve casos de otros agentes</span>' : ''}
-          <span class="correo">${correoDeBandeja(b.key)}</span>
-        </div>
-      `;
-    }).join('');
+  async function renderBandejasAcceso() {
+        const list = document.getElementById('bandejas-list');
+        const { data: empresa } = await supabaseClient.from('empresas').select('sigla').eq('id', EMPRESA_ID).single();
+        const sigla = empresa?.sigla || '';
+        const { data: permisos } = await supabaseClient.from('centralweb_permisos').select('*, centralweb_bandejas(nombre,key)').eq('user_id', CURRENT_USER.id).eq('acceso', true);
+        const accesibles = (permisos || []).filter(p => p.centralweb_bandejas);
+        if (!accesibles.length) {
+                list.innerHTML = '<div class="empty-msg">Todavía no tenés acceso a ninguna bandeja. El administrador lo configura desde "Administrar".</div>';
+                return;
+        }
+        list.innerHTML = accesibles.map(p => {
+                const b = p.centralweb_bandejas;
+                return `
+                        <div class="bandeja-row">
+                                  <span>${b.nombre}</span>
+                                            ${p.ver_otros ? '<span class="ver-otros-tag">Ve casos de otros agentes</span>' : ''}
+                                                      <span class="correo">${correoDeBandeja(b.key, sigla)}</span>
+                                                              </div>
+                                                                    `;
+        }).join('');
   }
 
   // ── Firma ──
   let modoFirmaActual = 'texto';
+  let firmaArchivoDataUrl = null;
+  let firmaArchivoFile = null;
 
   function setModoFirma(modo) {
-    modoFirmaActual = modo;
-    document.getElementById('tab-texto').classList.toggle('active', modo === 'texto');
-    document.getElementById('tab-archivo').classList.toggle('active', modo === 'archivo');
-    document.getElementById('panel-firma-texto').style.display = modo === 'texto' ? 'block' : 'none';
-    document.getElementById('panel-firma-archivo').style.display = modo === 'archivo' ? 'block' : 'none';
+        modoFirmaActual = modo;
+        document.getElementById('tab-texto').classList.toggle('active', modo === 'texto');
+        document.getElementById('tab-archivo').classList.toggle('active', modo === 'archivo');
+        document.getElementById('panel-firma-texto').style.display = modo === 'texto' ? 'block' : 'none';
+        document.getElementById('panel-firma-archivo').style.display = modo === 'archivo' ? 'block' : 'none';
   }
 
-  let firmaArchivoDataUrl = null;
-
   function onFirmaFileSelected(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      firmaArchivoDataUrl = reader.result;
-      document.getElementById('firma-preview-img').src = firmaArchivoDataUrl;
-      document.getElementById('firma-preview').classList.add('show');
-    };
-    reader.readAsDataURL(file);
+        const file = e.target.files[0];
+        if (!file) return;
+        firmaArchivoFile = file;
+        const reader = new FileReader();
+        reader.onload = () => {
+                firmaArchivoDataUrl = reader.result;
+                document.getElementById('firma-preview-img').src = firmaArchivoDataUrl;
+                document.getElementById('firma-preview').classList.add('show');
+        };
+        reader.readAsDataURL(file);
   }
 
   function quitarFirmaArchivo() {
-    firmaArchivoDataUrl = null;
-    document.getElementById('firma-file-input').value = '';
-    document.getElementById('firma-preview').classList.remove('show');
+        firmaArchivoDataUrl = null;
+        firmaArchivoFile = null;
+        document.getElementById('firma-file-input').value = '';
+        document.getElementById('firma-preview').classList.remove('show');
   }
 
-  function guardarFirma() {
-    const firmas = getFirmas();
-    if (modoFirmaActual === 'texto') {
-      firmas[CURRENT_USER_KEY] = { modo: 'texto', texto: document.getElementById('firma-texto').value };
-    } else {
-      if (!firmaArchivoDataUrl) { flashSaveMsg('save-firma-msg'); return; }
-      firmas[CURRENT_USER_KEY] = { modo: 'archivo', archivoDataUrl: firmaArchivoDataUrl };
-    }
-    saveFirmas(firmas);
-    flashSaveMsg('save-firma-msg');
+  async function subirArchivoFirma(file) {
+        const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+        const path = `firmas/${CURRENT_USER.id}_${Date.now()}.${ext}`;
+        const { error } = await supabaseClient.storage.from('adjuntos').upload(path, file, { upsert: true });
+        if (error) throw error;
+        const { data } = supabaseClient.storage.from('adjuntos').getPublicUrl(path);
+        return data.publicUrl;
   }
 
-  function renderFirma() {
-    const firma = getFirmas()[CURRENT_USER_KEY];
-    const modo = firma?.modo || 'texto';
-    setModoFirma(modo);
-    if (firma?.modo === 'texto') {
-      document.getElementById('firma-texto').value = firma.texto || '';
-    } else if (firma?.modo === 'archivo' && firma.archivoDataUrl) {
-      firmaArchivoDataUrl = firma.archivoDataUrl;
-      document.getElementById('firma-preview-img').src = firmaArchivoDataUrl;
-      document.getElementById('firma-preview').classList.add('show');
-    }
+  async function guardarFirma() {
+        try {
+                let payload;
+                if (modoFirmaActual === 'texto') {
+                          payload = { user_id: CURRENT_USER.id, modo: 'texto', texto: document.getElementById('firma-texto').value, archivo_url: null };
+                } else {
+                          if (!firmaArchivoFile && !firmaArchivoDataUrl) { flashSaveMsg('save-firma-msg'); return; }
+                          let url = firmaArchivoDataUrl && !firmaArchivoFile ? firmaArchivoDataUrl : null;
+                          if (firmaArchivoFile) url = await subirArchivoFirma(firmaArchivoFile);
+                          payload = { user_id: CURRENT_USER.id, modo: 'archivo', texto: null, archivo_url: url };
+                }
+                const { error } = await supabaseClient.from('centralweb_firmas').upsert(payload, { onConflict: 'user_id' });
+                if (error) throw error;
+                flashSaveMsg('save-firma-msg');
+        } catch (e) {
+                console.error('No se pudo guardar la firma:', e);
+                alert('No se pudo guardar la firma. Intentá de nuevo.');
+        }
   }
 
-  migrarUsuariosLegacy();
-  renderPerfil();
-  renderFirma();
+  async function renderFirma() {
+        const { data: firma } = await supabaseClient.from('centralweb_firmas').select('*').eq('user_id', CURRENT_USER.id).maybeSingle();
+        const modo = firma?.modo || 'texto';
+        setModoFirma(modo);
+        if (modo === 'texto') {
+                document.getElementById('firma-texto').value = firma?.texto || '';
+        } else if (firma?.archivo_url) {
+                firmaArchivoDataUrl = firma.archivo_url;
+                document.getElementById('firma-preview-img').src = firma.archivo_url;
+                document.getElementById('firma-preview').classList.add('show');
+        }
+  }
+
+  (async function initPerfil() {
+        const perfil = await cargarUsuarioActual();
+        if (!perfil) return;
+        renderPerfil();
+        await renderFirma();
+  })();
 </script>
 
 </body>
