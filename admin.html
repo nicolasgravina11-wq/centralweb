@@ -584,7 +584,7 @@
 
   <div class="card">
     <h2>Empresa</h2>
-    <p class="hint">El dominio de correo es fijo de la plataforma (@novadgt.com). La sigla identifica internamente a tu empresa dentro de CentralWeb y forma parte del correo de cada bandeja. Se definieron en el alta inicial, pero podés modificarlos si lo necesitás.</p>
+    <p class="hint">El dominio de correo es fijo de la plataforma (@cweb.novadgt.com). La sigla identifica internamente a tu empresa dentro de CentralWeb y forma parte del correo de cada bandeja. Se definieron en el alta inicial, pero podés modificarlos si lo necesitás.</p>
     <div class="row">
       <div>
         <label class="field-label">Nombre formal</label>
@@ -607,7 +607,7 @@
         Crear bandeja
       </button>
     </div>
-    <p class="hint">Cada bandeja obtiene su propia casilla (bandeja.sigla@novadgt.com).</p>
+    <p class="hint">Cada bandeja obtiene su propia casilla (bandeja.sigla@cweb.novadgt.com).</p>
     <div id="bandejas-listado"></div>
   </div>
 
@@ -1303,7 +1303,7 @@
   }
 
   function correoDeBandeja(bandejaKey) {
-    return EMPRESA_SIGLA ? `${bandejaKey}.${EMPRESA_SIGLA}@novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
+    return EMPRESA_SIGLA ? `${bandejaKey}.${EMPRESA_SIGLA}@cweb.novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
   }
 
   function renderEmpresa() {
@@ -1311,7 +1311,7 @@
     document.getElementById('empresa-nombre-input').value = empresa.nombre_formal || '';
     document.getElementById('empresa-sigla-input').value = empresa.sigla || '';
     document.getElementById('empresa-preview').innerHTML = empresa.sigla
-      ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@novadgt.com</b>`
+      ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@cweb.novadgt.com</b>`
       : 'Definí la sigla para previsualizar los correos de cada bandeja.';
   }
 
@@ -1570,7 +1570,7 @@ async function eliminarUsuario(id) {
     const alias = _aliasManualBandeja || slugify(nombre);
     const preview = document.getElementById('modal-bandeja-correo-preview');
     preview.innerHTML = `El correo va a quedar como:
-      <input type="text" id="modal-bandeja-alias-input" value="${alias}">.${EMPRESA_SIGLA}@novadgt.com`;
+      <input type="text" id="modal-bandeja-alias-input" value="${alias}">.${EMPRESA_SIGLA}@cweb.novadgt.com`;
     const input = document.getElementById('modal-bandeja-alias-input');
     input.focus();
     input.select();
