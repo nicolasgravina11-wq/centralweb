@@ -740,6 +740,10 @@
       <input type="text" id="modal-bandeja-nombre" placeholder="ej. Prestadores" oninput="actualizarPreviewCorreoModal()">
       <div class="domain-preview" id="modal-bandeja-correo-preview"></div>
 
+      <label class="field-label" style="margin-top:14px;display:block">Sector / Departamento</label>
+      <input type="text" id="modal-bandeja-sector" placeholder="ej. Dpto. de entradas y salidas generales" oninput="actualizarPreviewFirmaModal()">
+      <p class="hint" id="modal-bandeja-sector-preview"></p>
+
       <div class="detalle-section" style="margin-top:18px">
         <h3>Respuesta automática</h3>
         <p class="hint">Opcional, se puede definir ahora o más adelante desde el detalle de la bandeja.</p>
@@ -773,6 +777,9 @@
         <h3>Nombre de la bandeja</h3>
         <p class="hint">El correo de la bandeja (<span id="detalle-bandeja-correo-hint"></span>) no cambia aunque renombres la bandeja.</p>
         <input type="text" id="detalle-bandeja-input-nombre" oninput="marcarCambiosBandeja()">
+        <label class="field-label" style="margin-top:14px;display:block">Sector / Departamento</label>
+        <input type="text" id="detalle-bandeja-input-sector" placeholder="ej. Dpto. de entradas y salidas generales" oninput="marcarCambiosBandeja(); actualizarPreviewFirmaDetalle();">
+        <p class="hint" id="detalle-bandeja-sector-preview"></p>
       </div>
 
       <div class="detalle-section">
@@ -1351,6 +1358,7 @@
         <button class="bandeja-nombre-link" onclick="abrirDetalleBandeja('${b.id}')">${b.nombre}</button>
         ${nSub ? `<span class="subbandeja-count-pill">${nSub} sub-bandeja${nSub > 1 ? 's' : ''}</span>` : ''}
         <span class="correo">${correoDeBandeja(b.key)}</span>
+        ${b.sector ? `<span class="correo" style="color:var(--text-muted)">· ${b.sector}</span>` : ''}
       </div>
     `;
     }).join('');
@@ -1582,10 +1590,32 @@ async function eliminarUsuario(id) {
     input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmarAlias(); } });
   }
 
-  function abrirModalBandeja() {
+  function actualizarPreviewFirmaModal() {
+    const sector = document.getElementById('modal-bandeja-sector').value.trim();
+    const empresa = window.__empresaActual || {};
+    const nombreUpper = (empresa.nombre_formal || '').toUpperCase();
+    const preview = document.getElementById('modal-bandeja-sector-preview');
+    if (!preview) return;
+    preview.innerHTML = nombreUpper ? `Los correos de esta bandeja se firman como: <b>${sector ? nombreUpper + ' - ' + sector : nombreUpper}</b>` : '';
+  }
+
+  function actualizarPreviewFirmaDetalle() {
+    const sectorInput = document.getElementById('detalle-bandeja-input-sector');
+    if (!sectorInput) return;
+    const sector = sectorInput.value.trim();
+    const empresa = window.__empresaActual || {};
+    const nombreUpper = (empresa.nombre_formal || '').toUpperCase();
+    const preview = document.getElementById('detalle-bandeja-sector-preview');
+    if (!preview) return;
+    preview.innerHTML = nombreUpper ? `Los correos de esta bandeja se firman como: <b>${sector ? nombreUpper + ' - ' + sector : nombreUpper}</b>` : '';
+  }
+
+  function abrirModalBandeja() {function abrirModalBandeja() {
     document.getElementById('modal-bandeja-nombre').value = '';
+    document.getElementById('modal-bandeja-sector').value = '';
     document.getElementById('modal-bandeja-mensaje').innerHTML = '';
     document.getElementById('modal-bandeja-correo-preview').textContent = '';
+    document.getElementById('modal-bandeja-sector-preview').textContent = '';
     _aliasManualBandeja = null;
     renderUsuariosChecklist('modal-bandeja-usuarios-checks');
     _rteSetAttachments('toolbar_crear_bandeja', []);
@@ -1602,6 +1632,7 @@ async function eliminarUsuario(id) {
     const input = document.getElementById('modal-bandeja-nombre');
     const nombre = input.value.trim();
     if (!nombre) return;
+    const sector = document.getElementById('modal-bandeja-sector').value.trim();
     const mensajeBienvenida = document.getElementById('modal-bandeja-mensaje').innerHTML;
     const key = _aliasManualBandeja || slugify(nombre);
     if (_bandejasCache.some(b => b.key === key)) {
@@ -1609,7 +1640,7 @@ async function eliminarUsuario(id) {
       return;
     }
     const archivosAdjuntos = await _rteGetAttachments('toolbar_crear_bandeja', 'bandejas');
-    const { data: nueva, error } = await supabaseClient.from('centralweb_bandejas').insert({ empresa_id: EMPRESA_ID, key, nombre, mensaje_bienvenida: mensajeBienvenida, archivos_adjuntos: archivosAdjuntos, parent_id: null }).select().single();
+    const { data: nueva, error } = await supabaseClient.from('centralweb_bandejas').insert({ empresa_id: EMPRESA_ID, key, nombre, sector: sector || null, mensaje_bienvenida: mensajeBienvenida, archivos_adjuntos: archivosAdjuntos, parent_id: null }).select().single();
     if (error) { alert('No se pudo crear la bandeja: ' + error.message); return; }
     nueva.subbandejas = [];
     _bandejasCache.push(nueva);
@@ -1664,6 +1695,9 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-bandeja-correo-hint').textContent = correoDeBandeja(b.key);
     document.getElementById('detalle-bandeja-input-nombre').value = b.nombre;
     document.getElementById('detalle-bandeja-input-nombre').disabled = !ES_ADMIN;
+    document.getElementById('detalle-bandeja-input-sector').value = b.sector || '';
+    document.getElementById('detalle-bandeja-input-sector').disabled = !ES_ADMIN;
+    actualizarPreviewFirmaDetalle();
     document.getElementById('detalle-bandeja-guardar-btn').style.display = 'none';
     document.getElementById('detalle-mensaje-bienvenida').innerHTML = b.mensaje_bienvenida || '';
     document.getElementById('detalle-mensaje-bienvenida').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
@@ -1685,9 +1719,10 @@ async function eliminarUsuario(id) {
     const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
     const nombre = document.getElementById('detalle-bandeja-input-nombre').value.trim();
+    const sector = document.getElementById('detalle-bandeja-input-sector').value.trim();
     if (nombre) {
-      const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre }).eq('id', b.id);
-      if (!error) b.nombre = nombre;
+      const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre, sector: sector || null }).eq('id', b.id);
+      if (!error) { b.nombre = nombre; b.sector = sector || null; }
     }
     if (_permisosPendientes) {
       for (const uId of Object.keys(_permisosPendientes)) {
