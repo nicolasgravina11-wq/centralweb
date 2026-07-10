@@ -930,18 +930,7 @@
         <span id="disponible-label">Disponible</span>
         <span class="disp-badge" id="disponible-badge" style="background:#22c55e;color:white">ON</span>
       </div>
-      <div class="dropdown-wrap">
-        <div class="disponible-topbar-btn" id="ver-como-btn" title="Cambiar de usuario (simulación)">
-          <span id="ver-como-avatar" style="display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:8px;font-weight:700;flex-shrink:0"></span>
-          <span id="ver-como-label">Ver como…</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:11px;height:11px"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="dropdown-menu" id="ver-como-menu" style="right:0;left:auto">
-          <div class="dropdown-section-title">Ver como</div>
-          <div id="ver-como-list"></div>
-        </div>
-      </div>
-      <button class="btn btn-primary" id="btn-nuevo-caso">
+            <button class="btn btn-primary" id="btn-nuevo-caso">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo Caso
       </button>
@@ -1170,7 +1159,7 @@ async function cerrarSesion() {
   // dominio, no por usuario). Si el usuario logueado cambió, limpiamos
   // todo el estado visual "cw_*" antes de que se lea/renderice.
   const _cwUsuarioGuardado = localStorage.getItem('cw_usuario_activo');
-  if (_cwUsuarioGuardado && _cwUsuarioGuardado !== CURRENT_USER_ID) {
+  if (_cwUsuarioGuardado !== CURRENT_USER_ID) {
     Object.keys(localStorage)
       .filter(k => k.startsWith('cw_') && k !== 'cw_usuario_activo')
       .forEach(k => localStorage.removeItem(k));
@@ -2669,48 +2658,6 @@ async function cerrarSesion() {
   });
 
   applyDisponible();
-
-  // ════════════════════════════════
-  //  VER COMO [USUARIO] (simulación de login, sin backend real)
-  // ════════════════════════════════
-  function applyVerComo() {
-    const userInfo = getUserInfoMap();
-    const u = userInfo[CURRENT_USER_KEY] || Object.values(userInfo)[0];
-    const avatar = document.getElementById('ver-como-avatar');
-    avatar.style.background = u.gradient;
-    avatar.textContent = u.initials;
-    document.getElementById('ver-como-label').textContent = u.name;
-  }
-
-  function renderVerComoList() {
-    const list = document.getElementById('ver-como-list');
-    if (!list) return;
-    list.innerHTML = getUsuariosDinamicos().map(u => `
-      <div class="dropdown-item${u.key === CURRENT_USER_KEY ? ' active' : ''}" data-usuario="${u.key}" style="justify-content:space-between;align-items:center;gap:8px">
-        <span style="display:flex;align-items:center;gap:7px">
-          <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${u.gradient};font-size:8px;font-weight:700;color:white;flex-shrink:0">${u.initials}</span>
-          ${u.name}
-        </span>
-        ${u.key === CURRENT_USER_KEY ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;color:#1a6cd4"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-      </div>`).join('');
-    list.querySelectorAll('[data-usuario]').forEach(item => {
-      item.addEventListener('click', () => {
-        const key = item.dataset.usuario;
-        if (key === CURRENT_USER_KEY) { document.getElementById('ver-como-menu').classList.remove('open'); return; }
-        localStorage.setItem('cw_usuario_activo', key);
-        window.location.reload();
-      });
-    });
-  }
-
-  document.getElementById('ver-como-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    document.getElementById('ver-como-menu').classList.toggle('open');
-    renderVerComoList();
-  });
-  document.getElementById('ver-como-menu').addEventListener('click', e => e.stopPropagation());
-
-  applyVerComo();
 
   // Persiste todos los casos (estáticos + pool) para que caso-detalle.html
   // pueda armar el histórico de un remitente con la totalidad de sus casos,
