@@ -6,12 +6,18 @@
 // Header esperado:
 //   Authorization: Bearer <access_token del admin logueado>
 //
+// El usuario nuevo NO recibe una contraseña temporal: se le crea la cuenta
+// de Auth en estado "invitado" y Supabase le manda un email (via el SMTP
+// propio configurado) con un link a reset-password.html para que defina
+// su propia contraseña la primera vez.
+//
 // Variables de entorno necesarias (ya configuradas en Vercel):
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SITE_URL = 'https://centralweb.novadgt.com';
 
 const GRADIENTES = [
   'linear-gradient(135deg,#1a6cd4,#4fa3f7)',
@@ -55,13 +61,6 @@ async function getUsuarioDesdeToken(token) {
   });
   if (!respuesta.ok) return null;
   return respuesta.json();
-}
-
-function generarPasswordTemporal() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-  let out = '';
-  for (let i = 0; i < 12; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
 }
 
 module.exports = async (req, res) => {
@@ -112,9 +111,11 @@ module.exports = async (req, res) => {
     const cantidadActual = (usuariosExistentes || []).length;
 
     const emailNormalizado = String(email).trim().toLowerCase();
-    const passwordTemporal = generarPasswordTemporal();
 
-    const authRespuesta = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    // Crea el usuario en estado "invitado" (sin contraseña) y le manda el
+    // email de invitación via el SMTP configurado en Supabase Auth.
+    const redirectTo = encodeURIComponent(`${SITE_URL}/reset-password.html`);
+    const authRespuesta = await fetch(`${SUPABASE_URL}/auth/v1/invite?redirect_to=${redirectTo}`, {
       method: 'POST',
       headers: {
         apikey: SERVICE_KEY,
@@ -123,14 +124,12 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         email: emailNormalizado,
-        password: passwordTemporal,
-        email_confirm: true,
-        user_metadata: { nombre, apellido }
+        data: { nombre, apellido }
       })
     });
     const authJson = await authRespuesta.json().catch(() => ({}));
     if (!authRespuesta.ok) {
-      const mensaje = authJson?.msg || authJson?.message || authJson?.error_description || 'No se pudo crear el usuario de acceso';
+      const mensaje = authJson?.msg || authJson?.message || authJson?.error_description || 'No se pudo invitar al usuario';
       res.status(authRespuesta.status === 422 ? 409 : 502).json({ ok: false, error: mensaje });
       return;
     }
@@ -173,7 +172,7 @@ module.exports = async (req, res) => {
       }).catch(e => console.error('No se pudo asignar permiso de bandeja:', e.message));
     }
 
-    res.status(200).json({ ok: true, profile: nuevoPerfil, tempPassword: passwordTemporal });
+    res.status(200).json({ ok: true, profile: nuevoPerfil });
   } catch (e) {
     console.error('Error en create-user:', e.message);
     res.status(500).json({ ok: false, error: e.message });
