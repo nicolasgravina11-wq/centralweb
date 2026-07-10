@@ -1119,6 +1119,12 @@
 <script>
 async function cerrarSesion() {
   try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (user) {
+      await supabaseClient.from('profiles').update({ last_seen: null }).eq('id', user.id);
+    }
+  } catch (e) { /* silencioso */ }
+  try {
     await supabaseClient.auth.signOut();
   } catch (e) {
     console.error('Error al cerrar sesion:', e.message);
@@ -1223,7 +1229,7 @@ async function cerrarSesion() {
     name: `${u.nombre || ''} ${u.apellido || ''}`.trim(),
     gradient: u.gradiente || GRADIENTES_DB[i % GRADIENTES_DB.length],
     rol: u.rol || 'Agente',
-    online: true,
+    last_seen: u.last_seen || null,
   }));
 
   // Badge con el nombre del usuario logueado (informativo, junto a "Disponible")
@@ -2129,11 +2135,24 @@ async function cerrarSesion() {
   // Usuarios reales de la empresa (tabla profiles)
   function getUsuariosDinamicos() {
     const onlineGuardado = localStorage.getItem('cw_disponible') !== 'off';
-    return USUARIOS_DINAMICOS.map(u => ({
-      ...u,
-      online: u.key === CURRENT_USER_KEY ? onlineGuardado : true,
-    }));
+    const PRESENCIA_MS = 2 * 60 * 1000; // conectado = tuvo actividad en los ultimos 2 minutos
+    const ahora = Date.now();
+    return USUARIOS_DINAMICOS.map(u => {
+      if (u.key === CURRENT_USER_KEY) return { ...u, online: onlineGuardado };
+      const visto = u.last_seen ? new Date(u.last_seen).getTime() : 0;
+      return { ...u, online: (ahora - visto) < PRESENCIA_MS };
+    });
   }
+
+  // ── Presencia real: marca al usuario logueado como "activo" en Supabase
+  // (reemplaza el online:true fijo que mostraba a todos como conectados)
+  async function _actualizarPresencia() {
+    try {
+      await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', CURRENT_USER_ID);
+    } catch (e) { /* silencioso */ }
+  }
+  _actualizarPresencia();
+  setInterval(_actualizarPresencia, 60000);
 
   function _esUsuarioKey(k) { return !!k && (k === 'user_ng' || getUsuariosDinamicos().some(u => u.key === k)); } // ── Permisos por bandeja (tabla centralweb_permisos) ──
   function getPermisos() {
