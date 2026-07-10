@@ -133,7 +133,7 @@ module.exports = async (req, res) => {
     const empresaNombre = empresas[0].nombre_formal || 'CentralWeb';
 
     const bandejas = await supabaseFetch(
-      `centralweb_bandejas?select=id&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(bandejaKey)}&parent_id=is.null`
+      `centralweb_bandejas?select=id,sector&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(bandejaKey)}&parent_id=is.null`
     );
     if (!bandejas || !bandejas.length) {
       throw new Error(`No existe la bandeja "${bandejaKey}" para la empresa "${sigla}"`);
@@ -141,11 +141,12 @@ module.exports = async (req, res) => {
     const bandejaId = bandejas[0].id;
 
     let subBandejaId = null;
+    let subBandejaSector = null;
     if (subBandejaKey) {
       const subBandejas = await supabaseFetch(
-        `centralweb_bandejas?select=id&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(subBandejaKey)}&parent_id=eq.${bandejaId}`
+        `centralweb_bandejas?select=id,sector&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(subBandejaKey)}&parent_id=eq.${bandejaId}`
       );
-      if (subBandejas && subBandejas.length) subBandejaId = subBandejas[0].id;
+      if (subBandejas && subBandejas.length) { subBandejaId = subBandejas[0].id; subBandejaSector = subBandejas[0].sector || null; }
     }
 
     const numeroTicket = await supabaseFetch('rpc/centralweb_next_ticket', {
@@ -179,7 +180,9 @@ module.exports = async (req, res) => {
         empresa_id: empresaId,
         caso_id: caso.id,
         tipo: 'caso_creado_por_email',
-        data: { from: fromEmail, asunto } }) }); try { const autoResp = await enviarAutoRespuesta(recipient, fromEmail, ticket, empresaNombre); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
+        data: { from: fromEmail, asunto } }) }); try { const sectorBandeja = subBandejaSector || (bandejas[0] && bandejas[0].sector) || null;
+    const remitenteDisplay = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
+    const autoResp = await enviarAutoRespuesta(recipient, fromEmail, ticket, remitenteDisplay); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
     res.status(200).send('OK');
   } catch (e) {
     console.error('Error creando el caso desde el correo entrante:', e.message);
