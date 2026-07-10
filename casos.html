@@ -47,8 +47,8 @@
 
     /* ── DISPONIBLE BTN (topbar) ── */
     .disponible-topbar-btn {
-      display: flex; align-items: center; gap: 7px;
-      padding: 7px 13px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 13px 6px 6px;
       border-radius: 5px;
       border: 1.5px solid rgba(255,255,255,.2);
       background: rgba(255,255,255,.1);
@@ -59,16 +59,7 @@
       user-select: none;
     }
     .disponible-topbar-btn:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); }
-    .user-badge-topbar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 5px 12px 5px 6px;
-      border-radius: 5px;
-      border: 1.5px solid rgba(255,255,255,.2);
-      background: rgba(255,255,255,.1);
-      color: white;
-      font-size: 13px; font-weight: 600;
-      user-select: none;
-    }
+    .disp-sep { width: 1px; height: 16px; background: rgba(255,255,255,.25); flex-shrink: 0; }
     .user-badge-avatar {
       display: flex; align-items: center; justify-content: center;
       width: 24px; height: 24px; border-radius: 50%;
@@ -940,13 +931,11 @@
           </div>
         </div>
       </div>
-      <div class="user-badge-topbar" id="user-badge" title="Usuario actual">
+      <div class="disponible-topbar-btn" id="disponible-btn" title="Cambiar disponibilidad">
         <span class="user-badge-avatar" id="user-badge-avatar"></span>
         <span id="user-badge-name"></span>
-      </div>
-      <div class="disponible-topbar-btn" id="disponible-btn" title="Cambiar disponibilidad">
+        <span class="disp-sep"></span>
         <span class="disp-dot" id="status-dot" style="background:#22c55e"></span>
-        <span id="disponible-label">Disponible</span>
         <span class="disp-badge" id="disponible-badge" style="background:#22c55e;color:white">ON</span>
       </div>
             <button class="btn btn-primary" id="btn-nuevo-caso">
@@ -2670,12 +2659,10 @@ async function cerrarSesion() {
   //  DISPONIBLE TOGGLE
   // ════════════════════════════════
   const dispBtn   = document.getElementById('disponible-btn');
-  const dispLabel = document.getElementById('disponible-label');
   const dispBadge = document.getElementById('disponible-badge');
   let online = localStorage.getItem('cw_disponible') !== 'off';
 
   function applyDisponible() {
-    dispLabel.textContent = online ? 'Disponible' : 'Desconectado';
     dispBadge.textContent = online ? 'ON' : 'OFF';
     document.getElementById('status-dot').style.background = online ? '#22c55e' : '#94a3b8';
     dispBadge.style.background = online ? '#22c55e' : '#475569';
