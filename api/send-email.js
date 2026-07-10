@@ -105,14 +105,15 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     }
 
     const [empresas, bandejas] = await Promise.all([
-      supabaseFetch(`empresas?select=sigla&id=eq.${empresaId}`),
-      supabaseFetch(`centralweb_bandejas?select=id,key,parent_id&empresa_id=eq.${empresaId}`)
+      supabaseFetch(`empresas?select=sigla,nombre_formal&id=eq.${empresaId}`),
+      supabaseFetch(`centralweb_bandejas?select=id,key,parent_id,sector&empresa_id=eq.${empresaId}`)
     ]);
     if (!empresas || !empresas.length) {
       res.status(500).json({ ok: false, error: 'Empresa no encontrada' });
       return;
     }
     const sigla = empresas[0].sigla;
+    const empresaNombre = empresas[0].nombre_formal || 'CentralWeb';
     const bandejaPorId = {};
     (bandejas || []).forEach(b => { bandejaPorId[b.id] = b; });
     const bandeja = bandejaPorId[caso.bandeja_id];
@@ -123,7 +124,9 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     if (subBandeja) partes.push(subBandeja.key);
     partes.push(sigla);
     const fromAddress = `${partes.join('.')}@${MAILGUN_DOMAIN}`;
-    const fromDisplay = `${perfil.nombre || 'Soporte'} <${fromAddress}>`;
+    const sectorBandeja = (subBandeja && subBandeja.sector) || (bandeja && bandeja.sector) || null;
+    const remitenteNombre = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
+    const fromDisplay = `${remitenteNombre} <${fromAddress}>`;
     const asuntoFinal = asunto || `Re: ${caso.asunto || ''}`.trim(); const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
 
     const form = new FormData(); form.append('from', fromDisplay); form.append('to', to); if (cc) form.append('cc', cc); form.append('subject', asuntoFinal); form.append('html', cuerpoHtml); form.append('h:Reply-To', fromAddress); for (const a of adjuntosFinal) { if (a.buffer) form.append('attachment', new Blob([a.buffer], { type: a.tipo || 'application/octet-stream' }), a.nombre); } const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form });
