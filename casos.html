@@ -919,7 +919,7 @@
             Mi perfil
           </div>
           <div class="dropdown-sep"></div>
-          <div class="dropdown-item danger">
+          <div class="dropdown-item danger" onclick="cerrarSesion()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;opacity:.7"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Cerrar sesión
           </div>
@@ -1120,6 +1120,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script>
+async function cerrarSesion() {
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (e) {
+    console.error('Error al cerrar sesion:', e.message);
+  }
+  window.location.href = 'login.html';
+}
+
 (async function () {
   // ════════════════════════════════
   //  SESION REAL (Supabase) — reemplaza el viejo gate de localStorage
