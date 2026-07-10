@@ -1126,6 +1126,7 @@ async function cerrarSesion() {
   } catch (e) {
     console.error('Error al cerrar sesion:', e.message);
   }
+  Object.keys(localStorage).filter(k => k.startsWith('cw_')).forEach(k => localStorage.removeItem(k));
   window.location.href = 'login.html';
 }
 
@@ -1163,6 +1164,18 @@ async function cerrarSesion() {
   if (errorPerfil || !perfil) { window.location.href = 'login.html'; return; }
 
   const EMPRESA_ID = perfil.empresa_id; const CURRENT_USER_ID = session.user.id;
+
+  // ── Evita heredar pestañas/filtros/selecciones de OTRO usuario que haya
+  // iniciado sesión antes en este mismo navegador (localStorage es por
+  // dominio, no por usuario). Si el usuario logueado cambió, limpiamos
+  // todo el estado visual "cw_*" antes de que se lea/renderice.
+  const _cwUsuarioGuardado = localStorage.getItem('cw_usuario_activo');
+  if (_cwUsuarioGuardado && _cwUsuarioGuardado !== CURRENT_USER_ID) {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('cw_') && k !== 'cw_usuario_activo')
+      .forEach(k => localStorage.removeItem(k));
+  }
+  localStorage.setItem('cw_usuario_activo', CURRENT_USER_ID);
 
   const [{ data: bandejasDB }, { data: usuariosDB }, { data: permisosDB }, { data: casosDB }] = await Promise.all([
     supabaseClient.from('centralweb_bandejas').select('*').eq('empresa_id', EMPRESA_ID),
