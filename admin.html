@@ -1115,6 +1115,19 @@
     document.getElementById(ddId).classList.remove('open');
   }
 
+  // Resetea el label de fuente/tamaño de un toolbar a sus valores por defecto
+  // (13 / Inter). Necesario porque _buildRteToolbar solo corre una vez al
+  // cargar la página: sin esto, el picker queda mostrando el último tamaño
+  // elegido aunque el editor se haya vaciado para un caso/bandeja nuevo.
+  function _rteResetToolbarLabels(tid) {
+    const sizeLabel = document.getElementById(`rsp_label_${tid}`);
+    if (sizeLabel) sizeLabel.textContent = '13';
+    document.querySelectorAll(`#rsp_dd_${tid} .rte-picker-option`).forEach(o => o.classList.toggle('selected', o.textContent === '13'));
+    const fontLabel = document.getElementById(`rfp_label_${tid}`);
+    if (fontLabel) { fontLabel.textContent = 'Inter'; fontLabel.style.fontFamily = 'Inter,sans-serif'; }
+    document.querySelectorAll(`#rfp_dd_${tid} .rte-picker-option`).forEach(o => o.classList.toggle('selected', o.textContent === 'Inter'));
+  }
+
   // ── Color picker (fondo + texto) ──
   const _RTE_COLOR_PALETTE = [
     ['#000000','#434343','#666666','#999999','#b7b7b7','#cccccc','#d9d9d9','#efefef','#f3f3f3','#ffffff'],
@@ -1576,6 +1589,7 @@ async function eliminarUsuario(id) {
     _aliasManualBandeja = null;
     renderUsuariosChecklist('modal-bandeja-usuarios-checks');
     _rteSetAttachments('toolbar_crear_bandeja', []);
+    _rteResetToolbarLabels('toolbar_crear_bandeja');
     document.getElementById('modal-bandeja-backdrop').classList.add('open');
   }
 
@@ -1876,6 +1890,7 @@ async function eliminarUsuario(id) {
     document.getElementById('modal-respuesta-codigo').value = '';
     document.getElementById('modal-respuesta-nombre').value = '';
     document.getElementById('modal-respuesta-texto').innerHTML = '';
+    _rteResetToolbarLabels('toolbar_crear_respuesta');
     document.getElementById('modal-respuesta-backdrop').classList.add('open');
   }
 
