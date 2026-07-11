@@ -1469,6 +1469,14 @@ setTimeout(_ocultarOverlayCarga, 4000);
     const from     = tr.querySelector('.from-line')?.textContent.toLowerCase() || '';
     const ticket   = (tr.dataset.ticket || '').toLowerCase();
     const asignado = tr.querySelector('.td-asignado')?.textContent.toLowerCase() || '';
+
+    // Si la búsqueda es un número de ticket (con o sin '#'), matcheo EXACTO por ticket
+    // en vez de "includes", para no traer casos cuyo email/asunto simplemente contenga
+    // esos mismos dígitos como substring (ej: nicolas.gravina11@gmail.com al buscar "11").
+    const qTicket = q.replace(/^#/, '');
+    if (/^\d+$/.test(qTicket)) {
+      return ticket.replace('#', '') === qTicket;
+    }
     return subject.includes(q) || from.includes(q) || ticket.includes(q) || asignado.includes(q);
   }
 
