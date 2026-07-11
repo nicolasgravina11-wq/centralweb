@@ -2416,7 +2416,7 @@
         // visibles (no dependen de "Mostrar eventos"), igual que en el flujo en vivo.
         // Pero solo si sigue combinado: si ya se descombinó, _combinadoDeMap() ya no
         // lo lista y no hay que reintegrar ese contenido.
-        const sigueCombinado = (_combinadoDeMap()[c.ticket] || []).includes(ev.otro);
+        const sigueCombinado = (function() { try { const otroReal = window._supaCasosPorTicket && window._supaCasosPorTicket[ev.otro]; const casoReal = window._supaCasosPorTicket && window._supaCasosPorTicket[c.ticket]; if (otroReal && casoReal) return otroReal.combinado_con_id === casoReal.id && otroReal.estado === 'cerrado'; } catch (eSigue) {} return (_combinadoDeMap()[c.ticket] || []).includes(ev.otro); })();
         if (ev.tipo === 'combinar' && ev.rol === 'principal' && sigueCombinado) {
           return [marker, { ts: (ev.ts || 0) + 0.1, isChange: false, build: () => _buildAbsorbedThreadFragment(ev.otro) }];
         }
