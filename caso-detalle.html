@@ -1867,6 +1867,12 @@
     const fecha = info.date ? `${info.date}${info.time ? ' · ' + info.time : ''}` : '';
     const bandejaLabel = _bandejaLabelsDetail[info.bandeja] || 'Bandeja principal';
     const cuerpo = _mensajeIngresoHTML(absorbido);
+    const casoRefAbs = window._supaCasosPorTicket && window._supaCasosPorTicket[absorbido];
+    const bAbs = (casoRefAbs && window._supaBandejaPorId) ? window._supaBandejaPorId[casoRefAbs.bandeja_id] : null;
+    const sbAbs = (casoRefAbs && casoRefAbs.sub_bandeja_id && window._supaBandejaPorId) ? window._supaBandejaPorId[casoRefAbs.sub_bandeja_id] : null;
+    const sectorAbs = (sbAbs && sbAbs.sector) || (bAbs && bAbs.sector) || null;
+    const empresaAbs = (window._EMPRESA_NOMBRE_REAL || 'CentralWeb').toUpperCase();
+    const remitenteAbs = sectorAbs ? (empresaAbs + ' - ' + sectorAbs) : empresaAbs;
 
     const ingreso = document.createElement('div');
     ingreso.className = 'timeline-entry';
@@ -1893,7 +1899,7 @@
               <div class="email-from-name">
                 <span class="from-sender">${info.fromName || ''}</span>
                 <span class="from-arrow">›</span>
-                <span class="from-recipient">CentralWeb</span>
+                <span class="from-recipient">${remitenteAbs}</span>
               </div>
             </div>
             <div class="email-date">${fecha}</div>
@@ -1931,7 +1937,7 @@
             </div>
             <div class="email-from">
               <div class="email-from-name">
-                <span class="from-sender">CentralWeb</span>
+                <span class="from-sender">${remitenteAbs}</span>
                 <span class="from-arrow">›</span>
                 <span class="from-recipient">${info.fromName || ''}</span>
               </div>
