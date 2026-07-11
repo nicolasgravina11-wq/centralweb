@@ -2412,6 +2412,8 @@
                     var rThis = await supabaseClient.from('centralweb_casos').select('id').eq('ticket', c.ticket).maybeSingle();
                     var otroCaso = rOtro && rOtro.data, thisCaso = rThis && rThis.data;
                     if (otroCaso && thisCaso && otroCaso.combinado_con_id === thisCaso.id && otroCaso.estado === 'cerrado') {
+                      var waitStart = Date.now();
+                      while (!(window._BANDEJAS_DETAIL_REAL && window._BANDEJAS_DETAIL_REAL.length) && (Date.now() - waitStart) < 5000) { await new Promise(function(r){ setTimeout(r, 150); }); }
                       var elAbs = _buildAbsorbedThreadFragment(pev.otro);
                       _insertTimelineEntryChrono(elAbs, (pev.ts || 0) + 0.1);
                     }
