@@ -1990,7 +1990,7 @@
     notasAEliminar.forEach(n => document.getElementById(n.noteId)?.remove());
 
     // Quitar flags de combinación
-    const conMap = _combinadoConMap(); delete conMap[absorbido]; localStorage.setItem('cw_combinado_con_map', JSON.stringify(conMap)); _syncCombinarSupabase(absorbido, principal); _syncCombinarSupabase(absorbido, principal); _syncCombinarSupabase(absorbido, principal);
+    const conMap = _combinadoConMap(); delete conMap[absorbido]; localStorage.setItem('cw_combinado_con_map', JSON.stringify(conMap));
     const deMap = _combinadoDeMap();
     deMap[principal] = (deMap[principal] || []).filter(t => t !== absorbido);
     localStorage.setItem('cw_combinado_de_map', JSON.stringify(deMap));
