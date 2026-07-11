@@ -70,7 +70,7 @@ async function supabaseFetch(path, options = {}) {
   return respuesta.json();
 }
 
-async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`; const asuntoAuto = `Respuesta Automática — Caso ${ticket}`; const form = new FormData(); form.append('from', `${empresaNombre || 'CentralWeb'} <${fromAddress}>`); form.append('to', toEmail); form.append('subject', asuntoAuto); form.append('html', cuerpoHtml); form.append('h:Reply-To', fromAddress); const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form }); const mgJson = await mgResp.json().catch(() => ({})); if (!mgResp.ok) throw new Error(mgJson.message || 'Error enviando auto-respuesta'); return { mailgunId: mgJson.id || null, cuerpoHtml, asunto: asuntoAuto }; } function partirRemitente(remitenteCrudo) {
+async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre, mensajeBienvenida) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = mensajeBienvenida || `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`; const asuntoAuto = `Respuesta Automática — Caso ${ticket}`; const form = new FormData(); form.append('from', `${empresaNombre || 'CentralWeb'} <${fromAddress}>`); form.append('to', toEmail); form.append('subject', asuntoAuto); form.append('html', cuerpoHtml); form.append('h:Reply-To', fromAddress); const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form }); const mgJson = await mgResp.json().catch(() => ({})); if (!mgResp.ok) throw new Error(mgJson.message || 'Error enviando auto-respuesta'); return { mailgunId: mgJson.id || null, cuerpoHtml, asunto: asuntoAuto }; } function partirRemitente(remitenteCrudo) {
   const conNombre = (remitenteCrudo || '').match(/^(.*?)\s*<(.+)>$/);
   if (conNombre) {
     return { nombre: conNombre[1].trim().replace(/^"|"$/g, ''), email: conNombre[2].trim() };
@@ -133,7 +133,7 @@ module.exports = async (req, res) => {
     const empresaNombre = empresas[0].nombre_formal || 'CentralWeb';
 
     const bandejas = await supabaseFetch(
-      `centralweb_bandejas?select=id,sector&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(bandejaKey)}&parent_id=is.null`
+      `centralweb_bandejas?select=id,sector,mensaje_bienvenida&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(bandejaKey)}&parent_id=is.null`
     );
     if (!bandejas || !bandejas.length) {
       throw new Error(`No existe la bandeja "${bandejaKey}" para la empresa "${sigla}"`);
@@ -142,11 +142,12 @@ module.exports = async (req, res) => {
 
     let subBandejaId = null;
     let subBandejaSector = null;
+    let subBandejaMensaje = null;
     if (subBandejaKey) {
       const subBandejas = await supabaseFetch(
-        `centralweb_bandejas?select=id,sector&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(subBandejaKey)}&parent_id=eq.${bandejaId}`
+        `centralweb_bandejas?select=id,sector,mensaje_bienvenida&empresa_id=eq.${empresaId}&key=eq.${encodeURIComponent(subBandejaKey)}&parent_id=eq.${bandejaId}`
       );
-      if (subBandejas && subBandejas.length) { subBandejaId = subBandejas[0].id; subBandejaSector = subBandejas[0].sector || null; }
+      if (subBandejas && subBandejas.length) { subBandejaId = subBandejas[0].id; subBandejaSector = subBandejas[0].sector || null; subBandejaMensaje = subBandejas[0].mensaje_bienvenida || null; }
     }
 
     const numeroTicket = await supabaseFetch('rpc/centralweb_next_ticket', {
@@ -182,7 +183,8 @@ module.exports = async (req, res) => {
         tipo: 'caso_creado_por_email',
         data: { from: fromEmail, asunto } }) }); try { const sectorBandeja = subBandejaSector || (bandejas[0] && bandejas[0].sector) || null;
     const remitenteDisplay = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
-    const autoResp = await enviarAutoRespuesta(recipient, fromEmail, ticket, remitenteDisplay); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
+    const mensajeBienvenida = subBandejaMensaje || (bandejas[0] && bandejas[0].mensaje_bienvenida) || null;
+    const autoResp = await enviarAutoRespuesta(recipient, fromEmail, ticket, remitenteDisplay, mensajeBienvenida); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
     res.status(200).send('OK');
   } catch (e) {
     console.error('Error creando el caso desde el correo entrante:', e.message);
