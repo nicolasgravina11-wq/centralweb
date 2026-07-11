@@ -1294,7 +1294,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
       subject: c.asunto || '(sin asunto)',
       from: `${c.from_name || ''} <${c.from_email || ''}>`.trim(),
       date: fecha, time: hora,
-      unread: !_readSetInicial.has(c.ticket),
+      unread: !c.leido,
     };
   });
 
@@ -1314,15 +1314,8 @@ setTimeout(_ocultarOverlayCarga, 4000);
   }
 
   function aplicarLeidos() {
-    try {
-      const read = new Set(JSON.parse(localStorage.getItem('cw_read') || '[]'));
-      document.querySelectorAll('tbody tr[data-ticket]').forEach(tr => {
-        if (!read.has(tr.dataset.ticket)) return;
-        tr.classList.remove('unread');
-        const icon = tr.querySelector('.mail-icon');
-        if (icon) { icon.classList.remove('unread'); icon.classList.add('read'); }
-      });
-    } catch(e) {}
+    // No-op: el estado leido ahora es global (Supabase, columna leido) y se aplica
+    // directamente al renderizar cada fila (ver CASOS_REALES / unread: !c.leido).
   }
   function reabrirPorRespuesta(ticket) {
     // Cambia estado a abierto
@@ -2002,20 +1995,14 @@ setTimeout(_ocultarOverlayCarga, 4000);
     localStorage.setItem('cw_read', JSON.stringify([...s]));
   }
   function applyReadState() {
-    const read = getReadSet();
-    [...tbody.querySelectorAll('tr[data-ticket]')].forEach(tr => {
-      if (read.has(tr.dataset.ticket)) {
-        tr.classList.remove('unread');
-        tr.querySelector('.mail-icon')?.classList.replace('unread', 'read');
-      }
-    });
+    // No-op: el estado leido ahora es global (Supabase, columna leido).
     updateUnreadBadge();
   }
 
   // ════════════════════════════════
   //  ROW CLICK → DETAIL
   // ════════════════════════════════
-  tbody.addEventListener('click', e => {
+  tbody.addEventListener('click', async e => {
     const tr = e.target.closest('tr');
     if (!tr || e.target.tagName === 'INPUT' || tr.id === 'empty-state-row') return;
 
@@ -2046,8 +2033,9 @@ setTimeout(_ocultarOverlayCarga, 4000);
     }
     setActiveTab(caso.ticket);
 
-    // Marcar como leído
+    // Marcar como leído (local + Supabase, global para todos los usuarios)
     if (caso.ticket) markTicketRead(caso.ticket);
+    if (caso.ticket) { try { await supabaseClient.from('centralweb_casos').update({ leido: true }).eq('ticket', caso.ticket); } catch (eLeido) {} }
     tr.classList.remove('unread');
     tr.querySelector('.mail-icon')?.classList.replace('unread', 'read');
     updateUnreadBadge();
