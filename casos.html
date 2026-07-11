@@ -382,6 +382,8 @@
     tbody tr.ultimo-visto { background: rgba(13,34,68,.12); transition: background 1.2s ease; }
     tbody tr.ultimo-visto:hover { background: rgba(13,34,68,.18); }
     tbody tr.ultimo-visto.fading { background: transparent; }
+    tbody tr.sin-acceso-bandeja { opacity: .5; cursor: not-allowed; }
+    tbody tr.sin-acceso-bandeja:hover { background: transparent; }
 
     td {
       padding: 10px 16px;
@@ -1404,8 +1406,10 @@ setTimeout(_ocultarOverlayCarga, 4000);
   //  BUILD ROW
   // ════════════════════════════════
   function buildRow(d) {
+    const _accesoOk = tieneAccesoBandeja(d.subBandeja);
+    const _rowClasses = [d.unread ? 'unread' : '', _accesoOk ? '' : 'sin-acceso-bandeja'].filter(Boolean).join(' ');
     return `
-      <tr${d.unread ? ' class="unread"' : ''} data-status="${d.status}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
+      <tr${_rowClasses ? ` class="${_rowClasses}"` : ''} data-status="${d.status}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
         <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
         <td class="td-icon"><div class="mail-icon ${d.unread ? 'unread' : 'read'}">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
@@ -2005,6 +2009,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   tbody.addEventListener('click', async e => {
     const tr = e.target.closest('tr');
     if (!tr || e.target.tagName === 'INPUT' || tr.id === 'empty-state-row') return;
+    if (!tieneAccesoBandeja(tr.dataset.bandeja)) { alert('No tenés permiso para abrir este caso: pertenece a una bandeja a la que no tenés acceso.'); return; }
 
     // Recolectar datos del caso desde el DOM
     const fromRaw  = tr.querySelector('.from-line')?.textContent.replace('De: ', '').trim() || '';
