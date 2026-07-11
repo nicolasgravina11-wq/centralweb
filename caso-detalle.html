@@ -2401,6 +2401,24 @@
             });
             if (combineChanged) localStorage.setItem(combineKey, JSON.stringify(localCombine));
             if (transferChanged) localStorage.setItem(transferKey, JSON.stringify(localTransfer));
+            (async function() {
+              try {
+                const principales = localCombine.filter(function(pe){ return pe.tipo === 'combinar' && pe.rol === 'principal'; });
+                for (var pi = 0; pi < principales.length; pi++) {
+                  var pev = principales[pi];
+                  if (document.querySelector('[data-combined-ticket="' + pev.otro + '"]')) continue;
+                  try {
+                    var rOtro = await supabaseClient.from('centralweb_casos').select('id,estado,combinado_con_id').eq('ticket', pev.otro).maybeSingle();
+                    var rThis = await supabaseClient.from('centralweb_casos').select('id').eq('ticket', c.ticket).maybeSingle();
+                    var otroCaso = rOtro && rOtro.data, thisCaso = rThis && rThis.data;
+                    if (otroCaso && thisCaso && otroCaso.combinado_con_id === thisCaso.id && otroCaso.estado === 'cerrado') {
+                      var elAbs = _buildAbsorbedThreadFragment(pev.otro);
+                      _insertTimelineEntryChrono(elAbs, (pev.ts || 0) + 0.1);
+                    }
+                  } catch (eCheckAbs) {}
+                }
+              } catch (eAbsLoop) {}
+            })();
           } catch (eEventosRemotos2) {}
         }).catch(function(){});
       } catch (eEventosRemotos) {}
