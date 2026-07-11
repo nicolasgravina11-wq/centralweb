@@ -406,9 +406,9 @@
     }
     .historico-item {
       display: grid;
-      grid-template-columns: 40px 1fr auto 46px;
-      grid-template-rows: auto auto;
-      column-gap: 7px; row-gap: 2px;
+      grid-template-columns: 26px minmax(26px,1fr) minmax(46px,92px) auto 38px 20px;
+      grid-template-rows: auto;
+      column-gap: 6px; row-gap: 0;
       padding: 7px 14px 7px 20px;
       border-bottom: 1px solid var(--blue-50);
       cursor: pointer; transition: background .12s;
@@ -431,20 +431,20 @@
       font-size: 11px; font-weight: 500; color: var(--text-primary);
       grid-column: 2; grid-row: 1;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      align-self: center;
-    }
-    .hist-estado {
-      grid-column: 3; grid-row: 1; align-self: center;
-    }
-    .hist-fecha {
-      font-size: 10px; color: var(--text-muted);
-      grid-column: 4; grid-row: 1; text-align: right; white-space: nowrap; align-self: center;
+      align-self: center; cursor: help;
     }
     .hist-usuario {
       font-size: 10px; color: var(--text-muted);
-      grid-column: 2 / 5; grid-row: 2;
+      grid-column: 3; grid-row: 1;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      padding-top: 1px;
+      align-self: center; cursor: help;
+    }
+    .hist-estado {
+      grid-column: 4; grid-row: 1; align-self: center;
+    }
+    .hist-fecha {
+      font-size: 10px; color: var(--text-muted);
+      grid-column: 5; grid-row: 1; text-align: right; white-space: nowrap; align-self: center;
     }
     .hist-sin-acceso { opacity: .5; }
     .hist-sin-acceso .hist-open-btn { cursor: not-allowed; text-decoration: none; color: var(--text-muted); }
@@ -463,16 +463,15 @@
 
     /* Combinar casos */
     .combine-btn {
-      grid-column: 1 / 5; grid-row: 3;
-      display: inline-flex; align-items: center; gap: 5px;
-      margin-top: 3px; padding: 3px 8px; border-radius: 6px;
+      grid-column: 6; grid-row: 1; justify-self: center;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; padding: 0; border-radius: 5px;
       background: var(--blue-100); color: var(--blue-700);
-      font-size: 10px; font-weight: 700; border: none; cursor: pointer;
-      font-family: inherit; width: fit-content;
+      border: none; cursor: pointer;
+      font-family: inherit; align-self: center;
     }
     .combine-btn:hover { background: var(--blue-200); }
-    .combine-btn svg { width: 11px; height: 11px; }
-    .historico-item { grid-template-rows: auto auto auto; }
+    .combine-btn svg { width: 12px; height: 12px; }
 
     /* transfer modal */
     #dtransfer-modal-backdrop { display:none; position:fixed; inset:0; background:rgba(10,22,40,.5); backdrop-filter:blur(3px); z-index:10000; align-items:center; justify-content:center; }
@@ -1590,18 +1589,15 @@
           const invalida = _combineInvalidada(currentTicket, snap.mergeTs);
           const descombinarIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4h10z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>`;
           if (invalida) {
-            accionBtn = `<button class="combine-btn" disabled style="background:#f1f5f9;color:var(--text-muted);cursor:default" title="No se puede descombinar: ya se respondió">${descombinarIcon} No se puede descombinar</button>`;
+            accionBtn = `<button class="combine-btn" disabled style="background:#f1f5f9;color:var(--text-muted);cursor:default" title="No se puede descombinar: ya se respondió">${descombinarIcon}</button>`;
           } else if (currentEstado === 'cerrado') {
-            accionBtn = `<button class="combine-btn" disabled style="background:#fee2e2;color:#b91c1c;opacity:.45;cursor:not-allowed" title="Reabrí el caso para poder descombinar">${descombinarIcon} Descombinar</button>`;
+            accionBtn = `<button class="combine-btn" disabled style="background:#fee2e2;color:#b91c1c;opacity:.45;cursor:not-allowed" title="Reabrí el caso para poder descombinar">${descombinarIcon}</button>`;
           } else {
-            accionBtn = `<button class="combine-btn" style="background:#fee2e2;color:#b91c1c" onclick="_descombinar('${c.ticket}')">${descombinarIcon} Descombinar</button>`;
+            accionBtn = `<button class="combine-btn" style="background:#fee2e2;color:#b91c1c" onclick="_descombinar('${c.ticket}')" title="Descombinar">${descombinarIcon}</button>`;
           }
         }
       } else if (puedeCombinar) {
-        accionBtn = `<button class="combine-btn" onclick="openCombinarModal('${c.ticket}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4h10z"/><path d="M8 12h8"/></svg>
-          Combinar
-        </button>`;
+        accionBtn = `<button class="combine-btn" onclick="openCombinarModal('${c.ticket}')" title="Combinar con el caso actual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4h10z"/><path d="M8 12h8"/></svg></button>`;
       }
 
       return `<div class="historico-item${tieneAcceso?'':' hist-sin-acceso'}">
@@ -1609,7 +1605,7 @@
         <span class="hist-asunto" data-full="${c.asunto}">${c.asunto}</span>
         <span class="hist-estado">${estadoTexto}</span>
         <span class="hist-fecha"${isActual?' style="color:var(--blue-600);font-weight:600"':''}>${fechaCorta}</span>
-        <span class="hist-usuario">${tieneAcceso?'':'&#128274; '}${bandejaTexto} &middot; ${c.asignado}</span>
+        <span class="hist-usuario" data-full="${bandejaTexto} · ${c.asignado}">${tieneAcceso?'':'&#128274; '}${bandejaTexto} &middot; ${c.asignado}</span>
         ${accionBtn}
       </div>`;
     };
@@ -2681,7 +2677,7 @@
   function _initHistTooltip() {
     const pane = document.getElementById('tab-historico');
     pane.addEventListener('mouseover', e => {
-      const el = e.target.closest('.hist-asunto');
+      const el = e.target.closest('.hist-asunto, .hist-usuario');
       if (!el) return;
       clearTimeout(_histTipTimer);
       _histTipTimer = setTimeout(() => {
