@@ -168,7 +168,7 @@ module.exports = async (req, res) => {
         asunto,
         from_name: fromName,
         from_email: fromEmail,
-        mensaje_inicial: cuerpo, adjuntos
+        mensaje_inicial: cuerpo, adjuntos, leido: false
       })
     });
     const caso = casos[0];
