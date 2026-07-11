@@ -1758,14 +1758,15 @@
     const now = Date.now();
     const bMap = _bandejaMap(), aMap = _asignadoMap(), dMap = _displayMap(), sMap = _statusMap();
 
-    // Snapshot del absorbido para poder descombinar
-    localStorage.setItem('cw_pre_combine_' + absorbido, JSON.stringify({
+    // Snapshot del absorbido para poder descombinar (también viaja en el evento remoto)
+    const _preCombineSnap = {
       bandeja: bMap[absorbido] || 'principal',
       asignado: aMap[absorbido] || null,
       display: dMap[absorbido] || null,
       status: sMap[absorbido] || _findCaseInfo(absorbido).estado || 'abierto',
       mergeTs: now,
-    }));
+    };
+    localStorage.setItem('cw_pre_combine_' + absorbido, JSON.stringify(_preCombineSnap));
 
     // El absorbido pasa a cerrado
     sMap[absorbido] = 'cerrado';
@@ -1783,7 +1784,7 @@
 
     // Evento en timeline de ambos casos (persistido para cuando se abran)
     _saveCombineEvent(principal, { tipo:'combinar', otro: absorbido, rol:'principal', ts: now });
-    _saveCombineEvent(absorbido, { tipo:'combinar', otro: principal, rol:'absorbido', ts: now });
+    _saveCombineEvent(absorbido, { tipo:'combinar', otro: principal, rol:'absorbido', ts: now, snap: _preCombineSnap });
 
     // Si el caso actual en pantalla es el principal o el absorbido, refrescar UI sin recargar
     try {
@@ -2006,7 +2007,9 @@
   function _combineInvalidada(principal, mergeTs) {
     try {
       const lastOut = parseInt(localStorage.getItem('cw_last_outgoing_' + principal) || '0', 10);
-      return lastOut > mergeTs;
+      if (lastOut > mergeTs) return true;
+      const remotos = window._supaMensajesSalientes || [];
+      return remotos.some(function(m) { return m.creado_en && new Date(m.creado_en).getTime() > mergeTs; });
     } catch { return false; }
   }
 
@@ -2414,6 +2417,9 @@
             let combineChanged = false, transferChanged = false;
             eventosRemotos.forEach(function(er) {
               const ev = er.payload;
+              if (er.tipo === 'combinar' && ev && ev.rol === 'absorbido' && ev.snap && !localStorage.getItem('cw_pre_combine_' + c.ticket)) {
+                try { localStorage.setItem('cw_pre_combine_' + c.ticket, JSON.stringify(ev.snap)); } catch (eSnapBackfill) {}
+              }
               if (er.tipo === 'combinar' || er.tipo === 'descombinar') {
                 if (!localCombine.some(function(le){ return le.ts === ev.ts && le.tipo === ev.tipo && le.otro === ev.otro; })) {
                   localCombine.push(ev);
