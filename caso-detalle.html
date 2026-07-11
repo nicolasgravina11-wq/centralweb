@@ -1576,7 +1576,7 @@
       const badgeClass = { abierto:'abierto', espera:'espera', cerrado:'cerrado' }[estado] || 'cerrado';
       const badgeLabel = { abierto:'Abierto', espera:'En espera', cerrado:'Cerrado' }[estado] || 'Cerrado';
       const fechaCorta = c.date.replace(/ \d{4}/,'');
-      const puedeCombinar = !isActual && estado === 'abierto' && currentEstado === 'abierto' && !combinadoEnTicket;
+      const puedeCombinar = !isActual && estado === 'abierto' && currentEstado === 'abierto' && !combinadoEnTicket && tieneAcceso;
       const estadoTexto = combinadoEnTicket
         ? `<span class="badge-sm cerrado" style="font-size:10px;padding:1px 6px">Combinado → ${combinadoEnTicket}</span>`
         : `<span class="badge-sm ${badgeClass}" style="font-size:10px;padding:1px 6px">${isActual?'actual':badgeLabel}</span>`;
@@ -1704,6 +1704,7 @@
     if (!actual.ticket) return;
     const a = { ticket: actual.ticket, asunto: actual.subject, date: actual.date };
     const b = _findCaseInfo(histTicket);
+    if (b && !_tieneAccesoBandejaDetail(b.bandeja)) { alert('No tenés permiso para combinar con este caso: pertenece a una bandeja a la que no tenés acceso.'); return; }
     const [older, newer] = _ticketNum(a.ticket) <= _ticketNum(b.ticket) ? [a, b] : [b, a];
     const fromName = actual.fromName || '';
 
