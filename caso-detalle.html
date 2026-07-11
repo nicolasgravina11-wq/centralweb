@@ -4062,6 +4062,7 @@ function openNote() {
       const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}');
       if (!c.ticket) return;
       const isUser = targetBandeja === 'user_ng' || (typeof _usuariosDetail !== 'undefined' && Array.isArray(_usuariosDetail) && _usuariosDetail.some(function(u){ return u.key === targetBandeja; }));
+      const _esUsrKeyDetail = function(k) { return !!k && (k === 'user_ng' || (typeof _usuariosDetail !== 'undefined' && Array.isArray(_usuariosDetail) && _usuariosDetail.some(function(u){ return u.key === k; }))); };
 
       // Bandeja map (routing)
       const map = JSON.parse(localStorage.getItem('cw_bandeja_map') || '{}');
@@ -4077,7 +4078,7 @@ function openNote() {
       const displayMap = JSON.parse(localStorage.getItem('cw_bandeja_display_map') || '{}');
       if (isUser) {
         // Guardar bandeja actual como display solo si no es un usuario
-        if (!currentBandeja.startsWith('user_')) {
+        if (!_esUsrKeyDetail(currentBandeja)) {
           displayMap[c.ticket] = currentBandeja;
           localStorage.setItem('cw_bandeja_display_map', JSON.stringify(displayMap));
         }
@@ -4115,7 +4116,7 @@ function openNote() {
 
       // Margen de error: si volvés a la lista y estás mirando la bandeja de la que sacaste
       // este caso, sigue apareciendo ahí (apagado) hasta que cambies de bandeja o filtres "Abierto".
-      if (!currentBandeja.startsWith('user_')) {
+      if (!_esUsrKeyDetail(currentBandeja)) {
         try {
           const gracia = JSON.parse(sessionStorage.getItem('cw_casos_en_gracia') || '{}');
           gracia[c.ticket] = currentBandeja;
