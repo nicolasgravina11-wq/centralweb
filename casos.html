@@ -2026,7 +2026,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
       ticket:    tr.dataset.ticket || '',
       status:    tr.dataset.status || 'abierto',
       bandeja:   tr.dataset.bandeja || getBandejasDinamicas()[0]?.key,
-      subject:   tr.querySelector('.subject-line')?.textContent.trim() || '',
+      subject:   (function(){ const sl = tr.querySelector('.subject-line'); if (!sl) return ''; const clone = sl.cloneNode(true); const badge = clone.querySelector('.badge-transferido'); if (badge) badge.remove(); return clone.textContent.trim(); })(),
       fromName:  fromMatch ? fromMatch[1].trim() : fromRaw,
       fromEmail: fromMatch ? fromMatch[2].trim() : '',
       userInit:  tr.querySelector('.mini-avatar')?.textContent.trim() || '',
