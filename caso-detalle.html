@@ -2462,6 +2462,39 @@
         }).catch(function(){});
       } catch (eEventosRemotos) {}
     })();
+
+    // Backfill del snapshot de pre-combinación para poder descombinar desde el caso PRINCIPAL,
+    // aunque la combinación se haya hecho en otro navegador/usuario (el snapshot viaja en el
+    // evento remoto del caso absorbido, no en el del principal).
+    (function() {
+      try {
+        supabaseClient.from('centralweb_caso_eventos')
+          .select('ticket,payload')
+          .eq('tipo', 'combinar')
+          .filter('payload->>otro', 'eq', c.ticket)
+          .filter('payload->>rol', 'eq', 'absorbido')
+          .then(function(res) {
+            try {
+              const rows = res && res.data;
+              if (!rows || !rows.length) return;
+              let backfilled = false;
+              rows.forEach(function(row) {
+                if (row.payload && row.payload.snap && !localStorage.getItem('cw_pre_combine_' + row.ticket)) {
+                  localStorage.setItem('cw_pre_combine_' + row.ticket, JSON.stringify(row.payload.snap));
+                  backfilled = true;
+                }
+              });
+              if (backfilled) {
+                try {
+                  const actualNow = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}');
+                  if (typeof _renderHistorico === 'function' && actualNow.ticket) _renderHistorico(actualNow.ticket, actualNow.fromEmail);
+                } catch (eRe) {}
+              }
+            } catch (eInner) {}
+          });
+      } catch (eOuter) {}
+    })();
+
     function _insertTimelineEntryChrono(el, ts) { try { el.dataset.ts = ts; const actionBarEl = document.getElementById('action-bar'); const actionBarEntry2 = actionBarEl && actionBarEl.closest('.timeline-entry'); const entries = Array.from(document.querySelectorAll('.timeline-entry[data-ts]')); for (var i = 0; i < entries.length; i++) { var existing = entries[i]; if (existing === el) continue; if (ts < Number(existing.dataset.ts)) { existing.before(el); return; } } if (actionBarEntry2) actionBarEntry2.before(el); } catch (eIns) { const actionBarEl2 = document.getElementById('action-bar'); if (actionBarEl2 && actionBarEl2.closest('.timeline-entry')) actionBarEl2.closest('.timeline-entry').before(el); } }
     const eventos = [
       ...notas.map(n        => ({ ts: n.ts || 0, isChange: false, build: () => _buildNoteEntry(n) })),
