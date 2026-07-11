@@ -372,17 +372,18 @@
     .print-btn svg { width: 20px; height: 20px; }
 
     .badge-sm {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 12px; font-weight: 600; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 6px;
+      font-size: 14px; font-weight: 700; white-space: nowrap;
+      cursor: pointer;
     }
-    .badge-sm::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .badge-sm.abierto  { background: #fde8e8; color: #b91c1c; }
-    .badge-sm.abierto::before { background: #f87171; }
-    .badge-sm.espera   { background: #e0f5ff; color: #0369a1; }
-    .badge-sm.espera::before  { background: #38bdf8; }
-    .badge-sm.cerrado  { background: #e0f2fe; color: #475569; }
-    .badge-sm.cerrado::before { background: #94a3b8; }
+    .badge-sm::before { content: ''; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .badge-sm.abierto  { background: #f8caca; color: #7f1d1d; }
+    .badge-sm.abierto::before { background: #dc2626; }
+    .badge-sm.espera   { background: #bfe6fb; color: #075985; }
+    .badge-sm.espera::before  { background: #0284c7; }
+    .badge-sm.cerrado  { background: #cbd5e1; color: #1e293b; }
+    .badge-sm.cerrado::before { background: #64748b; }
 
     .detail-row {
       display: flex; align-items: flex-start; gap: 8px;
