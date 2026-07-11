@@ -867,6 +867,8 @@
   </style>
 </head>
 <body>
+<div id="cw-loading-overlay" style="position:fixed;inset:0;background:#f5f6f8;z-index:99999;display:flex;align-items:center;justify-content:center;"><div style="width:32px;height:32px;border:3px solid #dbe1e8;border-top-color:#2563eb;border-radius:50%;animation:cw-spin 0.7s linear infinite;"></div></div>
+<style>@keyframes cw-spin { to { transform: rotate(360deg); } }</style>
 
 <!-- ─── SIDEBAR ─── -->
 <!-- ─── MAIN ─── -->
@@ -1133,6 +1135,8 @@ async function cerrarSesion() {
   window.location.href = 'login.html';
 }
 
+function _ocultarOverlayCarga() { try { var ov = document.getElementById('cw-loading-overlay'); if (ov) ov.style.display = 'none'; } catch (eOv) {} }
+setTimeout(_ocultarOverlayCarga, 4000);
 (async function () {
   // ════════════════════════════════
   //  SESION REAL (Supabase) — reemplaza el viejo gate de localStorage
@@ -2784,6 +2788,7 @@ async function cerrarSesion() {
     transferCases, _quitarNuevoCasoAttach, _copiarTicket, closeTransferModal, revertCases,
     _onNuevoCasoAttach,
   });
+  _ocultarOverlayCarga();
 })();
 </script>
 
