@@ -1414,7 +1414,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   //  BUILD ROW
   // ════════════════════════════════
   function buildRow(d) {
-    const _accesoOk = tieneAccesoBandeja(d.realBandeja);
+    const _accesoOk = tieneAccesoCaso(d.subBandeja, d.realBandeja);
     const _rowClasses = [d.unread ? 'unread' : '', _accesoOk ? '' : 'sin-acceso-bandeja'].filter(Boolean).join(' ');
     return `
       <tr${_rowClasses ? ` class="${_rowClasses}"` : ''} data-status="${d.status}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-real-bandeja="${d.realBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
@@ -2025,7 +2025,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   tbody.addEventListener('click', async e => {
     const tr = e.target.closest('tr');
     if (!tr || e.target.tagName === 'INPUT' || tr.id === 'empty-state-row') return;
-    if (!tieneAccesoBandeja(tr.dataset.realBandeja || tr.dataset.bandeja)) { alert('No tenés permiso para abrir este caso: pertenece a una bandeja a la que no tenés acceso.'); return; }
+    if (!tieneAccesoCaso(tr.dataset.bandeja, tr.dataset.realBandeja)) { alert('No tenés permiso para abrir este caso: pertenece a una bandeja a la que no tenés acceso.'); return; }
 
     // Recolectar datos del caso desde el DOM
     const fromRaw  = tr.querySelector('.from-line')?.textContent.replace('De: ', '').trim() || '';
@@ -2181,6 +2181,14 @@ setTimeout(_ocultarOverlayCarga, 4000);
     if (ES_ADMIN) return true;
     const parentKey = key.includes('::') ? key.split('::')[0] : key;
     return !!getPermisos()[parentKey]?.[CURRENT_USER_KEY]?.acceso;
+  }
+
+  // Excepcion: si el caso esta asignado a mi, lo puedo trabajar aunque no tenga acceso a su bandeja real
+  // (asignar puntualmente es en si mismo un permiso de excepcion; el perfil de respuesta sigue siendo el de la bandeja original).
+  function tieneAccesoCaso(subBandeja, realBandeja) {
+    if (ES_ADMIN) return true;
+    if (subBandeja === CURRENT_USER_KEY) return true;
+    return tieneAccesoBandeja(realBandeja || subBandeja);
   }
 
   function getBandejasAccesibles() {
