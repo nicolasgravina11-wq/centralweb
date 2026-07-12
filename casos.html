@@ -2366,7 +2366,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     const list = document.getElementById('transfer-bandejas-list');
     if (!list) return;
     const todasBandejas = getBandejasDinamicas();
-    list.innerHTML = getBandejasAccesibles().map(b => {
+    list.innerHTML = getBandejasDinamicas().map(b => { // transferir a bandeja padre no requiere tener acceso propio a ella (solo abrir/ver casos si lo requiere)
       const orden = String(todasBandejas.findIndex(x => x.key === b.key) + 1).padStart(2, '0');
       return `<div class="tm-item" onclick="transferCases('${b.key}')"><span class="tm-bandeja-pill">${orden}</span><span>${b.nombre}</span></div>`;
     }).join('');
