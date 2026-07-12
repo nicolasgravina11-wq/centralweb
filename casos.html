@@ -1273,6 +1273,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   }
 
   function _bandejaKeyDeCaso(c) {
+    if (c.asignado_user_id) return c.asignado_user_id; // caso asignado a un usuario: se archiva en su carpeta
     const bandeja = _bandejaPorId[c.bandeja_id];
     if (!bandeja) return null;
     if (c.sub_bandeja_id) {
@@ -2171,6 +2172,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   // Las sub-bandejas heredan el permiso de su bandeja padre (no se configuran aparte, ver admin.html).
   function tieneAccesoBandeja(key) {
     if (ES_ADMIN) return true;
+    if (_esUsuarioKey(key)) return true; // carpetas de usuario: cualquiera puede ver/abrir para cubrir ausencias
     const parentKey = key.includes('::') ? key.split('::')[0] : key;
     return !!getPermisos()[parentKey]?.[CURRENT_USER_KEY]?.acceso;
   }
