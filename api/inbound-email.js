@@ -75,8 +75,8 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
   if (!texto) return '';
   let out = String(texto);
   const patrones = [
-    /\r?\n?El\s.{5,200}?escribi[oó]:[\s\S]*$/i,
-    /\r?\n?On\s.{5,200}?wrote:[\s\S]*$/i,
+    /\r?\n?El\s[\s\S]{5,300}?escribi[oó]:[\s\S]*$/i,
+    /\r?\n?On\s[\s\S]{5,300}?wrote:[\s\S]*$/i,
     /\r?\n?-{2,}\s*Mensaje original\s*-{2,}[\s\S]*$/i,
     /\r?\n?-{2,}\s*Original Message\s*-{2,}[\s\S]*$/i,
     /\r?\n?De:\s*.+\r?\nEnviado:[\s\S]*$/i,
