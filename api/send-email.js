@@ -121,10 +121,9 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
 
     const partes = [];
     if (bandeja) partes.push(bandeja.key);
-    if (subBandeja) partes.push(subBandeja.key);
     partes.push(sigla);
     const fromAddress = `${partes.join('.')}@${MAILGUN_DOMAIN}`;
-    const sectorBandeja = (subBandeja && subBandeja.sector) || (bandeja && bandeja.sector) || null;
+    const sectorBandeja = (bandeja && bandeja.sector) || null;
     const remitenteNombre = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
     const fromDisplay = `${remitenteNombre} <${fromAddress}>`;
     const asuntoFinal = asunto || `Re: ${caso.asunto || ''}`.trim(); const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
