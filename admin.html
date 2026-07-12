@@ -1874,7 +1874,7 @@ async function eliminarUsuario(id) {
         <svg class="sub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
         <span class="sub-tag">Sub-bandeja</span>
         <span class="nombre">${s.nombre}</span>
-        <span class="correo">${correoDeBandeja(b.key)}</span>
+        <span class="correo" style="color:var(--text-muted)">usa el correo de la bandeja padre</span>
         ${ES_ADMIN ? `<button class="remove-btn" onclick="confirmarEliminarSubbandeja('${s.id}')">Eliminar</button>` : ''}
       </div>
     `).join('');
