@@ -79,6 +79,22 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
   return { nombre: '', email: (remitenteCrudo || '').trim() };
 }
 
+function extraerMessageIds(fields) {
+  const crudos = [];
+  if (fields['In-Reply-To']) crudos.push(fields['In-Reply-To']);
+  if (fields['in-reply-to']) crudos.push(fields['in-reply-to']);
+  if (fields['References']) crudos.push(fields['References']);
+  if (fields['references']) crudos.push(fields['references']);
+  if (!crudos.length && fields['message-headers']) {
+    try {
+      const headers = JSON.parse(fields['message-headers']);
+      headers.forEach(([k, v]) => { if (/^(in-reply-to|references)$/i.test(k)) crudos.push(v); });
+    } catch (e) {}
+  }
+  const ids = crudos.join(' ').match(/<[^<>\s]+>/g) || [];
+  return [...new Set(ids)];
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).send('Method not allowed');
@@ -151,13 +167,58 @@ module.exports = async (req, res) => {
       if (subBandejas && subBandejas.length) { subBandejaId = subBandejas[0].id; subBandejaSector = subBandejas[0].sector || null; subBandejaMensaje = subBandejas[0].mensaje_bienvenida || null; }
     }
 
+    const { nombre: fromName, email: fromEmail } = partirRemitente(fields.from || fields.sender);
+
+    // ── Threading: si este correo es una respuesta a algo que nosotros mandamos, sumarlo al caso existente ──
+    const referenciados = extraerMessageIds(fields);
+    let casoExistente = null;
+    for (const msgId of referenciados) {
+      const previos = await supabaseFetch(`centralweb_mensajes?select=caso_id&empresa_id=eq.${empresaId}&direccion=eq.saliente&mailgun_id=eq.${encodeURIComponent(msgId)}&limit=1`);
+      if (previos && previos.length) {
+        const casosPrevios = await supabaseFetch(`centralweb_casos?select=*&id=eq.${previos[0].caso_id}&limit=1`);
+        if (casosPrevios && casosPrevios.length) { casoExistente = casosPrevios[0]; break; }
+      }
+    }
+
+    if (casoExistente) {
+      const adjuntosResp = [];
+      for (const f of files) { try { const path = `${sigla}/${casoExistente.ticket.replace('#', '')}/${Date.now()}-${f.nombre}`; const url = await subirAdjunto(path, f.buffer, f.tipo); adjuntosResp.push({ nombre: f.nombre, url, tamano: f.buffer.length }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
+
+      await supabaseFetch('centralweb_mensajes', {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: JSON.stringify({ empresa_id: empresaId, caso_id: casoExistente.id, autor_id: null, direccion: 'entrante', para: fromEmail, cc: null, asunto, cuerpo_html: cuerpo, mailgun_id: null, adjuntos: adjuntosResp })
+      });
+
+      const patchCaso = { leido: false };
+      if (casoExistente.estado === 'cerrado') {
+        patchCaso.estado = 'abierto';
+        patchCaso.asignado_user_id = null; // vuelve a la bandeja general, no a la carpeta del agente anterior
+      }
+      await supabaseFetch(`centralweb_casos?id=eq.${casoExistente.id}`, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: JSON.stringify(patchCaso)
+      });
+
+      await supabaseFetch('centralweb_eventos', {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: JSON.stringify({ empresa_id: empresaId, caso_id: casoExistente.id, tipo: 'respuesta_cliente_email', data: { from: fromEmail, asunto } })
+      });
+
+      console.log(`Respuesta entrante sumada al caso ${casoExistente.ticket}`);
+      res.status(200).send('OK');
+      return;
+    }
+
     const numeroTicket = await supabaseFetch('rpc/centralweb_next_ticket', {
       method: 'POST',
       body: JSON.stringify({ empresa_uuid: empresaId })
     });
     const ticket = `#${numeroTicket}`;
 
-    const { nombre: fromName, email: fromEmail } = partirRemitente(fields.from || fields.sender); const adjuntos = []; for (const f of files) { try { const path = `${sigla}/${String(numeroTicket)}/${Date.now()}-${f.nombre}`; const url = await subirAdjunto(path, f.buffer, f.tipo); adjuntos.push({ nombre: f.nombre, url, tamano: f.buffer.length }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
+    const adjuntos = []; for (const f of files) { try { const path = `${sigla}/${String(numeroTicket)}/${Date.now()}-${f.nombre}`; const url = await subirAdjunto(path, f.buffer, f.tipo); adjuntos.push({ nombre: f.nombre, url, tamano: f.buffer.length }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
 
     const casos = await supabaseFetch('centralweb_casos', {
       method: 'POST',
