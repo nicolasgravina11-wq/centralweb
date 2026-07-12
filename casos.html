@@ -1272,8 +1272,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     };
   }
 
-  function _bandejaKeyDeCaso(c) {
-    if (c.asignado_user_id) return c.asignado_user_id; // caso asignado a un usuario: se archiva en su carpeta
+  function _bandejaKeyReal(c) {
     const bandeja = _bandejaPorId[c.bandeja_id];
     if (!bandeja) return null;
     if (c.sub_bandeja_id) {
@@ -1281,6 +1280,13 @@ setTimeout(_ocultarOverlayCarga, 4000);
       if (sub) return `${bandeja.key}::${sub.key}`;
     }
     return bandeja.key;
+  }
+
+  // La bandeja real (de donde salen permisos y config de respuesta) nunca cambia por asignar el caso a un usuario:
+  // asignar es solo visualizacion (en que carpeta aparece), no mueve el caso de bandeja.
+  function _bandejaKeyDeCaso(c) {
+    if (c.asignado_user_id) return c.asignado_user_id; // se archiva en la carpeta del usuario asignado
+    return _bandejaKeyReal(c);
   }
 
   const _readSetInicial = (() => {
@@ -1294,6 +1300,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
       ticket: c.ticket,
       status: c.estado,
       subBandeja: _bandejaKeyDeCaso(c) || 'sin-bandeja',
+      realBandeja: _bandejaKeyReal(c) || 'sin-bandeja',
       subject: c.asunto || '(sin asunto)',
       from: `${c.from_name || ''} <${c.from_email || ''}>`.trim(),
       date: fecha, time: hora,
@@ -1407,10 +1414,10 @@ setTimeout(_ocultarOverlayCarga, 4000);
   //  BUILD ROW
   // ════════════════════════════════
   function buildRow(d) {
-    const _accesoOk = tieneAccesoBandeja(d.subBandeja);
+    const _accesoOk = tieneAccesoBandeja(d.realBandeja);
     const _rowClasses = [d.unread ? 'unread' : '', _accesoOk ? '' : 'sin-acceso-bandeja'].filter(Boolean).join(' ');
     return `
-      <tr${_rowClasses ? ` class="${_rowClasses}"` : ''} data-status="${d.status}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
+      <tr${_rowClasses ? ` class="${_rowClasses}"` : ''} data-status="${d.status}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-real-bandeja="${d.realBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
         <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
         <td class="td-icon"><div class="mail-icon ${d.unread ? 'unread' : 'read'}">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
@@ -2018,7 +2025,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   tbody.addEventListener('click', async e => {
     const tr = e.target.closest('tr');
     if (!tr || e.target.tagName === 'INPUT' || tr.id === 'empty-state-row') return;
-    if (!tieneAccesoBandeja(tr.dataset.bandeja)) { alert('No tenés permiso para abrir este caso: pertenece a una bandeja a la que no tenés acceso.'); return; }
+    if (!tieneAccesoBandeja(tr.dataset.realBandeja || tr.dataset.bandeja)) { alert('No tenés permiso para abrir este caso: pertenece a una bandeja a la que no tenés acceso.'); return; }
 
     // Recolectar datos del caso desde el DOM
     const fromRaw  = tr.querySelector('.from-line')?.textContent.replace('De: ', '').trim() || '';
@@ -2172,7 +2179,6 @@ setTimeout(_ocultarOverlayCarga, 4000);
   // Las sub-bandejas heredan el permiso de su bandeja padre (no se configuran aparte, ver admin.html).
   function tieneAccesoBandeja(key) {
     if (ES_ADMIN) return true;
-    if (_esUsuarioKey(key)) return true; // carpetas de usuario: cualquiera puede ver/abrir para cubrir ausencias
     const parentKey = key.includes('::') ? key.split('::')[0] : key;
     return !!getPermisos()[parentKey]?.[CURRENT_USER_KEY]?.acceso;
   }
