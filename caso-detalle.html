@@ -835,6 +835,7 @@
     .action-btn:hover { background: #e2e8f0; color: #0f172a; }
     .action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     .action-btn .action-icon-wrap { display: none; }
+    #action-bar.barra-bloqueada .action-btn { opacity: .45; pointer-events: none; cursor: not-allowed; }
 
     .action-btn.reply-action {
       background: var(--blue-600); color: white;
@@ -2778,6 +2779,7 @@
   // ── Compose ──
 
 function openNote() {
+    if (_barraAccionesBloqueada()) return;
     _composeType = 'note';
     const now = new Date();
     const hora = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
@@ -3050,12 +3052,23 @@ function openNote() {
   let _composeType = null; // 'reply' | 'note' | 'outgoing'
   let _composeTarget = '';
 
+  function _barraAccionesBloqueada() {
+    return !!document.getElementById('inline-compose-entry') || !!document.getElementById('dtransfer-modal-backdrop')?.classList.contains('open');
+  }
+
+  function _syncActionBarLock() {
+    const bar = document.getElementById('action-bar');
+    if (!bar) return;
+    bar.classList.toggle('barra-bloqueada', _barraAccionesBloqueada());
+  }
+
   function _removeInlineCompose() {
     document.getElementById('inline-compose-entry')?.remove();
     _composeType = null;
     _convFiles = [];
     _hideMentionDropdown();
     _closeColorPicker();
+    _syncActionBarLock();
   }
 
   function _insertInlineCompose(html) {
@@ -3068,6 +3081,7 @@ function openNote() {
     entry.querySelector('.compose-inline-ta')?.focus();
     // scroll into view
     entry.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    _syncActionBarLock();
   }
 
   const _TOOLBAR_HTML = `
@@ -4007,6 +4021,7 @@ function openNote() {
   }
 
   function openCompose(name, email) {
+    if (_barraAccionesBloqueada()) return;
     if (_currentEstadoActual() === 'cerrado') {
       _confirmReabrirCaso(() => openCompose(name, email));
       return;
@@ -4026,6 +4041,7 @@ function openNote() {
   }
 
   function openOutgoing() {
+    if (_barraAccionesBloqueada()) return;
     if (_currentEstadoActual() === 'cerrado') {
       _confirmReabrirCaso(() => openOutgoing());
       return;
@@ -4098,10 +4114,12 @@ function openNote() {
     const hasRevert = c.ticket && (prevMap[c.ticket] || currentBandeja.startsWith('user_'));
     document.getElementById('dtransfer-revert-section').style.display = hasRevert ? 'block' : 'none';
     document.getElementById('dtransfer-modal-backdrop').classList.add('open');
+    _syncActionBarLock();
   }
 
   function closeDetailTransferModal() {
     document.getElementById('dtransfer-modal-backdrop').classList.remove('open');
+    _syncActionBarLock();
   }
 
   function _renderDetailTransferBandejas() {
@@ -4215,6 +4233,7 @@ function openNote() {
 
   function toggleTransferMenu(e) {
     e.stopPropagation();
+    if (_barraAccionesBloqueada()) return;
     if (_currentEstadoActual() === 'cerrado') {
       _confirmReabrirCaso(() => openDetailTransferModal());
       return;
