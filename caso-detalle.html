@@ -926,6 +926,11 @@
       padding: 6px 12px; border-bottom: 1px solid var(--border);
       background: #f8fafc;
     }
+    .toolbar-attach-row {
+      display: flex; align-items: center; gap: 8px;
+      flex: 1 0 100%; margin-top: 6px; padding-top: 6px;
+      border-top: 1px solid var(--border);
+    }
     .toolbar-sep { width: 1px; height: 16px; background: #d1d5db; margin: 0 5px; flex-shrink: 0; }
     .toolbar-btn {
       display: flex; align-items: center; justify-content: center;
@@ -3155,7 +3160,7 @@ function openNote() {
       <button class="toolbar-btn" title="Centrar" onmousedown="event.preventDefault();document.execCommand('justifyCenter')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
       </button>
-      <div class="toolbar-sep"></div>
+      <div class="toolbar-attach-row">
       <button class="toolbar-attach-btn files" title="Adjuntar archivo" onmousedown="event.preventDefault()" onclick="document.getElementById('compose-file-input').click()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
         Adjuntar archivo
@@ -3165,6 +3170,7 @@ function openNote() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
         Archivos de esta conversación
       </button>
+    </div>
     </div>`;
 
   let _attachedFiles = [];
