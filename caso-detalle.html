@@ -877,8 +877,8 @@
       border: none; cursor: pointer; font-family: inherit;
     }
     .btn-compose-send:hover { background: var(--blue-700); }
-    .btn-compose-send.note { background: #5b9fbe; box-shadow: none; }
-    .btn-compose-send.note:hover { background: #0e7490; }
+    .btn-compose-send.note { background: var(--amber); color: var(--amber-text); box-shadow: none; }
+    .btn-compose-send.note:hover { background: var(--amber-dark); }
     .btn-compose-cancel {
       padding: 7px 12px; border-radius: 7px;
       background: transparent; border: 1px solid var(--border);
@@ -2804,21 +2804,21 @@ function openNote() {
         </div>
         <div style="flex:1;min-width:0">
           <div class="event-label">
-            <span class="event-label-text" style="color:#0e7490">Nota interna</span>
+            <span class="event-label-text" style="color:var(--amber-dark)">Nota interna</span>
             <span class="event-label-time">${hora} hs</span>
           </div>
-          <div class="email-card" style="border-color:#93c5d6">
-            <div class="email-header" style="background:#5b9fbe;border-bottom:1px solid #4a8fa8;cursor:default">
+          <div class="email-card" style="border-color:var(--amber-dark)">
+            <div class="email-header" style="background:var(--amber);border-bottom:1px solid var(--amber-dark);cursor:default">
               <div class="email-icon-wrap" style="background:rgba(255,255,255,.2)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber-text)" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </div>
               <div class="email-from">
-                <div class="email-from-name" style="color:white">Nicolas Gravina <span class="auto-tag" style="background:rgba(255,255,255,.25);color:white">Nota</span></div>
-                <div class="email-from-addr" style="color:rgba(255,255,255,.85)">Agente de soporte</div>
+                <div class="email-from-name" style="color:var(--amber-text)">Nicolas Gravina <span class="auto-tag" style="background:rgba(65,36,2,.15);color:var(--amber-text)">Nota</span></div>
+                <div class="email-from-addr" style="color:rgba(65,36,2,.7)">Agente de soporte</div>
               </div>
             </div>
             <textarea class="compose-inline-ta" placeholder="Escribí tu nota acá…"></textarea>
-            <div class="compose-inline-footer" style="background:#f0f9ff;border-top:1px solid #bae6fd">
+            <div class="compose-inline-footer" style="background:#fff8ec;border-top:1px solid #f3ddaa">
               <button class="btn-compose-send note" onclick="sendNote()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Guardar nota
@@ -2925,21 +2925,21 @@ function openNote() {
       </div>
       <div style="flex:1;min-width:0">
         <div class="event-label">
-          <span class="event-label-text" style="color:#0e7490">Nota interna</span>
+          <span class="event-label-text" style="color:var(--amber-dark)">Nota interna</span>
           <span class="event-label-time">${fecha} · ${hora} hs</span>
         </div>
-        <div class="email-card" style="background:white;border-color:#93c5d6">
-          <div class="email-header" style="background:#5b9fbe;border-bottom:1px solid #4a8fa8;position:relative">
+        <div class="email-card" style="background:white;border-color:var(--amber-dark)">
+          <div class="email-header" style="background:var(--amber);border-bottom:1px solid var(--amber-dark);position:relative">
             <div class="email-icon-wrap" style="background:rgba(255,255,255,.2);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber-text)" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div class="email-from">
-              <div class="email-from-name" style="color:white">Nicolas Gravina <span class="auto-tag" style="background:rgba(255,255,255,.25);color:white">Nota</span></div>
-              <div class="email-from-addr" style="color:rgba(255,255,255,.85)">Agente de soporte</div>
+              <div class="email-from-name" style="color:var(--amber-text)">Nicolas Gravina <span class="auto-tag" style="background:rgba(65,36,2,.15);color:var(--amber-text)">Nota</span></div>
+              <div class="email-from-addr" style="color:rgba(65,36,2,.7)">Agente de soporte</div>
             </div>
-            <div class="email-date" style="color:white">${fecha} · ${hora}</div>
-            <button class="note-menu-btn" onclick="toggleNoteMenu('${noteId}',event)" title="Opciones" style="color:white">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="width:16px;height:16px"><circle cx="12" cy="5" r="1.2" fill="white"/><circle cx="12" cy="12" r="1.2" fill="white"/><circle cx="12" cy="19" r="1.2" fill="white"/></svg>
+            <div class="email-date" style="color:var(--amber-text)">${fecha} · ${hora}</div>
+            <button class="note-menu-btn" onclick="toggleNoteMenu('${noteId}',event)" title="Opciones" style="color:var(--amber-text)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber-text)" stroke-width="2.5" style="width:16px;height:16px"><circle cx="12" cy="5" r="1.2" fill="white"/><circle cx="12" cy="12" r="1.2" fill="white"/><circle cx="12" cy="19" r="1.2" fill="white"/></svg>
             </button>
             <div class="note-menu" id="menu-${noteId}" style="display:none">
               <div class="note-menu-item" onclick="editNote('${noteId}')">
