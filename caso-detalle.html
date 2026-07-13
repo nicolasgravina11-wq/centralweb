@@ -877,8 +877,8 @@
       border: none; cursor: pointer; font-family: inherit;
     }
     .btn-compose-send:hover { background: var(--blue-700); }
-    .btn-compose-send.note { background: var(--amber); color: var(--amber-text); box-shadow: none; }
-    .btn-compose-send.note:hover { background: var(--amber-dark); }
+    .btn-compose-send.note { background: var(--accent); color: #fff; box-shadow: none; }
+    .btn-compose-send.note:hover { background: var(--blue-700); }
     .btn-compose-cancel {
       padding: 7px 12px; border-radius: 7px;
       background: transparent; border: 1px solid var(--border);
@@ -2804,17 +2804,17 @@ function openNote() {
         </div>
         <div style="flex:1;min-width:0">
           <div class="event-label">
-            <span class="event-label-text" style="color:var(--amber-dark)">Nota interna</span>
+            <span class="event-label-text" style="color:var(--accent)">Nota interna</span>
             <span class="event-label-time">${hora} hs</span>
           </div>
-          <div class="email-card" style="border-color:var(--amber-dark)">
-            <div class="email-header" style="background:var(--amber);border-bottom:1px solid var(--amber-dark);cursor:default">
+          <div class="email-card" style="border-color:var(--accent)">
+            <div class="email-header" style="background:var(--accent);border-bottom:1px solid rgba(255,255,255,.25);cursor:default">
               <div class="email-icon-wrap" style="background:rgba(255,255,255,.2)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber-text)" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </div>
               <div class="email-from">
-                <div class="email-from-name" style="color:var(--amber-text)">Nicolas Gravina <span class="auto-tag" style="background:rgba(65,36,2,.15);color:var(--amber-text)">Nota</span></div>
-                <div class="email-from-addr" style="color:rgba(65,36,2,.7)">Agente de soporte</div>
+                <div class="email-from-name" style="color:#fff">Nicolas Gravina <span class="auto-tag" style="background:rgba(255,255,255,.2);color:#fff">Nota</span></div>
+                <div class="email-from-addr" style="color:rgba(255,255,255,.75)">Agente de soporte</div>
               </div>
             </div>
             <textarea class="compose-inline-ta" placeholder="Escribí tu nota acá…"></textarea>
@@ -2828,7 +2828,7 @@ function openNote() {
               </div>
               <div id="nota-attach-list" style="display:flex;flex-wrap:wrap;margin-top:6px"></div>
             </div>
-            <div class="compose-inline-footer" style="background:#fff8ec;border-top:1px solid #f3ddaa">
+            <div class="compose-inline-footer" style="background:#eaf1ff;border-top:1px solid #bcd4ff">
               <button class="btn-compose-send note" onclick="sendNote()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Guardar nota
@@ -2935,21 +2935,21 @@ function openNote() {
       </div>
       <div style="flex:1;min-width:0">
         <div class="event-label">
-          <span class="event-label-text" style="color:var(--amber-dark)">Nota interna</span>
+          <span class="event-label-text" style="color:var(--accent)">Nota interna</span>
           <span class="event-label-time">${fecha} · ${hora} hs</span>
         </div>
-        <div class="email-card" style="background:white;border-color:var(--amber-dark)">
-          <div class="email-header" style="background:var(--amber);border-bottom:1px solid var(--amber-dark);position:relative">
+        <div class="email-card" style="background:white;border-color:var(--accent)">
+          <div class="email-header" style="background:var(--accent);border-bottom:1px solid rgba(255,255,255,.25);position:relative">
             <div class="email-icon-wrap" style="background:rgba(255,255,255,.2);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center">
-              <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber-text)" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="width:16px;height:16px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div class="email-from">
-              <div class="email-from-name" style="color:var(--amber-text)">Nicolas Gravina <span class="auto-tag" style="background:rgba(65,36,2,.15);color:var(--amber-text)">Nota</span></div>
-              <div class="email-from-addr" style="color:rgba(65,36,2,.7)">Agente de soporte</div>
+              <div class="email-from-name" style="color:#fff">Nicolas Gravina <span class="auto-tag" style="background:rgba(255,255,255,.2);color:#fff">Nota</span></div>
+              <div class="email-from-addr" style="color:rgba(255,255,255,.75)">Agente de soporte</div>
             </div>
-            <div class="email-date" style="color:var(--amber-text)">${fecha} · ${hora}</div>
-            <button class="note-menu-btn" onclick="toggleNoteMenu('${noteId}',event)" title="Opciones" style="color:var(--amber-text)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber-text)" stroke-width="2.5" style="width:16px;height:16px"><circle cx="12" cy="5" r="1.2" fill="white"/><circle cx="12" cy="12" r="1.2" fill="white"/><circle cx="12" cy="19" r="1.2" fill="white"/></svg>
+            <div class="email-date" style="color:#fff">${fecha} · ${hora}</div>
+            <button class="note-menu-btn" onclick="toggleNoteMenu('${noteId}',event)" title="Opciones" style="color:#fff">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" style="width:16px;height:16px"><circle cx="12" cy="5" r="1.2" fill="white"/><circle cx="12" cy="12" r="1.2" fill="white"/><circle cx="12" cy="19" r="1.2" fill="white"/></svg>
             </button>
             <div class="note-menu" id="menu-${noteId}" style="display:none">
               <div class="note-menu-item" onclick="editNote('${noteId}')">
@@ -2962,7 +2962,7 @@ function openNote() {
               </div>
             </div>
           </div>
-          <div class="email-body note-text" style="white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>${(adjuntos && adjuntos.length) ? '<div class="note-attachments" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + adjuntos.map(a => '<a href="' + a.url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:#fff8ec;border:1px solid #f3ddaa;border-radius:7px;padding:4px 9px;font-size:12px;color:var(--amber-text);text-decoration:none">📎 ' + a.nombre + '</a>').join('') + '</div>' : ''}
+          <div class="email-body note-text" style="white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>${(adjuntos && adjuntos.length) ? '<div class="note-attachments" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + adjuntos.map(a => '<a href="' + a.url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:#eaf1ff;border:1px solid #bcd4ff;border-radius:7px;padding:4px 9px;font-size:12px;color:var(--accent);text-decoration:none">📎 ' + a.nombre + '</a>').join('') + '</div>' : ''}
         </div>
       </div>`;
     return entry;
@@ -2985,7 +2985,7 @@ function openNote() {
   function _renderNotaAttachList() {
     const cont = document.getElementById('nota-attach-list');
     if (!cont) return;
-    cont.innerHTML = _notaFiles.map((f, i) => '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #f3ddaa;border-radius:7px;padding:3px 8px;font-size:12px;color:var(--amber-text);margin:0 6px 6px 0">' + f.name + ' <button type="button" onclick="_removeNotaFile(' + i + ')" style="border:none;background:none;cursor:pointer;color:var(--amber-dark);font-weight:700;line-height:1;padding:0">×</button></span>').join('');
+    cont.innerHTML = _notaFiles.map((f, i) => '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #bcd4ff;border-radius:7px;padding:3px 8px;font-size:12px;color:var(--accent);margin:0 6px 6px 0">' + f.name + ' <button type="button" onclick="_removeNotaFile(' + i + ')" style="border:none;background:none;cursor:pointer;color:var(--accent);font-weight:700;line-height:1;padding:0">×</button></span>').join('');
   }
 
   async function sendNote() {
