@@ -2407,7 +2407,7 @@
     });
     const mailOutBtn = document.querySelector('.action-btn.primary-action');
     if (mailOutBtn) {
-      mailOutBtn.setAttribute('onclick', `openCompose('${c.fromName}','${c.fromEmail}')`);
+      mailOutBtn.setAttribute('onclick', `openOutgoing()`);
     }
     // Cargar notas, transferencias y cambios de estado ordenados por timestamp
     const notas         = JSON.parse(localStorage.getItem('cw_notas_' + c.ticket) || '[]');
