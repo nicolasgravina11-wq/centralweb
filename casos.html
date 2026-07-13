@@ -51,7 +51,7 @@
     .disponible-topbar-btn {
       display: flex; align-items: center; gap: 8px;
       padding: 6px 13px 6px 6px;
-      border-radius: 5px;
+      border-radius: 20px;
       border: 1.5px solid rgba(255,255,255,.2);
       background: rgba(255,255,255,.1);
       color: white;
@@ -141,6 +141,8 @@
       padding: 0 24px;
       gap: 16px;
       flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
     }
 
     .page-title {
@@ -884,14 +886,15 @@
 
   <!-- TOP BAR -->
   <header class="topbar">
+    <svg style="position:absolute; left:38%; top:-230px; transform:translateX(-50%); pointer-events:none;" width="460" height="300" viewBox="0 0 460 300"><circle cx="230" cy="150" r="30" fill="none" stroke="rgba(76,141,255,.32)" stroke-width="1.6"></circle><circle cx="230" cy="150" r="55" fill="none" stroke="rgba(76,141,255,.26)" stroke-width="1.5"></circle><circle cx="230" cy="150" r="80" fill="none" stroke="rgba(76,141,255,.2)" stroke-width="1.4"></circle><circle cx="230" cy="150" r="105" fill="none" stroke="rgba(143,184,255,.16)" stroke-width="1.3"></circle><circle cx="230" cy="150" r="130" fill="none" stroke="rgba(143,184,255,.12)" stroke-width="1.2"></circle><circle cx="230" cy="150" r="155" fill="none" stroke="rgba(143,184,255,.08)" stroke-width="1.2"></circle><circle cx="230" cy="150" r="180" fill="none" stroke="rgba(143,184,255,.05)" stroke-width="1.1"></circle></svg>
     <div class="page-title">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <svg viewBox="0 0 64 64" style="position:relative;"><circle cx="32" cy="32" r="30" fill="none" stroke="#274a8c" stroke-width="3.5"></circle><circle cx="32" cy="32" r="20" fill="none" stroke="#4C8DFF" stroke-width="4"></circle><circle cx="32" cy="12" r="6.5" fill="#4C8DFF"></circle><circle cx="32" cy="32" r="4.5" fill="#fff"></circle></svg>
       Casos
     </div>
 
     <div class="bandeja-wrap">
       <div class="bandeja-select" id="bandeja-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V4z"/><path d="M3 12h5l1.5 2h5L16 12h5"/></svg>
         <span id="bandeja-label" style="cursor:pointer" onclick="scrollToLastCase(event)">Bandeja principal</span>
         <svg id="bandeja-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="cursor:pointer" onclick="toggleBandejaMenu(event)"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
