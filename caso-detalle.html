@@ -941,6 +941,8 @@
     }
     .toolbar-btn:hover { background: #e2e8f0; color: #1e293b; }
     .toolbar-btn svg { width: 15px; height: 15px; }
+    .toolbar-btn.color-btn { width: auto; padding: 0 8px; gap: 5px; }
+    .toolbar-btn.color-btn .color-btn-label { font-size: 12px; font-weight: 600; white-space: nowrap; }
     .toolbar-btn.active { background: #dbeafe; color: #1d4ed8; }
     .toolbar-btn-label {
       display: flex; align-items: center; justify-content: center;
@@ -3120,8 +3122,9 @@ function openNote() {
       <button class="toolbar-btn-label underline" title="Subrayado" onmousedown="event.preventDefault();document.execCommand('underline')">U</button>
       <div class="toolbar-sep"></div>
       <div class="toolbar-color-wrap" title="Color de fondo y de texto">
-        <button class="toolbar-btn" style="position:relative" onmousedown="_saveSelection()" onclick="_toggleColorPicker(event)">
+        <button class="toolbar-btn color-btn" style="position:relative" onmousedown="_saveSelection()" onclick="_toggleColorPicker(event)">
           <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><text x="2" y="18" font-size="18" font-weight="700" font-family="serif">A</text></svg>
+          <span class="color-btn-label">Color</span>
           <span class="toolbar-color-bar" id="fgcolor-bar" style="background:#0d1f3c"></span>
         </button>
       </div>
