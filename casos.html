@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CentralWeb — Gestión de Casos</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -34,10 +34,12 @@
       --amber:       #f0a82c;
       --amber-dark:  #d6921a;
       --amber-text:  #412402;
+      --accent:       #2456C9;
+      --accent-light: #4C8DFF;
     }
 
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Manrope', 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text-primary);
       display: flex;
@@ -61,6 +63,7 @@
     .disponible-topbar-btn:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); }
     .disp-sep { width: 1px; height: 16px; background: rgba(255,255,255,.25); flex-shrink: 0; }
     .user-badge-avatar {
+      font-family: 'JetBrains Mono', monospace;
       display: flex; align-items: center; justify-content: center;
       width: 24px; height: 24px; border-radius: 50%;
       font-size: 10px; font-weight: 700; color: white; flex-shrink: 0;
@@ -131,7 +134,7 @@
     /* ── TOP BAR ── */
     .topbar {
       height: var(--header-h);
-      background: #0c447c;
+      background: var(--blue-900);
       border-bottom: none;
       display: flex;
       align-items: center;
@@ -141,6 +144,7 @@
     }
 
     .page-title {
+      font-family: 'Space Grotesk', 'Manrope', sans-serif;
       font-size: 17px;
       font-weight: 700;
       color: white;
@@ -190,11 +194,12 @@
     }
 
     #btn-nuevo-caso {
-      background: #16a34a;
+      background: var(--accent);
       color: white;
+      box-shadow: 0 6px 16px rgba(36,86,201,.3);
     }
     #btn-nuevo-caso:hover {
-      background: #15803d;
+      background: var(--blue-700);
     }
 
     .btn-ghost {
@@ -434,7 +439,7 @@
     }
 
     .ticket-num {
-      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
       font-size: 12.5px;
       font-weight: 600;
       color: var(--blue-700);
@@ -472,6 +477,7 @@
     /* USUARIO CELL */
     .user-cell { display: flex; align-items: center; gap: 8px; }
     .mini-avatar {
+      font-family: 'JetBrains Mono', monospace;
       width: 26px; height: 26px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
