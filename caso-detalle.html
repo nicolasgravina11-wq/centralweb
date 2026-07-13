@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CentralWeb — Caso #10482</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -35,10 +35,12 @@
       --amber:       #f0a82c;
       --amber-dark:  #d6921a;
       --amber-text:  #412402;
+      --accent:       #2456C9;
+      --accent-light: #4C8DFF;
     }
 
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Manrope', 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text-primary);
       display: flex;
@@ -86,9 +88,11 @@
     ════════════════════════════════ */
     .topbar {
       height: var(--header-h);
-      background: #0c447c;
+      background: var(--blue-900);
       display: flex; align-items: center; padding: 0 24px; gap: 14px;
       flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
     }
     .back-btn {
       display: flex; align-items: center; gap: 6px;
@@ -177,7 +181,7 @@
     .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
     .disponible-topbar-btn {
       display: flex; align-items: center; gap: 7px;
-      padding: 7px 13px; border-radius: 5px;
+      padding: 7px 13px; border-radius: 20px;
       border: 1.5px solid rgba(255,255,255,.2);
       background: rgba(255,255,255,.1);
       color: white; font-size: 13px; font-weight: 600;
@@ -223,14 +227,15 @@
 
     .btn-primary {
       display: inline-flex; align-items: center; gap: 7px;
-      padding: 8px 16px; border-radius: 5px;
+      padding: 8px 16px; border-radius: 9px;
       font-size: 13px; font-weight: 600;
       cursor: pointer; border: none;
-      background: #16a34a;
+      background: var(--accent);
       color: white;
+      box-shadow: 0 6px 16px rgba(36,86,201,.3);
       transition: background .15s; white-space: nowrap; font-family: inherit;
     }
-    .btn-primary:hover { background: #15803d; }
+    .btn-primary:hover { background: var(--blue-700); }
     .btn-primary svg { width: 15px; height: 15px; }
 
     /* ════════════════════════════════
@@ -813,9 +818,10 @@
 
     /* ── BOTTOM ACTION BAR ── */
     .action-bar {
-      background: #f1f5f9;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
+      background: #fff;
+      border: 1px solid #d7e0f2;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(10,31,68,.04);
       display: flex;
       align-items: stretch;
       flex-shrink: 0;
@@ -824,34 +830,32 @@
 
     .action-btn {
       display: flex; align-items: center; gap: 7px;
-      padding: 11px 18px;
-      font-size: 13px; font-weight: 500;
+      padding: 12px 20px;
+      font-size: 14px; font-weight: 600;
       cursor: pointer; background: transparent; border: none;
-      border-right: 1px solid #e2e8f0;
-      font-family: inherit; color: #475569;
+      border-right: 1.5px solid #d7e0f2;
+      font-family: inherit; color: #374460;
       transition: background .12s, color .12s;
       white-space: nowrap;
     }
-    .action-btn:hover { background: #e2e8f0; color: #0f172a; }
+    .action-btn:hover { background: #f6f8fc; color: #0f172a; }
     .action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     .action-btn .action-icon-wrap { display: none; }
     #action-bar.barra-bloqueada .action-btn { opacity: .45; pointer-events: none; cursor: not-allowed; }
 
     .action-btn.reply-action {
-      background: var(--blue-600); color: white;
-      font-weight: 600; font-size: 13px;
+      background: #eaf1ff; color: var(--accent);
+      font-weight: 700; font-size: 14px;
       letter-spacing: .2px;
-      border-right: 1px solid var(--blue-700);
+      border-right: 1.5px solid #d7e0f2;
     }
-    .action-btn.reply-action:hover { background: var(--blue-700); color: white; }
+    .action-btn.reply-action:hover { background: #dce8ff; color: var(--accent); }
 
     .action-btn.primary-action {
-      margin-left: auto;
-      color: #475569;
+      color: #374460;
       border-right: none;
-      border-left: 1px solid #e2e8f0;
     }
-    .action-btn.primary-action:hover { background: #e2e8f0; color: #0f172a; }
+    .action-btn.primary-action:hover { background: #f6f8fc; color: #0f172a; }
 
     /* Inline compose textarea & footer */
     .compose-inline-ta {
@@ -1195,6 +1199,7 @@
 
   <!-- TOP BAR -->
   <header class="topbar">
+    <svg style="position:absolute; left:38%; top:-230px; transform:translateX(-50%); pointer-events:none;" width="460" height="300" viewBox="0 0 460 300"><circle cx="230" cy="150" r="30" fill="none" stroke="rgba(76,141,255,.32)" stroke-width="1.6"></circle><circle cx="230" cy="150" r="55" fill="none" stroke="rgba(76,141,255,.26)" stroke-width="1.5"></circle><circle cx="230" cy="150" r="80" fill="none" stroke="rgba(76,141,255,.2)" stroke-width="1.4"></circle><circle cx="230" cy="150" r="105" fill="none" stroke="rgba(143,184,255,.16)" stroke-width="1.3"></circle><circle cx="230" cy="150" r="130" fill="none" stroke="rgba(143,184,255,.12)" stroke-width="1.2"></circle><circle cx="230" cy="150" r="155" fill="none" stroke="rgba(143,184,255,.08)" stroke-width="1.2"></circle><circle cx="230" cy="150" r="180" fill="none" stroke="rgba(143,184,255,.05)" stroke-width="1.1"></circle></svg>
     <a class="back-btn" href="casos.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       Casos
@@ -1204,7 +1209,7 @@
 
     <div class="bandeja-wrap">
       <div class="bandeja-select" id="bandeja-btn" onclick="irABandejaActual()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V4z"/><path d="M3 12h5l1.5 2h5L16 12h5"/></svg>
         <span id="bandeja-label">Bandeja principal</span>
         <svg onclick="toggleBandejaMenuDetail(event)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="padding:2px;margin:-2px;border-radius:4px;flex-shrink:0" onmouseenter="this.style.background='rgba(255,255,255,.15)'" onmouseleave="this.style.background=''"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
