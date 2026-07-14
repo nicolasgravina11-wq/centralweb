@@ -475,7 +475,7 @@
       font-family: inherit; align-self: center;
     }
     .combine-btn:hover { background: var(--blue-200); }
-    .combine-btn svg { width: 12px; height: 12px; }
+    .combine-btn svg { width: 15px; height: 15px; }
 
     /* transfer modal */
     #dtransfer-modal-backdrop { display:none; position:fixed; inset:0; background:rgba(10,22,40,.5); backdrop-filter:blur(3px); z-index:10000; align-items:center; justify-content:center; }
@@ -1611,7 +1611,7 @@
           }
         }
       } else if (puedeCombinar) {
-        accionBtn = `<button class="combine-btn" onclick="openCombinarModal('${c.ticket}')" title="Combinar con el caso actual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4h10z"/><path d="M8 12h8"/></svg></button>`;
+        accionBtn = `<button class="combine-btn" onclick="openCombinarModal('${c.ticket}')" title="Combinar con el caso actual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg></button>`;
       }
 
       return `<div class="historico-item${tieneAcceso?'':' hist-sin-acceso'}">
@@ -1842,7 +1842,7 @@
     entry.innerHTML = `
       <div class="timeline-marker">
         <div class="timeline-arrow" style="background:var(--blue-100)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" stroke-width="2.5" style="width:14px;height:14px"><path d="M17 3a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4h10z"/><path d="M8 12h8"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" stroke-width="2.5" style="width:14px;height:14px"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
         </div>
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
