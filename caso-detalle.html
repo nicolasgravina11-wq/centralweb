@@ -4171,10 +4171,8 @@ function openNote() {
     _renderDetailTransferBandejas();
     updateDetailTransferCounts();
     const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}');
-    const prevMap = JSON.parse(localStorage.getItem('cw_prev_bandeja_map') || '{}');
-    const bandejaMap = JSON.parse(localStorage.getItem('cw_bandeja_map') || '{}');
-    const currentBandeja = bandejaMap[c.ticket] || c.bandeja || '';
-    const hasRevert = c.ticket && (prevMap[c.ticket] || currentBandeja.startsWith('user_'));
+    const asignadoActual = document.getElementById('detail-asignado');
+    const hasRevert = !!(c.ticket && asignadoActual && asignadoActual.textContent && asignadoActual.textContent.trim() !== 'Sin asignar');
     document.getElementById('dtransfer-revert-section').style.display = hasRevert ? 'block' : 'none';
     document.getElementById('dtransfer-modal-backdrop').classList.add('open');
     _syncActionBarLock();
@@ -4304,20 +4302,7 @@ function openNote() {
     openDetailTransferModal();
   }
 
-  function revertCaseDetail() {
-    try {
-      const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}');
-      if (!c.ticket) return;
-      const prevMap   = JSON.parse(localStorage.getItem('cw_prev_bandeja_map') || '{}');
-      const displayMap = JSON.parse(localStorage.getItem('cw_bandeja_display_map') || '{}');
-      const bandejaMap = JSON.parse(localStorage.getItem('cw_bandeja_map') || '{}');
-      const current   = bandejaMap[c.ticket] || c.bandeja || '';
-      const prev = prevMap[c.ticket]
-        || (current.startsWith('user_') ? (displayMap[c.ticket] || c.bandeja || null) : null);
-      if (!prev) return;
-      transferCaseDetail(prev);
-    } catch(e) {}
-  }
+  
 
   function transferCaseDetail(targetBandeja) {
     try {
@@ -4368,7 +4353,8 @@ function openNote() {
       if (asignadoVal) asignadoVal.textContent = isUser ? _userNamesDetail[targetBandeja] : 'Sin asignar';
 
       // Evento en timeline
-      const destinoLabel = isUser ? _userNamesDetail[targetBandeja] : (_bandejaLabelsDetail[targetBandeja] || targetBandeja);
+      const destinoLabel = !targetBandeja ? 'la bandeja' : (isUser
+        ? _userNamesDetail[targetBandeja] : (_bandejaLabelsDetail[targetBandeja] || targetBandeja));
       const ev  = _saveTransferEvent(c.ticket, destinoLabel, window._CURRENT_USER_NAME_REAL);
       const el  = _buildTransferEntry(ev);
       el.classList.add('timeline-change');
@@ -4554,9 +4540,9 @@ function _imprimirCaso() {
       <div id="dtransfer-bandejas-list"></div>
       <div class="dtm-divider"></div>
       <div id="dtransfer-revert-section" style="display:none">
-        <div class="dtm-item revert" onclick="revertCaseDetail()">
+        <div class="dtm-item revert" onclick="transferCaseDetail(null)">
           <span class="dtm-revert-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M3 10h10a8 8 0 010 16H3"/><polyline points="3 6 7 10 3 14"/></svg></span>
-          <span>Volver a bandeja anterior</span>
+          <span>Devolver a la bandeja</span>
         </div>
         <div class="dtm-divider"></div>
       </div>
