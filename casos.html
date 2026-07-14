@@ -1608,8 +1608,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     showCerrados = incluirCerrados.checked;
     if (showCerrados) localStorage.setItem('cw_incluir_cerrados', '1');
     else localStorage.removeItem('cw_incluir_cerrados');
-    applyVisibility();
-    recountFilters();
+    _runSearch();
   });
 
   // ════════════════════════════════
@@ -1647,6 +1646,9 @@ setTimeout(_ocultarOverlayCarga, 4000);
         _limpiarGracia();
         activeFilter = 'abierto';
         localStorage.setItem('cw_filtro', 'abierto');
+        showCerrados = false;
+        incluirCerrados.checked = false;
+        localStorage.removeItem('cw_incluir_cerrados');
         btn.classList.add('active');
       } else {
         activeFilter = isActive ? null : status;
