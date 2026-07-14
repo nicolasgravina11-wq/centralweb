@@ -1902,7 +1902,7 @@
     const info = _findCaseInfo(absorbido);
     const num = absorbido.replace('#', '');
     const fecha = info.date ? `${info.date}${info.time ? ' · ' + info.time : ''}` : '';
-    const bandejaLabel = (function(){ const found = _getBandejasDinamicasDetail().find(b => b.key === info.bandeja) || _getSubbandejasDinamicasDetail().find(b => b.key === info.bandeja); if (found) return found.nombre; return _bandejaLabelsDetail[info.bandeja] || 'Bandeja principal'; })();
+    const bandejaLabel = (function(){ const rawCaso = window._supaCasosPorTicket && window._supaCasosPorTicket[absorbido]; if (rawCaso && rawCaso.bandeja_id && window._supaBandejaPorId) { const bSub = rawCaso.sub_bandeja_id ? window._supaBandejaPorId[rawCaso.sub_bandeja_id] : null; if (bSub) return bSub.nombre; const bPar = window._supaBandejaPorId[rawCaso.bandeja_id]; if (bPar) return bPar.nombre; } const found = _getBandejasDinamicasDetail().find(b => b.key === info.bandeja) || _getSubbandejasDinamicasDetail().find(b => b.key === info.bandeja); if (found) return found.nombre; return _bandejaLabelsDetail[info.bandeja] || 'Bandeja principal'; })();
     const cuerpo = _mensajeIngresoHTML(absorbido);
     const casoRefAbs = window._supaCasosPorTicket && window._supaCasosPorTicket[absorbido];
     const bAbs = (casoRefAbs && window._supaBandejaPorId) ? window._supaBandejaPorId[casoRefAbs.bandeja_id] : null;
