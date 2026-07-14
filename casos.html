@@ -1858,42 +1858,35 @@ setTimeout(_ocultarOverlayCarga, 4000);
     const checked = getRowChecks().filter(c => c.checked);
     if (!checked.length) return;
     const map = getBandejaMap();
+    let any = false;
     checked.forEach(c => {
       const tr = c.closest('tr');
       const ticket = tr.dataset.ticket;
       if (!ticket) return;
       const current = tr.dataset.bandeja;
-      // Usar bandeja previa guardada, o la bandeja display (original antes de asignar a usuario), o la primera bandeja real
-      const prev = _prevBandejaMap[ticket]
-        || (_esUsuarioKey(current) ? (_bandejaDisplayMap[ticket] || getBandejasDinamicas()[0]?.key) : null);
-      if (!prev) return;
-      _prevBandejaMap[ticket] = current;
-      map[ticket] = prev;
-      tr.dataset.bandeja = prev;
-      const isUser = _esUsuarioKey(prev);
-      if (isUser) {
-        _asignadoMap[ticket] = prev;
-        if (!_esUsuarioKey(current)) _bandejaDisplayMap[ticket] = current;
-      } else {
-        delete _asignadoMap[ticket];
-        _bandejaDisplayMap[ticket] = prev;
-      }
+      if (!_esUsuarioKey(current)) return;
+      const realBandeja = _bandejaDisplayMap[ticket] || getBandejasDinamicas()[0]?.key;
+      if (!realBandeja) return;
+      any = true;
+      delete _asignadoMap[ticket];
+      map[ticket] = realBandeja;
+      tr.dataset.bandeja = realBandeja;
       const cell = tr.querySelector('.td-asignado');
       if (cell) cell.innerHTML = buildAsignadoCell(ticket);
-      const prevLabel = _esUsuarioKey(prev) ? getUserInfoMap()[prev]?.name : bandejaLabels[prev];
-      _saveTransferEventBandeja(ticket, prevLabel);
+      _saveTransferEventBandeja(ticket, 'la bandeja');
     });
+    if (!any) { closeTransferModal(); return; }
     saveBandejaMap(map);
     saveAsignadoMap();
     saveBandejaDisplayMap();
-    savePrevBandejaMap();
     closeTransferModal();
     applyVisibility();
     recountFilters();
     updateBandejaCounts();
     clearSelection();
     _persistAllCases();
-    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} devuelto${checked.length > 1 ? 's' : ''} a bandeja anterior`); _syncBandejaCambios(checked);
+    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} devuelto${checked.length > 1 ? 's' : ''} a la bandeja`);
+    _syncBandejaCambios(checked);
   }
 
   function _syncBandejaCambios(checked) { const porDestino = {}; checked.forEach(c => { const tr = c.closest('tr'); const ticket = tr && tr.dataset.ticket; if (!ticket) return; const destino = tr.dataset.bandeja; (porDestino[destino] = porDestino[destino] || []).push(ticket); }); Object.entries(porDestino).forEach(([destino, tks]) => { const resuelto = _bandejaIdPorKey[destino]; const patch = resuelto ? { bandeja_id: resuelto.id, sub_bandeja_id: resuelto.subId, asignado_user_id: null } : (_esUsuarioKey(destino) ? { asignado_user_id: destino === 'user_ng' ? CURRENT_USER_ID : destino } : null); if (!patch) return; supabaseClient.from('centralweb_casos').update(patch).eq('empresa_id', EMPRESA_ID).in('ticket', tks).then(({ error }) => { if (error) console.error('No se pudo sincronizar la bandeja en Supabase:', error); }); }); } function transferCases(targetBandeja) {
@@ -2396,9 +2389,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     const checked = getRowChecks().filter(c => c.checked);
     const hasRevert = checked.some(c => {
       const tr = c.closest('tr');
-      const ticket = tr?.dataset.ticket;
-      const bandeja = tr?.dataset.bandeja || '';
-      return ticket && (_esUsuarioKey(bandeja) || _prevBandejaMap[ticket]);
+      return tr && _esUsuarioKey(tr.dataset.bandeja);
     });
     document.getElementById('tm-revert-section').style.display = hasRevert ? 'block' : 'none';
     document.getElementById('transfer-modal-backdrop').classList.add('open');
@@ -2835,7 +2826,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
       <div id="tm-revert-section" style="display:none">
         <div class="tm-item revert" onclick="revertCases()">
           <span class="tm-revert-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M3 10h10a8 8 0 010 16H3"/><polyline points="3 6 7 10 3 14"/></svg></span>
-          <span>Volver a bandeja anterior</span>
+          <span>Devolver a la bandeja</span>
         </div>
         <div class="tm-divider"></div>
       </div>
