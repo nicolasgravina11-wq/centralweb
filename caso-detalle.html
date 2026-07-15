@@ -2535,6 +2535,37 @@
     // sin datos: se muestra el contenido por defecto del HTML
   }
 
+  // Correccion diferida: si el hilo del caso absorbido se armo antes de que
+  // cargaran los datos reales de Supabase (bandeja/mensaje), lo reconstruye
+  // una vez que esos datos estan disponibles.
+  (function() {
+    try {
+      var pendientes = document.querySelectorAll('[data-combined-ticket]');
+      if (!pendientes.length) return;
+      var tickets = [];
+      pendientes.forEach(function(el){ var tk = el.getAttribute('data-combined-ticket'); if (tickets.indexOf(tk) === -1) tickets.push(tk); });
+      (async function() {
+        var waitStart2 = Date.now();
+        while (!(window._supaCasosPorTicket && window._supaBandejaPorId) && (Date.now() - waitStart2) < 5000) {
+          await new Promise(function(r){ setTimeout(r, 150); });
+        }
+        if (!(window._supaCasosPorTicket && window._supaBandejaPorId)) return;
+        tickets.forEach(function(tk) {
+          try {
+            var viejos = document.querySelectorAll('[data-combined-ticket="' + tk + '"]');
+            if (!viejos.length) return;
+            var ultimo = viejos[viejos.length - 1];
+            var anchorNode = ultimo.nextSibling;
+            var parent = ultimo.parentNode;
+            var nuevo = _buildAbsorbedThreadFragment(tk);
+            viejos.forEach(function(v){ v.remove(); });
+            if (nuevo && parent) parent.insertBefore(nuevo, anchorNode);
+          } catch(eFix) {}
+        });
+      })();
+    } catch(eOuter) {}
+  })();
+
   // Actualiza el estado del caso en tiempo real cuando se vuelve a la pestaña
   function refreshStatus() {
     try {
