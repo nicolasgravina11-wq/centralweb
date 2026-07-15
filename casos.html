@@ -1303,6 +1303,19 @@ setTimeout(_ocultarOverlayCarga, 4000);
     try { return new Set(JSON.parse(localStorage.getItem('cw_read') || '[]')); } catch { return new Set(); }
   })();
 
+  // Reconciliar el mapa local de estados con el estado real de Supabase.
+  // Sin esto, un caso reabierto por el backend (ej: respuesta del cliente a un caso cerrado)
+  // seguia mostrandose como "Cerrado" indefinidamente porque applyStatusMap() confiaba
+  // ciegamente en el valor guardado en localStorage, sin importar cuan viejo fuera.
+  {
+    const _mapaSync = getStatusMap();
+    let _mapaCambio = false;
+    (casosDB || []).forEach(c => {
+      if (c.ticket && c.estado && _mapaSync[c.ticket] !== c.estado) { _mapaSync[c.ticket] = c.estado; _mapaCambio = true; }
+    });
+    if (_mapaCambio) saveStatusMap(_mapaSync);
+  }
+
   const CASOS_REALES = (casosDB || []).map(c => {
     const { fecha, hora } = _formatFechaHora(c.creado_en);
     return {
