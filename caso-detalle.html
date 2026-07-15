@@ -2710,7 +2710,6 @@
   function applyDisponible() {
     document.getElementById('status-dot').style.background    = online ? '#22c55e' : '#94a3b8';
     document.getElementById('disponible-badge').style.background = online ? '#22c55e' : '#475569';
-    document.getElementById('disponible-label').textContent   = online ? 'Disponible' : 'Desconectado';
     document.getElementById('disponible-badge').textContent   = online ? 'ON' : 'OFF';
     const ng = _usuariosDetail.find(u => u.key === 'user_ng');
     if (ng) ng.online = online;
