@@ -1528,6 +1528,8 @@
 
   function _estadoEfectivo(ticket, fallback) {
     try {
+      const rawTk = window._supaCasosPorTicket && window._supaCasosPorTicket[ticket];
+      if (rawTk && rawTk.estado) return rawTk.estado;
       const sm = JSON.parse(localStorage.getItem('cw_status_map') || '{}');
       return sm[ticket] || fallback;
     } catch { return fallback; }
