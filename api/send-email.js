@@ -92,7 +92,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     const empresaId = perfil.empresa_id;
 
     const casos = await supabaseFetch(
-      `centralweb_casos?select=id,ticket,asunto,bandeja_id,sub_bandeja_id,empresa_id&id=eq.${casoId}`
+      `centralweb_casos?select=id,ticket,asunto,bandeja_id,sub_bandeja_id,empresa_id,mensaje_inicial,from_name,from_email,creado_en&id=eq.${casoId}`
     );
     if (!casos || !casos.length) {
       res.status(404).json({ ok: false, error: 'Caso no encontrado' });
@@ -126,9 +126,27 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     const sectorBandeja = (bandeja && bandeja.sector) || null;
     const remitenteNombre = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
     const fromDisplay = `${remitenteNombre} <${fromAddress}>`;
-    const asuntoFinal = asunto || `Re: ${caso.asunto || ''}`.trim(); const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
+    const asuntoBase = asunto || `Re: ${caso.asunto || ''}`.trim();
+    const asuntoFinal = asuntoBase.includes(caso.ticket) ? asuntoBase : `${asuntoBase} [${caso.ticket}]`; const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
 
-    const form = new FormData(); form.append('from', fromDisplay); form.append('to', to); if (cc) form.append('cc', cc); form.append('subject', asuntoFinal); const htmlParaEnvio = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8" /></head><body>${cuerpoHtml}<span style="display:none">​</span></body></html>`; // zero-width space: obliga a Mailgun a codificar el envio como utf-8 real (no ascii)
+    let cuerpoConHistorial = cuerpoHtml;
+    try {
+      const historialMsgs = await supabaseFetch(`centralweb_mensajes?select=direccion,cuerpo_html,creado_en&caso_id=eq.${caso.id}&order=creado_en.asc`).catch(function(){ return []; });
+      const fmtFecha = function(iso) { try { return new Date(iso).toLocaleString('es-AR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); } catch (e) { return ''; } };
+      const piezas = [];
+      if (caso.mensaje_inicial) piezas.push({ ts: caso.creado_en, quien: caso.from_name || caso.from_email || 'Cliente', cuerpo: caso.mensaje_inicial });
+      (historialMsgs || []).forEach(function(m) {
+        piezas.push({ ts: m.creado_en, quien: m.direccion === 'saliente' ? (remitenteNombre || 'Soporte') : (caso.from_name || caso.from_email || 'Cliente'), cuerpo: m.cuerpo_html });
+      });
+      if (piezas.length) {
+        const quoteHtml = piezas.map(function(p) {
+          return `<div style="margin-top:14px;padding-left:12px;border-left:2px solid #cbd5e1;color:#475569;font-size:13px"><div style="margin-bottom:4px">El ${fmtFecha(p.ts)}, ${p.quien} escribio:</div><div>${p.cuerpo}</div></div>`;
+        }).join('');
+        cuerpoConHistorial = cuerpoHtml + quoteHtml;
+      }
+    } catch (eHist) { console.error('No se pudo armar el historial citado:', eHist.message); }
+
+    const form = new FormData(); form.append('from', fromDisplay); form.append('to', to); if (cc) form.append('cc', cc); form.append('subject', asuntoFinal); const htmlParaEnvio = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8" /></head><body>${cuerpoConHistorial}<span style="display:none">​</span></body></html>`; // zero-width space: obliga a Mailgun a codificar el envio como utf-8 real (no ascii)
   form.append('html', htmlParaEnvio); form.append('h:Reply-To', fromAddress); form.append('h:Content-Language', 'es'); for (const a of adjuntosFinal) { if (a.buffer) form.append('attachment', new Blob([a.buffer], { type: a.tipo || 'application/octet-stream' }), a.nombre); } const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form });
 
     const mgJson = await mgResp.json().catch(() => ({}));
