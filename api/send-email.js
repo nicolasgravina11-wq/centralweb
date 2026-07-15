@@ -127,20 +127,29 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     const remitenteNombre = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
     const fromDisplay = `${remitenteNombre} <${fromAddress}>`;
     const asuntoBase = asunto || `Re: ${caso.asunto || ''}`.trim();
-    const asuntoFinal = asuntoBase.includes(caso.ticket) ? asuntoBase : `${asuntoBase} [${caso.ticket}]`; const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
+    let asuntoFinal;
+    if (asuntoBase.includes(caso.ticket)) {
+      asuntoFinal = asuntoBase;
+    } else {
+      const prefijoMatch = asuntoBase.match(/^(Re|RE|Fwd|FWD|RV|Rv):\s*/);
+      asuntoFinal = prefijoMatch
+        ? `${prefijoMatch[0]}[${caso.ticket}] ${asuntoBase.slice(prefijoMatch[0].length)}`
+        : `[${caso.ticket}] ${asuntoBase}`;
+    } const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
 
     let cuerpoConHistorial = cuerpoHtml;
     try {
       const historialMsgs = await supabaseFetch(`centralweb_mensajes?select=direccion,cuerpo_html,creado_en&caso_id=eq.${caso.id}&order=creado_en.asc`).catch(function(){ return []; });
       const fmtFecha = function(iso) { try { return new Date(iso).toLocaleString('es-AR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); } catch (e) { return ''; } };
       const piezas = [];
-      if (caso.mensaje_inicial) piezas.push({ ts: caso.creado_en, quien: caso.from_name || caso.from_email || 'Cliente', cuerpo: caso.mensaje_inicial });
+      if (caso.mensaje_inicial) piezas.push({ ts: caso.creado_en, quien: caso.from_name || caso.from_email || 'Cliente', email: caso.from_email || '', cuerpo: caso.mensaje_inicial });
       (historialMsgs || []).forEach(function(m) {
-        piezas.push({ ts: m.creado_en, quien: m.direccion === 'saliente' ? (remitenteNombre || 'Soporte') : (caso.from_name || caso.from_email || 'Cliente'), cuerpo: m.cuerpo_html });
+        const esSaliente = m.direccion === 'saliente';
+        piezas.push({ ts: m.creado_en, quien: esSaliente ? (remitenteNombre || 'Soporte') : (caso.from_name || caso.from_email || 'Cliente'), email: esSaliente ? (fromAddress || '') : (caso.from_email || ''), cuerpo: m.cuerpo_html });
       });
       if (piezas.length) {
-        const quoteHtml = piezas.map(function(p) {
-          return `<div style="margin-top:14px;padding-left:12px;border-left:2px solid #cbd5e1;color:#475569;font-size:13px"><div style="margin-bottom:4px">El ${fmtFecha(p.ts)}, ${p.quien} escribio:</div><div>${p.cuerpo}</div></div>`;
+        const quoteHtml = piezas.slice().reverse().map(function(p) {
+          return `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #d0d7de"><div style="margin-bottom:6px;font-size:13px;color:#475569"><strong>${p.quien}</strong>${p.email ? ` (${p.email})` : ''} <span style="color:#94a3b8">/ ${fmtFecha(p.ts)}</span></div><div>${p.cuerpo}</div></div>`;
         }).join('');
         cuerpoConHistorial = cuerpoHtml + quoteHtml;
       }
