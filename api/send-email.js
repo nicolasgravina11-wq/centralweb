@@ -135,7 +135,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
       asuntoFinal = prefijoMatch
         ? `${prefijoMatch[0]}[${caso.ticket}] ${asuntoBase.slice(prefijoMatch[0].length)}`
         : `[${caso.ticket}] ${asuntoBase}`;
-    } const adjuntosFinal = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); } }
+    } const adjuntosFinal = []; const adjuntosFallidos = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombre}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); adjuntosFallidos.push({ nombre: (item && item.nombre) || 'archivo', error: e.message }); } }
 
     let cuerpoConHistorial = cuerpoHtml;
     try {
@@ -181,7 +181,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
       })
     }).catch(e => console.error('No se pudo guardar el mensaje enviado en Supabase:', e.message));
 
-    res.status(200).json({ ok: true, mailgunId: mgJson.id || null, from: fromAddress });
+    res.status(200).json({ ok: true, mailgunId: mgJson.id || null, from: fromAddress, omitidos: adjuntosFallidos });
   } catch (e) {
     console.error('Error en send-email:', e.message);
     res.status(500).json({ ok: false, error: e.message });
