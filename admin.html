@@ -1829,9 +1829,11 @@ async function eliminarUsuario(id) {
     const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
     if (!b.subbandejas) b.subbandejas = [];
-    let key = slugify(nombre);
-    let i = 1;
-    while (b.subbandejas.some(s => s.key === key)) key = `${slugify(nombre)}_${i++}`;
+    const key = slugify(nombre);
+    if (b.subbandejas.some(s => s.key === key)) {
+      alert(`Ya existe una sub-bandeja con el nombre "${nombre}" en esta bandeja. Elegí otro nombre antes de crearla.`);
+      return;
+    }
     const { data: nueva, error } = await supabaseClient.from('centralweb_bandejas').insert({ empresa_id: EMPRESA_ID, key, nombre, parent_id: b.id }).select().single();
     if (error) { alert('No se pudo crear la sub-bandeja: ' + error.message); return; }
     b.subbandejas.push(nueva);
