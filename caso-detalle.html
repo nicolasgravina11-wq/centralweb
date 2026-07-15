@@ -2633,6 +2633,7 @@
       // Guarda en cw_status_map
       const map = JSON.parse(localStorage.getItem('cw_status_map') || '{}');
       map[c.ticket] = newStatus; _syncEstadoSupabase(c.ticket, newStatus);
+      if (window._supaCasosPorTicket && window._supaCasosPorTicket[c.ticket]) window._supaCasosPorTicket[c.ticket].estado = newStatus;
       localStorage.setItem('cw_status_map', JSON.stringify(map));
       if (newStatus === 'cerrado') _marcarCierreEnGraciaDetail(c.ticket);
       // Actualiza badge en detalle
