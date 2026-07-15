@@ -1307,13 +1307,16 @@ setTimeout(_ocultarOverlayCarga, 4000);
   // Sin esto, un caso reabierto por el backend (ej: respuesta del cliente a un caso cerrado)
   // seguia mostrandose como "Cerrado" indefinidamente porque applyStatusMap() confiaba
   // ciegamente en el valor guardado en localStorage, sin importar cuan viejo fuera.
+  // Nota: se lee/escribe localStorage directamente (no getStatusMap/saveStatusMap) porque
+  // este bloque corre antes de que la variable de modulo _statusMap se inicialice.
   {
-    const _mapaSync = getStatusMap();
+    let _mapaSync = {};
+    try { _mapaSync = JSON.parse(localStorage.getItem('cw_status_map') || '{}'); } catch {}
     let _mapaCambio = false;
     (casosDB || []).forEach(c => {
       if (c.ticket && c.estado && _mapaSync[c.ticket] !== c.estado) { _mapaSync[c.ticket] = c.estado; _mapaCambio = true; }
     });
-    if (_mapaCambio) saveStatusMap(_mapaSync);
+    if (_mapaCambio) { try { localStorage.setItem('cw_status_map', JSON.stringify(_mapaSync)); } catch {} }
   }
 
   const CASOS_REALES = (casosDB || []).map(c => {
