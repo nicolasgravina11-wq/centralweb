@@ -1729,11 +1729,11 @@
           Vas a combinar el caso <strong>${a.ticket}</strong> con el caso <strong>${b.ticket}</strong> (mismo remitente: ${fromName}).
           <div class="combine-opt selected" onclick="_selectCombinePrincipal('${older.ticket}')" id="combine-opt-${older.ticket.replace('#','')}">
             <input type="radio" name="combine-principal" value="${older.ticket}" checked />
-            <span><strong>${older.ticket}</strong> — ${older.date || ''} — quedará como principal y absorberá</span>
+            <span><strong>${older.ticket}</strong> — ${older.date || ''} — quedará como principal y absorberá al caso ${newer.ticket}</span>
           </div>
           <div class="combine-opt" onclick="_selectCombinePrincipal('${newer.ticket}')" id="combine-opt-${newer.ticket.replace('#','')}">
             <input type="radio" name="combine-principal" value="${newer.ticket}" />
-            <span><strong>${newer.ticket}</strong> — ${newer.date || ''} — quedará como principal y absorberá</span>
+            <span><strong>${newer.ticket}</strong> — ${newer.date || ''} — quedará como principal y absorberá al caso ${older.ticket}</span>
           </div>
         </div>
         <div class="combine-modal-footer">
