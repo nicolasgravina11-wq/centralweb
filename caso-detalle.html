@@ -3355,7 +3355,7 @@ function openNote() {
     card.dataset.status = status || 'done';
     if (status === 'error') card.title = 'No se pudo subir. Se reintentará al enviar.';
     card.innerHTML = `
-      <div class="att-card-icon" style="background:${bg}">
+      <div class="att-card-icon" style="background:#f8fafc">
         ${_fileIconSvg(color, ext)}
         <span class="att-card-ext" style="display:none">${ext}</span>
       </div>
