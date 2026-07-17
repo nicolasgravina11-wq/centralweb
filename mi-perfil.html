@@ -520,12 +520,24 @@
   }
 
   async function subirArchivoFirma(file) {
-        const ext = (file.name.split('.').pop() || 'png').toLowerCase();
-        const path = `firmas/${CURRENT_USER.id}_${Date.now()}.${ext}`;
-        const { error } = await supabaseClient.storage.from('adjuntos').upload(path, file, { upsert: true });
-        if (error) throw error;
-        const { data } = supabaseClient.storage.from('adjuntos').getPublicUrl(path);
-        return data.publicUrl;
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/upload-attachment.js', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (session ? session.access_token : '')
+      },
+      body: JSON.stringify({ carpeta: 'firmas', nombre: file.name, contenidoBase64: base64, tipo: file.type })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Error al subir la firma');
+    return data.url;
   }
 
   async function guardarFirma() {
