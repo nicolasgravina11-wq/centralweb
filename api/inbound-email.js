@@ -65,9 +65,10 @@ async function supabaseFetch(path, options = {}) {
     const texto = await respuesta.text();
     throw new Error(`Supabase ${path} -> ${respuesta.status}: ${texto}`);
   }
-  const contentLength = respuesta.headers.get('content-length');
-  if (contentLength === '0') return null;
-  return respuesta.json();
+  if (respuesta.status === 204) return null;
+  const texto = await respuesta.text();
+  if (!texto) return null;
+  try { return JSON.parse(texto); } catch (e) { return null; }
 }
 
 async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } async function obtenerAdjuntosDesdeMailgun(fields) {
@@ -80,7 +81,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
   for (const meta of (metaLista || [])) {
     try {
       const resp = await fetch(meta.url, { headers: { Authorization: auth } });
-      if (!resp.ok) { console.error('No se pudo descargar adjunto de Mailgun:', meta.name, resp.status); continue; }
+      if (!resp.ok) { const detalle = await resp.text().catch(() => ''); console.error('No se pudo descargar adjunto de Mailgun:', meta.name, resp.status, detalle); continue; }
       const buffer = Buffer.from(await resp.arrayBuffer());
       resultado.push({ nombre: meta.name || 'archivo', tipo: meta['content-type'] || 'application/octet-stream', buffer });
     } catch (e) {
