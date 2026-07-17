@@ -70,7 +70,27 @@ async function supabaseFetch(path, options = {}) {
   return respuesta.json();
 }
 
-async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre, mensajeBienvenida, asuntoOriginal) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = (mensajeBienvenida || `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`).replace(/<span class="var-chip"[^>]*>[^<]*<\/span>/gi, ticket); const asuntoBase = asuntoOriginal || 'Consulta';
+async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } async function obtenerAdjuntosDesdeMailgun(fields) {
+  if (!fields || !fields.attachments) return [];
+  if (!MAILGUN_API_KEY) { console.error('Falta MAILGUN_API_KEY: no se pueden descargar adjuntos entrantes'); return []; }
+  let metaLista;
+  try { metaLista = JSON.parse(fields.attachments); } catch (e) { console.error('No se pudo parsear el JSON de attachments:', e.message); return []; }
+  const auth = 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64');
+  const resultado = [];
+  for (const meta of (metaLista || [])) {
+    try {
+      const resp = await fetch(meta.url, { headers: { Authorization: auth } });
+      if (!resp.ok) { console.error('No se pudo descargar adjunto de Mailgun:', meta.name, resp.status); continue; }
+      const buffer = Buffer.from(await resp.arrayBuffer());
+      resultado.push({ nombre: meta.name || 'archivo', tipo: meta['content-type'] || 'application/octet-stream', buffer });
+    } catch (e) {
+      console.error('Error descargando adjunto de Mailgun:', meta && meta.name, e.message);
+    }
+  }
+  return resultado;
+}
+
+async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre, mensajeBienvenida, asuntoOriginal) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = (mensajeBienvenida || `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`).replace(/<span class="var-chip"[^>]*>[^<]*<\/span>/gi, ticket); const asuntoBase = asuntoOriginal || 'Consulta';
   const asuntoConRe = /^re:/i.test(asuntoBase) ? asuntoBase : `Re: ${asuntoBase}`;
   const asuntoAuto = asuntoConRe.includes(ticket) ? asuntoConRe : (function() {
     const m = asuntoConRe.match(/^(Re|RE):\s*/);
@@ -138,8 +158,9 @@ module.exports = async (req, res) => {
   }
 
   let fields, files;
+  files = [];
   try {
-    ({ fields, files } = await parseMultipart(req));
+    ({ fields } = await parseMultipart(req));
   } catch (e) {
     console.error('Error parseando el correo entrante:', e);
     res.status(400).send('Bad request');
@@ -150,6 +171,12 @@ module.exports = async (req, res) => {
     console.error('Firma de Mailgun invalida o faltante');
     res.status(401).send('Firma invalida');
     return;
+  }
+
+  try {
+    files = await obtenerAdjuntosDesdeMailgun(fields);
+  } catch (e) {
+    console.error('No se pudieron descargar los adjuntos desde Mailgun:', e.message);
   }
 
   const recipient = (fields.recipient || '').toLowerCase().trim();
