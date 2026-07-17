@@ -1511,9 +1511,14 @@
     let nombreEmpresa = '';
     try { nombreEmpresa = (typeof _remitenteFormalActual === 'function' ? _remitenteFormalActual() : '') || ''; } catch (e) {}
     nombreEmpresa = nombreEmpresa.trim().toLowerCase();
+    let nombresAgentes = [];
+    try {
+      nombresAgentes = Object.values(window._perfilesAutorPorId || {}).map(n => (n || '').trim().toLowerCase()).filter(Boolean);
+      if (typeof _CURRENT_USER_NAME !== 'undefined' && _CURRENT_USER_NAME) nombresAgentes.push(_CURRENT_USER_NAME.trim().toLowerCase());
+    } catch (eAg) {}
     document.querySelectorAll('.email-from-name .from-sender, .email-from-name .from-recipient').forEach(function(el) {
       const txt = (el.textContent || '').trim().toLowerCase();
-      const esEmpresa = !!txt && (txt === nombreEmpresa || txt.endsWith('@cweb.novadgt.com'));
+      const esEmpresa = !!txt && (txt === nombreEmpresa || txt.endsWith('@cweb.novadgt.com') || nombresAgentes.includes(txt));
       el.classList.toggle('identidad-empresa', esEmpresa);
     });
   }
