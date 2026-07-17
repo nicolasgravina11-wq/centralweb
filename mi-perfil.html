@@ -340,6 +340,10 @@
       </div>
       <div class="firma-preview" id="firma-preview">
         <img id="firma-preview-img" alt="Firma">
+        <div class="firma-size-control">
+          <label class="hint-small" for="firma-size-slider">Tamaño de la imagen: <span id="firma-size-value">220px</span></label>
+          <input type="range" id="firma-size-slider" min="80" max="400" step="10" value="220" oninput="onFirmaSizeChange()" style="width:100%">
+        </div>
         <button class="remove-btn" onclick="quitarFirmaArchivo()">Quitar imagen</button>
       </div>
     </div>
@@ -490,6 +494,7 @@
   let modoFirmaActual = 'texto';
   let firmaArchivoDataUrl = null;
   let firmaArchivoFile = null;
+  let firmaArchivoAncho = 220;
 
   function setModoFirma(modo) {
         modoFirmaActual = modo;
@@ -507,9 +512,16 @@
         reader.onload = () => {
                 firmaArchivoDataUrl = reader.result;
                 document.getElementById('firma-preview-img').src = firmaArchivoDataUrl;
+          document.getElementById('firma-preview-img').style.maxWidth = firmaArchivoAncho + 'px';
                 document.getElementById('firma-preview').classList.add('show');
         };
         reader.readAsDataURL(file);
+  }
+
+  function onFirmaSizeChange() {
+    firmaArchivoAncho = parseInt(document.getElementById('firma-size-slider').value, 10);
+    document.getElementById('firma-size-value').textContent = firmaArchivoAncho + 'px';
+    document.getElementById('firma-preview-img').style.maxWidth = firmaArchivoAncho + 'px';
   }
 
   function quitarFirmaArchivo() {
@@ -548,8 +560,9 @@
                 } else {
                           if (!firmaArchivoFile && !firmaArchivoDataUrl) { flashSaveMsg('save-firma-msg'); return; }
                           let url = firmaArchivoDataUrl && !firmaArchivoFile ? firmaArchivoDataUrl : null;
-                          if (firmaArchivoFile) url = await subirArchivoFirma(firmaArchivoFile);
-                          payload = { user_id: CURRENT_USER.id, modo: 'archivo', texto: null, archivo_url: url };
+                                if (firmaArchivoFile) url = await subirArchivoFirma(firmaArchivoFile);
+                                url = url.replace(/#w\d+$/, '') + '#w' + firmaArchivoAncho;
+                                payload = { user_id: CURRENT_USER.id, modo: 'archivo', texto: null, archivo_url: url };
                 }
                 const { error } = await supabaseClient.from('centralweb_firmas').upsert(payload, { onConflict: 'user_id' });
                 if (error) throw error;
@@ -568,8 +581,17 @@
                 document.getElementById('firma-texto').value = firma?.texto || '';
         } else if (firma?.archivo_url) {
                 firmaArchivoDataUrl = firma.archivo_url;
-                document.getElementById('firma-preview-img').src = firma.archivo_url;
-                document.getElementById('firma-preview').classList.add('show');
+          {
+            let w = 220;
+            const m = /#w(\d+)$/.exec(firma.archivo_url);
+            if (m) w = parseInt(m[1], 10);
+            firmaArchivoAncho = w;
+            document.getElementById('firma-size-slider').value = w;
+            document.getElementById('firma-size-value').textContent = w + 'px';
+          }
+          document.getElementById('firma-preview-img').src = firma.archivo_url;
+          document.getElementById('firma-preview-img').style.maxWidth = firmaArchivoAncho + 'px';
+          document.getElementById('firma-preview').classList.add('show');
         }
   }
 
