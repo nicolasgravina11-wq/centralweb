@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
       res.status(403).json({ ok: false, error: 'Perfil no encontrado' });
       return;
     }
-    if (perfiles[0].rol !== 'Administrador') {
+    if (carpeta !== 'firmas' && perfiles[0].rol !== 'Administrador') {
       res.status(403).json({ ok: false, error: 'Solo un Administrador puede subir este archivo' });
       return;
     }
