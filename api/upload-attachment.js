@@ -14,7 +14,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const CARPETAS_PERMITIDAS = ['bandejas'];
+const CARPETAS_PERMITIDAS = ['bandejas', 'respuestas'];
 
 async function supabaseFetch(path, options = {}) {
   const headers = {
