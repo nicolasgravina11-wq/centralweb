@@ -1508,14 +1508,13 @@
   // Colorea en azul el nombre de la EMPRESA (nunca el del cliente) en los encabezados
   // De/Para del timeline, comparando contra el remitente original del caso.
   function _colorearIdentidadTimeline() {
-    const c = window._casoActualDB;
-    if (!c) return;
-    const nombreCliente = (c.from_name || '').trim().toLowerCase();
-    const emailCliente = (c.from_email || '').trim().toLowerCase();
+    let nombreEmpresa = '';
+    try { nombreEmpresa = (typeof _remitenteFormalActual === 'function' ? _remitenteFormalActual() : '') || ''; } catch (e) {}
+    nombreEmpresa = nombreEmpresa.trim().toLowerCase();
     document.querySelectorAll('.email-from-name .from-sender, .email-from-name .from-recipient').forEach(function(el) {
       const txt = (el.textContent || '').trim().toLowerCase();
-      const esCliente = !!txt && (txt === nombreCliente || txt === emailCliente);
-      el.classList.toggle('identidad-empresa', !esCliente);
+      const esEmpresa = !!txt && (txt === nombreEmpresa || txt.endsWith('@cweb.novadgt.com'));
+      el.classList.toggle('identidad-empresa', esEmpresa);
     });
   }
   (function _iniciarObservadorIdentidadTimeline() {
