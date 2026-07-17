@@ -702,6 +702,19 @@
       font-size: 11px; font-weight: 800; letter-spacing: .5px;
       color: white; background: rgba(0,0,0,.18); padding: 2px 6px; border-radius: 4px;
     }
+    .att-card[data-status="uploading"] .att-card-icon { opacity: .45; }
+    .att-card[data-status="uploading"]::after {
+      content: ''; position: absolute; top: 6px; right: 6px; width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,.15); border-top-color: #2563eb; border-radius: 50%;
+      animation: att-card-spin .7s linear infinite;
+    }
+    .att-card[data-status="error"] { border-color: #dc2626; }
+    .att-card[data-status="error"]::after {
+      content: '!'; position: absolute; top: 4px; right: 4px; width: 15px; height: 15px;
+      background: #dc2626; color: #fff; border-radius: 50%; font-size: 10px; line-height: 15px;
+      text-align: center; font-weight: 700;
+    }
+    @keyframes att-card-spin { to { transform: rotate(360deg); } }
     .att-card-info { padding: 6px 8px; border-top: 1px solid var(--border); background: #f8fafc; }
     .att-card-name {
       font-size: 11px; font-weight: 500; color: var(--text-primary);
@@ -3294,11 +3307,13 @@ function openNote() {
     return { ext: ext.toUpperCase() || 'FILE', ...(map[ext] || { color: '#64748b', bg: '#f8fafc' }) };
   }
 
-  function _buildAttachCard(name, size, removeCallback, url) {
+  function _buildAttachCard(name, size, removeCallback, url, status) {
     const { ext, color, bg } = _fileTypeInfo(name);
     const isImage = ['jpg','jpeg','png','gif','webp'].includes(ext.toLowerCase());
     const card = document.createElement('div');
     card.className = 'att-card'; if (url) card.dataset.url = url;
+    card.dataset.status = status || 'done';
+    if (status === 'error') card.title = 'No se pudo subir. Se reintentará al enviar.';
     card.innerHTML = `
       <div class="att-card-icon" style="background:${bg};color:${color}">
         ${_fileIconSvg}
@@ -3916,10 +3931,29 @@ function openNote() {
     _closeColorPicker();
   });
 
+  async function _subirAdjuntoInline(f) {
+    f._uploadStatus = 'uploading';
+    _renderAttachList();
+    try {
+      const nombreSeguro = (f.name || 'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = 'mensajes/' + (window._casoActualDB ? window._casoActualDB.id : 'tmp') + '/' + Date.now() + '-' + nombreSeguro;
+      const { error } = await supabaseClient.storage.from('adjuntos').upload(path, f, { contentType: f.type || 'application/octet-stream' });
+      if (error) throw error;
+      const { data: pub } = supabaseClient.storage.from('adjuntos').getPublicUrl(path);
+      f._uploadStatus = 'done';
+      f._uploadedUrl = pub.publicUrl;
+    } catch (e) {
+      console.error('No se pudo subir adjunto:', f.name, (e && e.message) || e);
+      f._uploadStatus = 'error';
+    }
+    _renderAttachList();
+  }
+
   function _onAttachFiles(input) {
     Array.from(input.files).forEach(f => {
       if (_attachedFiles.find(x => x.name === f.name)) return;
       _attachedFiles.push(f);
+      _subirAdjuntoInline(f);
     });
     _renderAttachList();
     input.value = '';
@@ -3931,10 +3965,10 @@ function openNote() {
     list.innerHTML = '';
     _attachedFiles.forEach((f, i) => {
       const size = typeof f.size === 'number' ? (f.size/1024).toFixed(0)+' KB' : (f.size || '');
-      list.appendChild(_buildAttachCard(f.name, size, () => { _attachedFiles.splice(i,1); _renderAttachList(); }, URL.createObjectURL(f)));
+      list.appendChild(_buildAttachCard(f.name, size, () => { _attachedFiles.splice(i,1); _renderAttachList(); }, URL.createObjectURL(f), f._uploadStatus || 'done'));
     });
     _convFiles.forEach((f, i) => {
-      list.appendChild(_buildAttachCard(f.name, f.size || '', () => { _convFiles.splice(i,1); _renderAttachList(); }, f.url||null));
+      list.appendChild(_buildAttachCard(f.name, f.size || '', () => { _convFiles.splice(i,1); _renderAttachList(); }, f.url||null, 'done'));
     });
   }
 
@@ -4183,10 +4217,14 @@ function openNote() {
     } catch(e) {}
   }
 
-  async function _syncSentEmailToSupabase(toStr, ccStr, html, files, convFiles) { try { if (!window._casoActualDB) return; const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) return; const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}'); const nuevosAdj = (await Promise.all((files||[]).map(async function(f) { try { const nombreSeguro = (f.name || 'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_'); const path = 'mensajes/' + window._casoActualDB.id + '/' + Date.now() + '-' + nombreSeguro; const { error } = await supabaseClient.storage.from('adjuntos').upload(path, f, { contentType: f.type || 'application/octet-stream' }); if (error) throw error; const { data: pub } = supabaseClient.storage.from('adjuntos').getPublicUrl(path); return { nombre: f.name, tipo: f.type || 'application/octet-stream', url: pub.publicUrl, tamano: f.size }; } catch (e) { console.error('No se pudo subir adjunto directo a Storage:', f.name, (e && e.message) || e); return null; } }))).filter(Boolean); const reusedAdj = (convFiles||[]).filter(f => f.url).map(f => ({ nombre: f.name, url: f.url })); const adjuntosPayload = [...nuevosAdj, ...reusedAdj]; const resp = await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ casoId: window._casoActualDB.id, to: toStr, cc: ccStr || undefined, asunto: 'Re: ' + (c.asunto || window._casoActualDB.asunto || ''), cuerpoHtml: html, adjuntos: adjuntosPayload }) }); const json = await resp.json().catch(() => ({})); if (!resp.ok || !json.ok) console.error('No se pudo enviar el correo real:', json.error || resp.status);
+  async function _syncSentEmailToSupabase(toStr, ccStr, html, files, convFiles) { try { if (!window._casoActualDB) return; const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) return; const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}'); const nuevosAdj = (await Promise.all((files||[]).map(async function(f) { try { if (f._uploadedUrl) return { nombre: f.name, tipo: f.type || 'application/octet-stream', url: f._uploadedUrl, tamano: f.size }; const nombreSeguro = (f.name || 'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_'); const path = 'mensajes/' + window._casoActualDB.id + '/' + Date.now() + '-' + nombreSeguro; const { error } = await supabaseClient.storage.from('adjuntos').upload(path, f, { contentType: f.type || 'application/octet-stream' }); if (error) throw error; const { data: pub } = supabaseClient.storage.from('adjuntos').getPublicUrl(path); return { nombre: f.name, tipo: f.type || 'application/octet-stream', url: pub.publicUrl, tamano: f.size }; } catch (e) { console.error('No se pudo subir adjunto directo a Storage:', f.name, (e && e.message) || e); return null; } }))).filter(Boolean); const reusedAdj = (convFiles||[]).filter(f => f.url).map(f => ({ nombre: f.name, url: f.url })); const adjuntosPayload = [...nuevosAdj, ...reusedAdj]; const resp = await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ casoId: window._casoActualDB.id, to: toStr, cc: ccStr || undefined, asunto: 'Re: ' + (c.asunto || window._casoActualDB.asunto || ''), cuerpoHtml: html, adjuntos: adjuntosPayload }) }); const json = await resp.json().catch(() => ({})); if (!resp.ok || !json.ok) console.error('No se pudo enviar el correo real:', json.error || resp.status);
       if (json.omitidos && json.omitidos.length) { alert('El correo se envio, pero estos adjuntos no se pudieron incluir: ' + json.omitidos.map(function(o){ return o.nombre + ' (' + (o.error || 'error desconocido') + ')'; }).join(', ')); } } catch (e) { console.error('Error sincronizando envio de correo:', e); } } function sendReply() {
     const html = _getComposeHTML();
     if (!html) return;
+    const _pendUp = _attachedFiles.filter(f => f._uploadStatus === 'uploading');
+    const _errUp  = _attachedFiles.filter(f => f._uploadStatus === 'error');
+    if (_pendUp.length) { alert('Espera a que terminen de subir los adjuntos antes de enviar.'); return; }
+    if (_errUp.length && !confirm('Algunos adjuntos no se pudieron subir y no se incluiran en el correo. ¿Enviar de todas formas?')) { return; }
     const now      = new Date();
     const fecha    = now.toLocaleDateString('es-AR', { day:'numeric', month:'short', year:'numeric' });
     const hora     = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
@@ -4205,6 +4243,10 @@ function openNote() {
   function sendOutgoing() {
     const html = _getComposeHTML();
     if (!html) return;
+    const _pendUp = _attachedFiles.filter(f => f._uploadStatus === 'uploading');
+    const _errUp  = _attachedFiles.filter(f => f._uploadStatus === 'error');
+    if (_pendUp.length) { alert('Espera a que terminen de subir los adjuntos antes de enviar.'); return; }
+    if (_errUp.length && !confirm('Algunos adjuntos no se pudieron subir y no se incluiran en el correo. ¿Enviar de todas formas?')) { return; }
     const now      = new Date();
     const fecha    = now.toLocaleDateString('es-AR', { day:'numeric', month:'short', year:'numeric' });
     const hora     = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
