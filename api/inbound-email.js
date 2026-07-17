@@ -160,7 +160,7 @@ module.exports = async (req, res) => {
   let fields, files;
   files = [];
   try {
-    ({ fields } = await parseMultipart(req));
+    ({ fields, files } = await parseMultipart(req));
   } catch (e) {
     console.error('Error parseando el correo entrante:', e);
     res.status(400).send('Bad request');
@@ -173,10 +173,12 @@ module.exports = async (req, res) => {
     return;
   }
 
-  try {
-    files = await obtenerAdjuntosDesdeMailgun(fields);
-  } catch (e) {
-    console.error('No se pudieron descargar los adjuntos desde Mailgun:', e.message);
+  if (!files.length) {
+    try {
+      files = await obtenerAdjuntosDesdeMailgun(fields);
+    } catch (e) {
+      console.error('No se pudieron descargar los adjuntos desde Mailgun:', e.message);
+    }
   }
 
   const recipient = (fields.recipient || '').toLowerCase().trim();
