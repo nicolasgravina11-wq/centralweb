@@ -244,10 +244,11 @@
     border-radius: 8px;
     background: white;
     display: none;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
   }
   .firma-preview.show { display: flex; }
+  .firma-preview-top { display: flex; align-items: center; gap: 12px; }
   .firma-preview img { max-height: 150px; max-width: 220px; }
   .firma-preview .remove-btn {
     margin-left: auto;
@@ -339,12 +340,14 @@
         <div class="hint-small">PNG o JPG. Hace click para elegir la imagen de tu firma.</div>
       </div>
       <div class="firma-preview" id="firma-preview">
-        <img id="firma-preview-img" alt="Firma">
+        <div class="firma-preview-top">
+          <img id="firma-preview-img" alt="Firma">
+          <button class="remove-btn" onclick="quitarFirmaArchivo()">Quitar imagen</button>
+        </div>
         <div class="firma-size-control">
           <label class="hint-small" for="firma-size-slider">Tamaño de la imagen: <span id="firma-size-value">220px</span></label>
           <input type="range" id="firma-size-slider" min="80" max="400" step="10" value="220" oninput="onFirmaSizeChange()" style="width:100%">
         </div>
-        <button class="remove-btn" onclick="quitarFirmaArchivo()">Quitar imagen</button>
       </div>
     </div>
 
