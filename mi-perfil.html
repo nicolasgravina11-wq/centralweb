@@ -334,9 +334,9 @@
     </div>
 
     <div id="panel-firma-archivo" style="display:none">
-      <div class="firma-file-zone">
-        <input type="file" id="firma-file-input" accept="image/*" onchange="onFirmaFileSelected(event)">
-        <div class="hint-small">PNG o JPG, se guarda localmente para esta demo.</div>
+      <div class="firma-file-zone" onclick="document.getElementById('firma-file-input').click()" style="cursor:pointer">
+        <input type="file" id="firma-file-input" accept="image/*" onchange="onFirmaFileSelected(event)" style="display:none">
+        <div class="hint-small">PNG o JPG. Hace click para elegir la imagen de tu firma.</div>
       </div>
       <div class="firma-preview" id="firma-preview">
         <img id="firma-preview-img" alt="Firma">
