@@ -3628,6 +3628,12 @@ function openNote() {
     try { ticket = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}').ticket || ''; } catch (err) {}
     const html = respuesta.texto.replace(/<span class="var-chip"[^>]*>[^<]*<\/span>/gi, ticket);
     document.execCommand('insertHTML', false, html + '&nbsp;');
+    if (respuesta.archivos_adjuntos && respuesta.archivos_adjuntos.length) {
+      respuesta.archivos_adjuntos.forEach(a => {
+        if (a.url && !_convFiles.find(f => f.name === a.name)) _convFiles.push({ name: a.name, size: a.size, url: a.url });
+      });
+      _renderAttachList();
+    }
     _hideMentionDropdown();
   }
 
