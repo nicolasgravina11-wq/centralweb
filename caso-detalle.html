@@ -1507,7 +1507,7 @@
 
     </div><!-- /right-panel -->
   </div><!-- /content-area -->
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
   // Colorea en azul el nombre de la EMPRESA (nunca el del cliente) en los encabezados
@@ -3375,7 +3375,7 @@ function openNote() {
     dlBtn.className = 'att-card-dl-btn';
     dlBtn.title = 'Descargar';
     dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>';
-    dlBtn.onclick = e => { e.stopPropagation(); _downloadAttach(name); };
+    dlBtn.onclick = e => { e.stopPropagation(); _downloadAttach(name, url); };
     card.appendChild(dlBtn);
     card.addEventListener('click', () => _openAttachPreview(name, size, color, bg, ext, isImage, card.dataset.url || null));
     return card;
@@ -3436,7 +3436,7 @@ function openNote() {
     // Botones
     overlay.querySelector('#pv-close').onclick = () => overlay.remove();
     overlay.querySelector('#pv-print').onclick = () => window.print();
-    overlay.querySelector('#pv-download').onclick = () => _downloadAttach(name);
+    overlay.querySelector('#pv-download').onclick = () => _downloadAttach(name, url);
     overlay.querySelector('#pv-fullscreen').onclick = () => {
       if (!document.fullscreenElement) overlay.requestFullscreen?.();
       else document.exitFullscreen?.();
@@ -3508,14 +3508,44 @@ function openNote() {
     }).catch(() => {});
   }
 
-  function _downloadAttach(name) {
-    // En producción aquí iría la URL real del archivo
-    alert(`Descargando: ${name}`);
+  function _downloadAttach(name, url) {
+    if (!url) { alert('No se encontró el archivo para descargar.'); return; }
+    const sep = url.indexOf('?') === -1 ? '?' : '&';
+    const a = document.createElement('a');
+    a.href = url + sep + 'download=' + encodeURIComponent(name || 'archivo');
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
-  function _downloadAttachZip(names) {
-    // En producción esto armaría y descargaría un .zip real con los archivos
-    alert(`Descargando comprimido (${names.length} archivos):\n${names.join('\n')}`);
+  async function _downloadAttachZip(files) {
+    if (!files || !files.length) return;
+    try {
+      if (typeof JSZip === 'undefined') { alert('No se pudo cargar el compresor de archivos. Probó de nuevo.'); return; }
+      const zip = new JSZip();
+      const resultados = await Promise.allSettled(files.map(async f => {
+        const resp = await fetch(f.url);
+        if (!resp.ok) throw new Error('No se pudo descargar ' + f.name);
+        const blob = await resp.blob();
+        zip.file(f.name, blob);
+      }));
+      const fallidos = resultados.filter(r => r.status === 'rejected').length;
+      if (fallidos === files.length) { alert('No se pudo generar el archivo comprimido.'); return; }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zipUrl = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = zipUrl;
+      a.download = 'adjuntos.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(zipUrl), 10000);
+      if (fallidos) alert(`Se incluyeron ${files.length - fallidos} de ${files.length} archivos (algunos no se pudieron descargar).`);
+    } catch (err) {
+      console.error('Error generando zip de adjuntos:', err);
+      alert('No se pudo generar el archivo comprimido.');
+    }
   }
 
   // Renderiza una lista de adjuntos dentro de un contenedor ".email-attachments"
@@ -3527,7 +3557,7 @@ function openNote() {
     btn.type = 'button';
     btn.className = 'download-zip-btn';
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Descargar archivos comprimidos (${files.length})`;
-    btn.onclick = () => _downloadAttachZip(files.map(f => f.name));
+    btn.onclick = () => _downloadAttachZip(files);
     container.after(btn);
   }
 
