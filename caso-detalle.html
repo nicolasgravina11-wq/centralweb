@@ -1519,7 +1519,7 @@
     let nombresAgentes = [];
     try {
       nombresAgentes = Object.values(window._perfilesAutorPorId || {}).map(n => (n || '').trim().toLowerCase()).filter(Boolean);
-      if (typeof _CURRENT_USER_NAME !== 'undefined' && _CURRENT_USER_NAME) nombresAgentes.push(_CURRENT_USER_NAME.trim().toLowerCase());
+      if (window._CURRENT_USER_NAME_REAL) nombresAgentes.push(window._CURRENT_USER_NAME_REAL.trim().toLowerCase());
     } catch (eAg) {}
     document.querySelectorAll('.email-from-name .from-sender, .email-from-name .from-recipient').forEach(function(el) {
       const txt = (el.textContent || '').trim().toLowerCase();
@@ -1550,7 +1550,7 @@
         const { data: perfilesAutorDB } = await supabaseClient.from('profiles').select('id,nombre,apellido').in('id', idsAutorHist);
         (perfilesAutorDB || []).forEach(p => { window._perfilesAutorPorId[p.id] = ((p.nombre || '') + ' ' + (p.apellido || '')).trim(); });
       }
-    } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); const _CURRENT_USER_NAME = 'Nicolás Gravina';
+    } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); 
 
   // ── Dataset histórico (debe estar antes de _renderHistorico) ──
   const _HIST_CASES = {
@@ -4060,9 +4060,9 @@ function openNote() {
         <div class="email-card">
           <div class="email-header" style="cursor:default">
             <div class="email-icon-wrap" style="background:${iconBg}"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
-            <div class="email-from" data-usuario="${_CURRENT_USER_NAME}">
+            <div class="email-from" data-usuario="${window._CURRENT_USER_NAME_REAL || 'Usuario'}">
               <div class="email-from-name">
-                <span class="from-sender">${remitente || 'Nicolás Gravina'}</span>
+                <span class="from-sender">${remitente || 'Usuario'}</span>
                 <span class="from-arrow">›</span>
                 <span class="from-recipient">${to[0] || ''}</span>
               </div>
@@ -4302,7 +4302,7 @@ function openNote() {
     _removeInlineCompose();
     _syncSentEmailToSupabase(to.join(','), cc.join(','), html, files, conv); const entry = _buildSentCard('Respuesta enviada', '#7c3aed', 'var(--blue-600)',
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 21 12 15 6"/></svg>',
-      fecha, hora, html, files, conv, to, cc, _CURRENT_USER_NAME, window._supaFromAddress || 'soporte@empresa.com');
+      fecha, hora, html, files, conv, to, cc, window._CURRENT_USER_NAME_REAL || 'Usuario', window._supaFromAddress || 'soporte@empresa.com');
     document.getElementById('action-bar').closest('.timeline-entry').before(entry);
     _registrarOutgoingTs();
   }
@@ -4324,7 +4324,7 @@ function openNote() {
     _removeInlineCompose();
     _syncSentEmailToSupabase(to.join(','), cc.join(','), html, files, conv); const entry = _buildSentCard('Correo saliente', '#16a34a', '#16a34a',
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
-      fecha, hora, html, files, conv, to, cc, _CURRENT_USER_NAME, window._supaFromAddress || 'soporte@empresa.com');
+      fecha, hora, html, files, conv, to, cc, window._CURRENT_USER_NAME_REAL || 'Usuario', window._supaFromAddress || 'soporte@empresa.com');
     document.getElementById('action-bar').closest('.timeline-entry').before(entry);
     _registrarOutgoingTs();
   }
