@@ -152,7 +152,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
       });
       if (piezas.length) {
         const quoteHtml = piezas.slice().reverse().map(function(p) {
-          return `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #d0d7de"><div style="margin-bottom:6px;font-size:13px;color:#475569"><strong>${p.quien}</strong>${p.email ? ` (${p.email})` : ''} <span style="color:#94a3b8">/ ${fmtFecha(p.ts)}</span></div><div>${p.cuerpo}</div></div>`;
+          return `<div style="margin-top:20px;padding-top:14px;border-top:3px solid #94a3b8"><div style="margin-bottom:6px;font-size:13px;color:#475569"><strong>${p.quien}</strong>${p.email ? ` (${p.email})` : ''} <span style="color:#94a3b8">/ ${fmtFecha(p.ts)}</span></div><div>${p.cuerpo}</div></div>`;
         }).join('');
         cuerpoConHistorial = cuerpoHtml + adjuntosMencionHtml + quoteHtml;
       }
