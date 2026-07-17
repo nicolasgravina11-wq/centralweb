@@ -137,7 +137,9 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
         : `[${caso.ticket}] ${asuntoBase}`;
     } const adjuntosFinal = []; const adjuntosFallidos = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const nombreSeguro = (nombre || 'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_'); const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombreSeguro}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetch(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); adjuntosFallidos.push({ nombre: (item && item.nombre) || 'archivo', error: e.message }); } }
 
-    let cuerpoConHistorial = cuerpoHtml;
+    function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    const adjuntosMencionHtml = adjuntosFinal.length ? ('<div style="margin:14px 0 0;font-size:13px;color:#475569">' + adjuntosFinal.map(function(a){ return '\uD83D\uDCCE Adjunto: <strong>' + escHtml(a.nombre) + '</strong>'; }).join('<br>') + '</div>') : '';
+    let cuerpoConHistorial = cuerpoHtml + adjuntosMencionHtml;
     try {
       const historialMsgs = await supabaseFetch(`centralweb_mensajes?select=direccion,cuerpo_html,creado_en&caso_id=eq.${caso.id}&order=creado_en.asc`).catch(function(){ return []; });
       const fmtFecha = function(iso) { try { return new Date(iso).toLocaleString('es-AR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); } catch (e) { return ''; } };
@@ -151,7 +153,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
         const quoteHtml = piezas.slice().reverse().map(function(p) {
           return `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #d0d7de"><div style="margin-bottom:6px;font-size:13px;color:#475569"><strong>${p.quien}</strong>${p.email ? ` (${p.email})` : ''} <span style="color:#94a3b8">/ ${fmtFecha(p.ts)}</span></div><div>${p.cuerpo}</div></div>`;
         }).join('');
-        cuerpoConHistorial = cuerpoHtml + quoteHtml;
+        cuerpoConHistorial = cuerpoHtml + adjuntosMencionHtml + quoteHtml;
       }
     } catch (eHist) { console.error('No se pudo armar el historial citado:', eHist.message); }
 
