@@ -1928,6 +1928,7 @@ async function eliminarUsuario(id) {
     document.getElementById('modal-respuesta-nombre').value = '';
     document.getElementById('modal-respuesta-texto').innerHTML = '';
     _rteResetToolbarLabels('toolbar_crear_respuesta');
+    _rteSetAttachments('toolbar_crear_respuesta', []);
     document.getElementById('modal-respuesta-backdrop').classList.add('open');
   }
 
@@ -1945,7 +1946,8 @@ async function eliminarUsuario(id) {
       alert(`Ya existe una respuesta con el código "@${codigo}".`);
       return;
     }
-    const { data: nueva, error } = await supabaseClient.from('centralweb_respuestas_automaticas').insert({ empresa_id: EMPRESA_ID, codigo, nombre, texto }).select().single();
+    const archivosAdjuntos = await _rteGetAttachments('toolbar_crear_respuesta', 'respuestas');
+    const { data: nueva, error } = await supabaseClient.from('centralweb_respuestas_automaticas').insert({ empresa_id: EMPRESA_ID, codigo, nombre, texto, archivos_adjuntos: archivosAdjuntos }).select().single();
     if (error) { alert('No se pudo crear: ' + error.message); return; }
     _respuestasCache.push(nueva);
     cerrarModalRespuesta();
@@ -1969,6 +1971,7 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-respuesta-input-nombre').value = r.nombre;
     document.getElementById('detalle-respuesta-input-texto').innerHTML = r.texto;
     document.getElementById('detalle-respuesta-input-codigo').disabled = !ES_ADMIN;
+    _rteSetAttachments('toolbar_detalle_respuesta', r.archivos_adjuntos || []);
     document.getElementById('detalle-respuesta-input-nombre').disabled = !ES_ADMIN;
     document.getElementById('detalle-respuesta-input-texto').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
     document.getElementById('detalle-respuesta-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
@@ -1993,11 +1996,14 @@ async function eliminarUsuario(id) {
       return;
     }
     const texto = document.getElementById('detalle-respuesta-input-texto').innerHTML;
-    const { error } = await supabaseClient.from('centralweb_respuestas_automaticas').update({ codigo: nuevoCodigo, nombre, texto }).eq('id', r.id);
+    const archivosAdjuntos = await _rteGetAttachments('toolbar_detalle_respuesta', 'respuestas');
+    const { error } = await supabaseClient.from('centralweb_respuestas_automaticas').update({ codigo: nuevoCodigo, nombre, texto, archivos_adjuntos: archivosAdjuntos }).eq('id', r.id);
     if (error) { alert('No se pudo guardar: ' + error.message); return; }
     r.codigo = nuevoCodigo;
     r.nombre = nombre;
     r.texto = texto;
+    r.archivos_adjuntos = archivosAdjuntos;
+    _rteSetAttachments('toolbar_detalle_respuesta', archivosAdjuntos);
     detalleRespuestaActualId = r.id;
     renderDetalleRespuesta();
     renderRespuestasListado();
