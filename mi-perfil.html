@@ -326,33 +326,35 @@
     <h2>Firma</h2>
     <p class="hint">Elegí un modo: texto libre, o un archivo de imagen con la firma/logo de la empresa. Cambiar de modo reemplaza la firma anterior.</p>
     <div class="signature-mode-tabs">
-      <button class="sig-tab" id="tab-texto" onclick="setModoFirma('texto')">Texto</button>
-      <button class="sig-tab" id="tab-archivo" onclick="setModoFirma('archivo')">Archivo / imagen</button>
+      <button class="sig-tab" id="tab-texto" onclick="setModoFirma('texto')" disabled>Texto</button>
+      <button class="sig-tab" id="tab-archivo" onclick="setModoFirma('archivo')" disabled>Archivo / imagen</button>
     </div>
 
     <div id="panel-firma-texto">
-      <textarea id="firma-texto" placeholder="Ej. Nicolás Gravina&#10;CentralWeb — Atención al cliente"></textarea>
+      <textarea id="firma-texto" placeholder="Ej. Nicolás Gravina&#10;CentralWeb — Atención al cliente" disabled></textarea>
     </div>
 
     <div id="panel-firma-archivo" style="display:none">
       <div class="firma-file-zone" onclick="document.getElementById('firma-file-input').click()" style="cursor:pointer">
-        <input type="file" id="firma-file-input" accept="image/*" onchange="onFirmaFileSelected(event)" style="display:none">
+        <input type="file" id="firma-file-input" accept="image/*" onchange="onFirmaFileSelected(event)" style="display:none" disabled>
         <div class="hint-small">PNG o JPG. Hace click para elegir la imagen de tu firma.</div>
       </div>
       <div class="firma-preview" id="firma-preview">
         <div class="firma-preview-top">
           <img id="firma-preview-img" alt="Firma">
-          <button class="remove-btn" onclick="quitarFirmaArchivo()">Quitar imagen</button>
+          <button class="remove-btn" onclick="quitarFirmaArchivo()" disabled>Quitar imagen</button>
         </div>
         <div class="firma-size-control">
           <label class="hint-small" for="firma-size-slider">Tamaño de la imagen: <span id="firma-size-value">220px</span></label>
-          <input type="range" id="firma-size-slider" min="80" max="400" step="10" value="220" oninput="onFirmaSizeChange()" style="width:100%">
+          <input type="range" id="firma-size-slider" min="80" max="400" step="10" value="220" oninput="onFirmaSizeChange()" style="width:100%" disabled>
         </div>
       </div>
     </div>
 
-    <div style="display:flex;align-items:center;margin-top:14px">
-      <button class="btn" onclick="guardarFirma()">Guardar firma</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+      <button class="btn secondary" id="firma-editar-btn" onclick="activarEdicionFirma()">Editar</button>
+      <button class="btn" id="firma-guardar-btn" style="display:none" onclick="guardarFirma()">Guardar firma</button>
+      <button class="btn secondary" id="firma-cancelar-btn" style="display:none" onclick="cancelarEdicionFirma()">Cancelar</button>
       <span class="save-msg" id="save-firma-msg">Guardado ✓</span>
     </div>
   </div>
@@ -363,19 +365,21 @@
     <div class="field">
       <label class="field-label">Nueva contraseña</label>
       <div class="pwd-wrap">
-        <input type="password" id="input-nueva-pass" placeholder="Mínimo 6 caracteres">
+        <input type="password" id="input-nueva-pass" placeholder="Mínimo 6 caracteres" disabled>
         <button type="button" class="pwd-toggle" onclick="_togglePwd('input-nueva-pass', this)" aria-label="Mostrar contraseña"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button>
       </div>
     </div>
     <div class="field">
       <label class="field-label">Repetir contraseña</label>
       <div class="pwd-wrap">
-        <input type="password" id="input-nueva-pass2" placeholder="Repetí la contraseña">
+        <input type="password" id="input-nueva-pass2" placeholder="Repetí la contraseña" disabled>
         <button type="button" class="pwd-toggle" onclick="_togglePwd('input-nueva-pass2', this)" aria-label="Mostrar contraseña"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;margin-top:14px">
-      <button class="btn" onclick="cambiarPassword()">Guardar contraseña</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+      <button class="btn secondary" id="password-editar-btn" onclick="activarEdicionPassword()">Editar</button>
+      <button class="btn" id="password-guardar-btn" style="display:none" onclick="cambiarPassword()">Guardar contraseña</button>
+      <button class="btn secondary" id="password-cancelar-btn" style="display:none" onclick="cancelarEdicionPassword()">Cancelar</button>
       <span class="save-msg" id="save-pass-msg">Guardada ✓</span>
       <span class="save-msg" id="error-pass-msg" style="color:#dc2626"></span>
     </div>
@@ -459,6 +463,60 @@
     document.getElementById('input-nueva-pass').value = '';
     document.getElementById('input-nueva-pass2').value = '';
     flashSaveMsg('save-pass-msg');
+    _passwordEditando = false;
+    _aplicarLockPassword();
+  }
+
+  let _firmaEditando = false;
+  let _passwordEditando = false;
+
+  function _aplicarLockFirma() {
+    const editando = _firmaEditando;
+    document.getElementById('tab-texto').disabled = !editando;
+    document.getElementById('tab-archivo').disabled = !editando;
+    document.getElementById('firma-texto').disabled = !editando;
+    document.getElementById('firma-file-input').disabled = !editando;
+    document.getElementById('firma-size-slider').disabled = !editando;
+    const removeBtn = document.querySelector('#firma-preview .remove-btn');
+    if (removeBtn) removeBtn.disabled = !editando;
+    const zone = document.querySelector('.firma-file-zone');
+    if (zone) zone.style.cursor = editando ? 'pointer' : 'not-allowed';
+    document.getElementById('firma-editar-btn').style.display = editando ? 'none' : '';
+    document.getElementById('firma-guardar-btn').style.display = editando ? '' : 'none';
+    document.getElementById('firma-cancelar-btn').style.display = editando ? '' : 'none';
+  }
+
+  function activarEdicionFirma() {
+    _firmaEditando = true;
+    _aplicarLockFirma();
+  }
+
+  async function cancelarEdicionFirma() {
+    _firmaEditando = false;
+    await renderFirma();
+  }
+
+  function _aplicarLockPassword() {
+    const editando = _passwordEditando;
+    document.getElementById('input-nueva-pass').disabled = !editando;
+    document.getElementById('input-nueva-pass2').disabled = !editando;
+    document.getElementById('password-editar-btn').style.display = editando ? 'none' : '';
+    document.getElementById('password-guardar-btn').style.display = editando ? '' : 'none';
+    document.getElementById('password-cancelar-btn').style.display = editando ? '' : 'none';
+  }
+
+  function activarEdicionPassword() {
+    _passwordEditando = true;
+    _aplicarLockPassword();
+  }
+
+  function cancelarEdicionPassword() {
+    _passwordEditando = false;
+    document.getElementById('input-nueva-pass').value = '';
+    document.getElementById('input-nueva-pass2').value = '';
+    const errEl = document.getElementById('error-pass-msg');
+    errEl.classList.remove('show');
+    _aplicarLockPassword();
   }
 
   async function toggleBandejasDropdown() {
@@ -570,6 +628,8 @@
                 const { error } = await supabaseClient.from('centralweb_firmas').upsert(payload, { onConflict: 'user_id' });
                 if (error) throw error;
                 flashSaveMsg('save-firma-msg');
+                _firmaEditando = false;
+                _aplicarLockFirma();
         } catch (e) {
                 console.error('No se pudo guardar la firma:', e);
                 alert('No se pudo guardar la firma. Intentá de nuevo.');
@@ -596,6 +656,7 @@
           document.getElementById('firma-preview-img').style.maxWidth = firmaArchivoAncho + 'px';
           document.getElementById('firma-preview').classList.add('show');
         }
+    _aplicarLockFirma();
   }
 
   (async function initPerfil() {
