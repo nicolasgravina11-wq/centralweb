@@ -588,13 +588,15 @@
     <div class="row">
       <div>
         <label class="field-label">Nombre formal</label>
-        <input type="text" id="empresa-nombre-input" placeholder="ej. Instituto de Seguridad Social del Neuquén">
+        <input type="text" id="empresa-nombre-input" placeholder="ej. Instituto de Seguridad Social del Neuquén" disabled>
       </div>
       <div>
         <label class="field-label">Sigla</label>
-        <input type="text" id="empresa-sigla-input" placeholder="ej. issn" maxlength="12">
+        <input type="text" id="empresa-sigla-input" placeholder="ej. issn" maxlength="12" disabled>
       </div>
-      <button class="btn" id="guardar-empresa-btn" onclick="guardarEmpresa()">Guardar</button>
+      <button class="btn-mini" id="empresa-editar-btn" onclick="activarEdicionEmpresa()">Editar</button>
+      <button class="btn" id="guardar-empresa-btn" style="display:none" onclick="guardarEmpresa()">Guardar</button>
+      <button class="btn-cancel" id="empresa-cancelar-btn" style="display:none" onclick="cancelarEdicionEmpresa()">Cancelar</button>
     </div>
     <div class="domain-preview" id="empresa-preview"></div>
   </div>
@@ -725,8 +727,10 @@
     <div class="modal-footer" style="justify-content:space-between">
       <button class="remove-btn" id="detalle-respuesta-eliminar-btn" onclick="confirmarEliminarRespuesta()">Eliminar respuesta</button>
       <div style="display:flex;gap:8px">
+        <button class="btn-mini" id="detalle-respuesta-editar-btn" onclick="activarEdicionRespuesta()">Editar</button>
         <button class="btn" id="detalle-respuesta-guardar-btn" style="display:none" onclick="guardarDatosRespuesta()">Guardar cambios</button>
-        <button class="btn-cancel" onclick="cerrarDetalleRespuesta()">Cerrar</button>
+        <button class="btn-cancel" id="detalle-respuesta-cancelar-btn" style="display:none" onclick="cancelarEdicionRespuesta()">Cancelar</button>
+        <button class="btn-cancel" id="detalle-respuesta-cerrar-btn" onclick="cerrarDetalleRespuesta()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -816,8 +820,10 @@
     <div class="modal-footer" style="justify-content:space-between">
       <button class="remove-btn" id="detalle-bandeja-eliminar-btn" onclick="eliminarBandejaDesdeDetalle()">Eliminar bandeja</button>
       <div style="display:flex;gap:8px">
+        <button class="btn-mini" id="detalle-bandeja-editar-btn" onclick="activarEdicionBandeja()">Editar</button>
         <button class="btn-mini" id="detalle-bandeja-guardar-btn" style="display:none" onclick="guardarCambiosBandeja()">Guardar cambios</button>
-        <button class="btn-cancel" onclick="cerrarDetalleBandeja()">Cerrar</button>
+        <button class="btn-cancel" id="detalle-bandeja-cancelar-btn" style="display:none" onclick="cancelarEdicionBandeja()">Cancelar</button>
+        <button class="btn-cancel" id="detalle-bandeja-cerrar-btn" onclick="cerrarDetalleBandeja()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -870,8 +876,10 @@
     <div class="modal-footer" style="justify-content:space-between">
       <button class="remove-btn" id="detalle-usuario-eliminar-btn" onclick="confirmarEliminarUsuario()">Eliminar usuario</button>
       <div style="display:flex;gap:8px">
+        <button class="btn-mini" id="detalle-usuario-editar-btn" onclick="activarEdicionUsuario()">Editar</button>
         <button class="btn" id="detalle-usuario-guardar-btn" style="display:none" onclick="guardarDatosUsuario()">Guardar cambios</button>
-        <button class="btn-cancel" onclick="cerrarDetalleUsuario()">Cerrar</button>
+        <button class="btn-cancel" id="detalle-usuario-cancelar-btn" style="display:none" onclick="cancelarEdicionUsuario()">Cancelar</button>
+        <button class="btn-cancel" id="detalle-usuario-cerrar-btn" onclick="cerrarDetalleUsuario()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1313,13 +1321,32 @@
     return EMPRESA_SIGLA ? `${bandejaKey}.${EMPRESA_SIGLA}@cweb.novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
   }
 
+  let _empresaEditando = false;
+
   function renderEmpresa() {
     const empresa = window.__empresaActual || {};
     document.getElementById('empresa-nombre-input').value = empresa.nombre_formal || '';
     document.getElementById('empresa-sigla-input').value = empresa.sigla || '';
     document.getElementById('empresa-preview').innerHTML = empresa.sigla
-      ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@cweb.novadgt.com</b>`
+      ? `Ejemplo: la bandeja "Prestadores" tendría el correo <b>prestadores.${empresa.sigla}@novadgt.com</b>`
       : 'Definí la sigla para previsualizar los correos de cada bandeja.';
+    const editando = ES_ADMIN && _empresaEditando;
+    document.getElementById('empresa-nombre-input').disabled = !editando;
+    document.getElementById('empresa-sigla-input').disabled = !editando;
+    document.getElementById('empresa-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
+    document.getElementById('guardar-empresa-btn').style.display = editando ? '' : 'none';
+    document.getElementById('empresa-cancelar-btn').style.display = editando ? '' : 'none';
+  }
+
+  function activarEdicionEmpresa() {
+    if (!ES_ADMIN) return;
+    _empresaEditando = true;
+    renderEmpresa();
+  }
+
+  function cancelarEdicionEmpresa() {
+    _empresaEditando = false;
+    renderEmpresa();
   }
 
   async function guardarEmpresa() {
@@ -1331,6 +1358,7 @@
     if (error) { alert('No se pudo guardar la empresa: ' + error.message); return; }
     window.__empresaActual = data;
     EMPRESA_SIGLA = data.sigla;
+    _empresaEditando = false;
     renderEmpresa();
     renderBandejas();
   }
@@ -1381,16 +1409,17 @@
     `).join('');
   }
 
-  function renderBandejasChecklist(containerId, marcadasIds, onToggle) {
+  function renderBandejasChecklist(containerId, marcadasIds, onToggle, habilitado) {
     const bandejas = _bandejasCache;
     const container = document.getElementById(containerId);
     if (!bandejas.length) {
       container.innerHTML = '<div class="empty-msg">Todavía no hay bandejas creadas.</div>';
       return;
     }
+    const enabled = habilitado === undefined ? ES_ADMIN : habilitado;
     container.innerHTML = bandejas.map(b => `
       <label class="bandeja-check-row">
-        <input type="checkbox" value="${b.id}" ${marcadasIds.includes(b.id) ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'}
+        <input type="checkbox" value="${b.id}" ${marcadasIds.includes(b.id) ? 'checked' : ''} ${enabled ? '' : 'disabled'}
           onchange="${onToggle}('${b.id}', this.checked)">
         ${b.nombre}
       </label>
@@ -1460,8 +1489,11 @@ async function eliminarUsuario(id) {
   // ── Detalle de usuario ──
   let detalleUsuarioActualId = null;
 
+  let _usuarioEditando = false;
+
   function abrirDetalleUsuario(id) {
     detalleUsuarioActualId = id;
+    _usuarioEditando = false;
     renderDetalleUsuario();
     document.getElementById('modal-detalle-usuario-backdrop').classList.add('open');
   }
@@ -1469,20 +1501,37 @@ async function eliminarUsuario(id) {
   function renderDetalleUsuario() {
     const u = _usuariosCache.find(x => x.id === detalleUsuarioActualId);
     if (!u) return;
+    const editando = ES_ADMIN && _usuarioEditando;
     document.getElementById('detalle-usuario-nombre').textContent = `${u.nombre} ${u.apellido}`;
     document.getElementById('detalle-usuario-email').textContent = u.email;
     document.getElementById('detalle-usuario-input-nombre').value = u.nombre;
     document.getElementById('detalle-usuario-input-apellido').value = u.apellido;
     document.getElementById('detalle-usuario-input-email').value = u.email;
     document.getElementById('detalle-usuario-input-rol').value = u.rol;
-    document.getElementById('detalle-usuario-input-nombre').disabled = !ES_ADMIN;
-    document.getElementById('detalle-usuario-input-apellido').disabled = !ES_ADMIN;
-    document.getElementById('detalle-usuario-input-rol').disabled = !ES_ADMIN;
+    document.getElementById('detalle-usuario-input-nombre').disabled = !editando;
+    document.getElementById('detalle-usuario-input-apellido').disabled = !editando;
+    document.getElementById('detalle-usuario-input-rol').disabled = !editando;
+    document.getElementById('toolbar-firma-usuario').style.display = editando ? '' : 'none';
+    document.getElementById('detalle-usuario-firma').setAttribute('contenteditable', editando ? 'true' : 'false');
     document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && u.id !== CURRENT_USER.id) ? '' : 'none';
     document.getElementById('detalle-usuario-guardar-btn').style.display = 'none';
+    document.getElementById('detalle-usuario-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
+    document.getElementById('detalle-usuario-cancelar-btn').style.display = editando ? '' : 'none';
+    document.getElementById('detalle-usuario-cerrar-btn').style.display = editando ? 'none' : '';
 
     const bandejasConAcceso = _permisosCache.filter(p => p.user_id === u.id && p.acceso).map(p => p.bandeja_id);
-    renderBandejasChecklist('detalle-usuario-bandejas-checks', bandejasConAcceso, 'toggleAccesoUsuarioDetalle');
+    renderBandejasChecklist('detalle-usuario-bandejas-checks', bandejasConAcceso, 'toggleAccesoUsuarioDetalle', editando);
+  }
+
+  function activarEdicionUsuario() {
+    if (!ES_ADMIN) return;
+    _usuarioEditando = true;
+    renderDetalleUsuario();
+  }
+
+  function cancelarEdicionUsuario() {
+    _usuarioEditando = false;
+    renderDetalleUsuario();
   }
 
   function marcarCambiosUsuario() {
@@ -1522,12 +1571,18 @@ async function eliminarUsuario(id) {
     btn.textContent = '✓ Guardado';
     btn.style.display = '';
     clearTimeout(btn._restoreTimeout);
-    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar cambios'; btn.style.display = 'none'; }, 1200);
+    btn._restoreTimeout = setTimeout(() => {
+      btn.textContent = 'Guardar cambios';
+      btn.style.display = 'none';
+      _usuarioEditando = false;
+      renderDetalleUsuario();
+    }, 1200);
   }
 
   function cerrarDetalleUsuario() {
     document.getElementById('modal-detalle-usuario-backdrop').classList.remove('open');
     detalleUsuarioActualId = null;
+    _usuarioEditando = false;
   }
 
   function confirmarEliminarUsuario() {
@@ -1667,10 +1722,12 @@ async function eliminarUsuario(id) {
 
   // ── Detalle de bandeja ──
   let detalleActualId = null;
+  let _bandejaEditando = false;
 
   function abrirDetalleBandeja(id) {
     detalleActualId = id;
     _permisosPendientes = null;
+    _bandejaEditando = false;
     renderDetalleBandeja();
     document.getElementById('modal-detalle-backdrop').classList.add('open');
   }
@@ -1680,6 +1737,7 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-subbandejas-form').style.display = 'none';
     detalleActualId = null;
     _permisosPendientes = null;
+    _bandejaEditando = false;
   }
 
   function bandejaActual() {
@@ -1690,23 +1748,37 @@ async function eliminarUsuario(id) {
     const index = _bandejasCache.findIndex(x => x.id === detalleActualId);
     const b = _bandejasCache[index];
     if (!b) return;
+    const editando = ES_ADMIN && _bandejaEditando;
     document.getElementById('detalle-bandeja-nombre').textContent = `${ordenVisual(index)} ${b.nombre}`;
     document.getElementById('detalle-bandeja-correo').textContent = correoDeBandeja(b.key);
     document.getElementById('detalle-bandeja-correo-hint').textContent = correoDeBandeja(b.key);
     document.getElementById('detalle-bandeja-input-nombre').value = b.nombre;
-    document.getElementById('detalle-bandeja-input-nombre').disabled = !ES_ADMIN;
-    document.getElementById('detalle-bandeja-input-sector').value = b.sector || '';
-    document.getElementById('detalle-bandeja-input-sector').disabled = !ES_ADMIN;
-    actualizarPreviewFirmaDetalle();
+    document.getElementById('detalle-bandeja-input-nombre').disabled = !editando;
     document.getElementById('detalle-bandeja-guardar-btn').style.display = 'none';
     document.getElementById('detalle-mensaje-bienvenida').innerHTML = b.mensaje_bienvenida || '';
-    document.getElementById('detalle-mensaje-bienvenida').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
+    document.getElementById('detalle-mensaje-bienvenida').setAttribute('contenteditable', editando ? 'true' : 'false');
+    document.getElementById('toolbar-detalle-bienvenida').style.display = editando ? '' : 'none';
     _rteSetAttachments('toolbar_detalle_bienvenida', b.archivos_adjuntos || []);
-    document.getElementById('detalle-mensaje-guardar-btn').style.display = ES_ADMIN ? '' : 'none';
+    document.getElementById('detalle-mensaje-guardar-btn').style.display = editando ? '' : 'none';
     document.getElementById('detalle-subbandeja-crear-btn').style.display = ES_ADMIN ? '' : 'none';
     document.getElementById('detalle-bandeja-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
+    document.getElementById('detalle-bandeja-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
+    document.getElementById('detalle-bandeja-cancelar-btn').style.display = editando ? '' : 'none';
+    document.getElementById('detalle-bandeja-cerrar-btn').style.display = editando ? 'none' : '';
     renderDetallePermisos();
     renderSubbandejasListado();
+  }
+
+  function activarEdicionBandeja() {
+    if (!ES_ADMIN) return;
+    _bandejaEditando = true;
+    renderDetalleBandeja();
+  }
+
+  function cancelarEdicionBandeja() {
+    _bandejaEditando = false;
+    _permisosPendientes = null;
+    renderDetalleBandeja();
   }
 
   function marcarCambiosBandeja() {
@@ -1719,10 +1791,9 @@ async function eliminarUsuario(id) {
     const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
     const nombre = document.getElementById('detalle-bandeja-input-nombre').value.trim();
-    const sector = document.getElementById('detalle-bandeja-input-sector').value.trim();
     if (nombre) {
-      const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre, sector: sector || null }).eq('id', b.id);
-      if (!error) { b.nombre = nombre; b.sector = sector || null; }
+      const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre }).eq('id', b.id);
+      if (!error) b.nombre = nombre;
     }
     if (_permisosPendientes) {
       for (const uId of Object.keys(_permisosPendientes)) {
@@ -1737,7 +1808,12 @@ async function eliminarUsuario(id) {
     btn.textContent = '✓ Guardado';
     btn.style.display = '';
     clearTimeout(btn._restoreTimeout);
-    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar cambios'; btn.style.display = 'none'; }, 1200);
+    btn._restoreTimeout = setTimeout(() => {
+      btn.textContent = 'Guardar cambios';
+      btn.style.display = 'none';
+      _bandejaEditando = false;
+      renderDetalleBandeja();
+    }, 1200);
   }
 
   async function guardarMensajeBienvenida() {
@@ -1759,7 +1835,12 @@ async function eliminarUsuario(id) {
     btn.focus();
     btn.textContent = '✓ Guardado';
     clearTimeout(btn._restoreTimeout);
-    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar mensaje'; btn.disabled = false; }, 1500);
+    btn._restoreTimeout = setTimeout(() => {
+      btn.textContent = 'Guardar mensaje';
+      btn.disabled = false;
+      _bandejaEditando = false;
+      renderDetalleBandeja();
+    }, 1500);
   }
 
   let _permisosPendientes = null;
@@ -1787,13 +1868,13 @@ async function eliminarUsuario(id) {
                 <td><span class="avatar" style="background:${u.gradiente}">${u.iniciales}</span>${u.nombre} ${u.apellido}</td>
                 <td>
                   <label class="toggle">
-                    <input type="checkbox" ${p.acceso ? 'checked' : ''} ${ES_ADMIN ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.id}','acceso', this.checked)">
+                    <input type="checkbox" ${p.acceso ? 'checked' : ''} ${(ES_ADMIN && _bandejaEditando) ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.id}','acceso', this.checked)">
                     <span class="slider"></span>
                   </label>
                 </td>
                 <td>
                   <label class="toggle">
-                    <input type="checkbox" ${p.verOtros ? 'checked' : ''} ${(p.acceso && ES_ADMIN) ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.id}','verOtros', this.checked)">
+                    <input type="checkbox" ${p.verOtros ? 'checked' : ''} ${(p.acceso && ES_ADMIN && _bandejaEditando) ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.id}','verOtros', this.checked)">
                     <span class="slider"></span>
                   </label>
                 </td>
@@ -1955,9 +2036,11 @@ async function eliminarUsuario(id) {
   }
 
   let detalleRespuestaActualId = null;
+  let _respuestaEditando = false;
 
   function abrirDetalleRespuesta(id) {
     detalleRespuestaActualId = id;
+    _respuestaEditando = false;
     renderDetalleRespuesta();
     document.getElementById('modal-detalle-respuesta-backdrop').classList.add('open');
   }
@@ -1965,17 +2048,32 @@ async function eliminarUsuario(id) {
   function renderDetalleRespuesta() {
     const r = _respuestasCache.find(x => x.id === detalleRespuestaActualId);
     if (!r) return;
+    const editando = ES_ADMIN && _respuestaEditando;
     document.getElementById('detalle-respuesta-nombre').textContent = r.nombre;
     document.getElementById('detalle-respuesta-codigo').textContent = `@${r.codigo}`;
     document.getElementById('detalle-respuesta-input-codigo').value = r.codigo;
     document.getElementById('detalle-respuesta-input-nombre').value = r.nombre;
     document.getElementById('detalle-respuesta-input-texto').innerHTML = r.texto;
-    document.getElementById('detalle-respuesta-input-codigo').disabled = !ES_ADMIN;
-    _rteSetAttachments('toolbar_detalle_respuesta', r.archivos_adjuntos || []);
-    document.getElementById('detalle-respuesta-input-nombre').disabled = !ES_ADMIN;
-    document.getElementById('detalle-respuesta-input-texto').setAttribute('contenteditable', ES_ADMIN ? 'true' : 'false');
+    document.getElementById('detalle-respuesta-input-codigo').disabled = !editando;
+    document.getElementById('detalle-respuesta-input-nombre').disabled = !editando;
+    document.getElementById('detalle-respuesta-input-texto').setAttribute('contenteditable', editando ? 'true' : 'false');
+    document.getElementById('toolbar-detalle-respuesta').style.display = editando ? '' : 'none';
     document.getElementById('detalle-respuesta-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
     document.getElementById('detalle-respuesta-guardar-btn').style.display = 'none';
+    document.getElementById('detalle-respuesta-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
+    document.getElementById('detalle-respuesta-cancelar-btn').style.display = editando ? '' : 'none';
+    document.getElementById('detalle-respuesta-cerrar-btn').style.display = editando ? 'none' : '';
+  }
+
+  function activarEdicionRespuesta() {
+    if (!ES_ADMIN) return;
+    _respuestaEditando = true;
+    renderDetalleRespuesta();
+  }
+
+  function cancelarEdicionRespuesta() {
+    _respuestaEditando = false;
+    renderDetalleRespuesta();
   }
 
   function marcarCambiosRespuesta() {
@@ -1996,16 +2094,12 @@ async function eliminarUsuario(id) {
       return;
     }
     const texto = document.getElementById('detalle-respuesta-input-texto').innerHTML;
-    const archivosAdjuntos = await _rteGetAttachments('toolbar_detalle_respuesta', 'respuestas');
-    const { error } = await supabaseClient.from('centralweb_respuestas_automaticas').update({ codigo: nuevoCodigo, nombre, texto, archivos_adjuntos: archivosAdjuntos }).eq('id', r.id);
+    const { error } = await supabaseClient.from('centralweb_respuestas_automaticas').update({ codigo: nuevoCodigo, nombre, texto }).eq('id', r.id);
     if (error) { alert('No se pudo guardar: ' + error.message); return; }
     r.codigo = nuevoCodigo;
     r.nombre = nombre;
     r.texto = texto;
-    r.archivos_adjuntos = archivosAdjuntos;
-    _rteSetAttachments('toolbar_detalle_respuesta', archivosAdjuntos);
     detalleRespuestaActualId = r.id;
-    renderDetalleRespuesta();
     renderRespuestasListado();
     const btn = document.getElementById('detalle-respuesta-guardar-btn');
     ['detalle-respuesta-input-codigo', 'detalle-respuesta-input-nombre', 'detalle-respuesta-input-texto'].forEach(id => document.getElementById(id).blur());
@@ -2014,12 +2108,18 @@ async function eliminarUsuario(id) {
     btn.focus();
     btn.textContent = '✓ Guardado';
     clearTimeout(btn._restoreTimeout);
-    btn._restoreTimeout = setTimeout(() => { btn.textContent = 'Guardar cambios'; btn.style.display = 'none'; }, 1200);
+    btn._restoreTimeout = setTimeout(() => {
+      btn.textContent = 'Guardar cambios';
+      btn.style.display = 'none';
+      _respuestaEditando = false;
+      renderDetalleRespuesta();
+    }, 1200);
   }
 
   function cerrarDetalleRespuesta() {
     document.getElementById('modal-detalle-respuesta-backdrop').classList.remove('open');
     detalleRespuestaActualId = null;
+    _respuestaEditando = false;
   }
 
   function confirmarEliminarRespuesta() {
