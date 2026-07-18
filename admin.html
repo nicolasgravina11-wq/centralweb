@@ -1511,9 +1511,7 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-usuario-input-nombre').disabled = !editando;
     document.getElementById('detalle-usuario-input-apellido').disabled = !editando;
     document.getElementById('detalle-usuario-input-rol').disabled = !editando;
-    document.getElementById('toolbar-firma-usuario').style.display = editando ? '' : 'none';
-    document.getElementById('detalle-usuario-firma').setAttribute('contenteditable', editando ? 'true' : 'false');
-    document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && u.id !== CURRENT_USER.id) ? '' : 'none';
+        document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && u.id !== CURRENT_USER.id) ? '' : 'none';
     document.getElementById('detalle-usuario-guardar-btn').style.display = 'none';
     document.getElementById('detalle-usuario-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
     document.getElementById('detalle-usuario-cancelar-btn').style.display = editando ? '' : 'none';
