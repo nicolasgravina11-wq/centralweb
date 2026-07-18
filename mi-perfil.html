@@ -362,6 +362,7 @@
   <div class="card">
     <h2>Cambiar contraseña</h2>
     <p class="hint" style="margin-bottom:14px">Elegí una contraseña nueva para tu cuenta.</p>
+<div class="field"><label class="field-label">Contraseña actual</label><div class="pwd-wrap"><input type="password" id="input-pass-actual" placeholder="Tu contraseña actual" disabled><button type="button" class="pwd-toggle" onclick="_togglePwd('input-pass-actual', this)" aria-label="Mostrar contraseña"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button></div></div>
     <div class="field">
       <label class="field-label">Nueva contraseña</label>
       <div class="pwd-wrap">
@@ -433,39 +434,7 @@
         setTimeout(() => el.classList.remove('show'), 1800);
   }
 
-    async function cambiarPassword() {
-    const p1 = document.getElementById('input-nueva-pass').value;
-    const p2 = document.getElementById('input-nueva-pass2').value;
-    const errEl = document.getElementById('error-pass-msg');
-    errEl.classList.remove('show');
-    errEl.textContent = '';
-    if (!p1 || !p2) {
-      errEl.textContent = 'Completá ambos campos.';
-      errEl.classList.add('show');
-      return;
-    }
-    if (p1.length < 6) {
-      errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-      errEl.classList.add('show');
-      return;
-    }
-    if (p1 !== p2) {
-      errEl.textContent = 'Las contraseñas no coinciden.';
-      errEl.classList.add('show');
-      return;
-    }
-    const { error } = await supabaseClient.auth.updateUser({ password: p1 });
-    if (error) {
-      errEl.textContent = error.message;
-      errEl.classList.add('show');
-      return;
-    }
-    document.getElementById('input-nueva-pass').value = '';
-    document.getElementById('input-nueva-pass2').value = '';
-    flashSaveMsg('save-pass-msg');
-    _passwordEditando = false;
-    _aplicarLockPassword();
-  }
+    async function cambiarPassword() { const pActual = document.getElementById('input-pass-actual').value; const p1 = document.getElementById('input-nueva-pass').value; const p2 = document.getElementById('input-nueva-pass2').value; const errEl = document.getElementById('error-pass-msg'); errEl.classList.remove('show'); errEl.textContent = ''; if (!pActual || !p1 || !p2) { errEl.textContent = 'Completá todos los campos.'; errEl.classList.add('show'); return; } if (p1.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.classList.add('show'); return; } if (p1 !== p2) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.classList.add('show'); return; } const { error: errorActual } = await supabaseClient.auth.signInWithPassword({ email: CURRENT_USER.email, password: pActual }); if (errorActual) { errEl.textContent = 'La contraseña actual es incorrecta.'; errEl.classList.add('show'); return; } const { error } = await supabaseClient.auth.updateUser({ password: p1 }); if (error) { errEl.textContent = error.message; errEl.classList.add('show'); return; } document.getElementById('input-pass-actual').value = ''; document.getElementById('input-nueva-pass').value = ''; document.getElementById('input-nueva-pass2').value = ''; flashSaveMsg('save-pass-msg'); _passwordEditando = false; _aplicarLockPassword(); }
 
   let _firmaEditando = false;
   let _passwordEditando = false;
@@ -496,28 +465,14 @@
     await renderFirma();
   }
 
-  function _aplicarLockPassword() {
-    const editando = _passwordEditando;
-    document.getElementById('input-nueva-pass').disabled = !editando;
-    document.getElementById('input-nueva-pass2').disabled = !editando;
-    document.getElementById('password-editar-btn').style.display = editando ? 'none' : '';
-    document.getElementById('password-guardar-btn').style.display = editando ? '' : 'none';
-    document.getElementById('password-cancelar-btn').style.display = editando ? '' : 'none';
-  }
+  function _aplicarLockPassword() { const editando = _passwordEditando; document.getElementById('input-pass-actual').disabled = !editando; document.getElementById('input-nueva-pass').disabled = !editando; document.getElementById('input-nueva-pass2').disabled = !editando; document.getElementById('password-editar-btn').style.display = editando ? 'none' : ''; document.getElementById('password-guardar-btn').style.display = editando ? '' : 'none'; document.getElementById('password-cancelar-btn').style.display = editando ? '' : 'none'; }
 
   function activarEdicionPassword() {
     _passwordEditando = true;
     _aplicarLockPassword();
   }
 
-  function cancelarEdicionPassword() {
-    _passwordEditando = false;
-    document.getElementById('input-nueva-pass').value = '';
-    document.getElementById('input-nueva-pass2').value = '';
-    const errEl = document.getElementById('error-pass-msg');
-    errEl.classList.remove('show');
-    _aplicarLockPassword();
-  }
+  function cancelarEdicionPassword() { _passwordEditando = false; document.getElementById('input-pass-actual').value = ''; document.getElementById('input-nueva-pass').value = ''; document.getElementById('input-nueva-pass2').value = ''; const errEl = document.getElementById('error-pass-msg'); errEl.classList.remove('show'); _aplicarLockPassword(); }
 
   async function toggleBandejasDropdown() {
         const toggle = document.getElementById('bandejas-toggle');
