@@ -1754,6 +1754,9 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-bandeja-correo-hint').textContent = correoDeBandeja(b.key);
     document.getElementById('detalle-bandeja-input-nombre').value = b.nombre;
     document.getElementById('detalle-bandeja-input-nombre').disabled = !editando;
+    document.getElementById('detalle-bandeja-input-sector').value = b.sector || '';
+    document.getElementById('detalle-bandeja-input-sector').disabled = !editando;
+    actualizarPreviewFirmaDetalle();
     document.getElementById('detalle-bandeja-guardar-btn').style.display = 'none';
     document.getElementById('detalle-mensaje-bienvenida').innerHTML = b.mensaje_bienvenida || '';
     document.getElementById('detalle-mensaje-bienvenida').setAttribute('contenteditable', editando ? 'true' : 'false');
@@ -1791,9 +1794,10 @@ async function eliminarUsuario(id) {
     const b = _bandejasCache.find(x => x.id === detalleActualId);
     if (!b) return;
     const nombre = document.getElementById('detalle-bandeja-input-nombre').value.trim();
+    const sector = document.getElementById('detalle-bandeja-input-sector').value.trim();
     if (nombre) {
-      const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre }).eq('id', b.id);
-      if (!error) b.nombre = nombre;
+      const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre, sector: sector || null }).eq('id', b.id);
+      if (!error) { b.nombre = nombre; b.sector = sector || null; }
     }
     if (_permisosPendientes) {
       for (const uId of Object.keys(_permisosPendientes)) {
