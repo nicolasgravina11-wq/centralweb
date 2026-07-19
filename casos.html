@@ -2704,7 +2704,22 @@ setTimeout(_ocultarOverlayCarga, 4000);
 
     const bienvenida = _mensajeBienvenidaPara(bandejaKey, ticket);
     if (bienvenida) localStorage.setItem('cw_bienvenida_' + ticket, bienvenida);
-
+    if (bienvenida) {
+            try {
+                      const { data: { session: sesionEnvio } } = await supabaseClient.auth.getSession();
+                      const envio = await fetch('/api/send-email', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sesionEnvio?.access_token || ''}` },
+                                  body: JSON.stringify({ casoId: casoInsertado.id, to: email, asunto: 'Confirmación de ingreso', cuerpoHtml: bienvenida }),
+                      });
+                      const envioData = await envio.json();
+                      if (!envioData.ok) throw new Error(envioData.error || 'Error enviando bienvenida');
+            } catch (e) {
+                      console.error(e);
+                      showToast('El caso se creó, pero no se pudo enviar el correo de bienvenida');
+            }
+    }
+    
     // Mensaje inicial y adjuntos cargados en el modal → se guardan para que caso-detalle.html
     // (todavía no migrado a Supabase) los muestre como el correo entrante real de este caso.
     localStorage.setItem('cw_mensaje_inicial_' + ticket, JSON.stringify({
