@@ -735,6 +735,9 @@
       box-shadow: var(--shadow-lg);
       width: 520px;
       max-width: 95vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
       animation: modalIn .18s ease;
     }
@@ -753,7 +756,7 @@
       transition: background .12s;
     }
     .modal-close:hover { background: var(--blue-50); color: var(--text-primary); }
-    .modal-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; }
     .modal-footer {
       display: flex; justify-content: flex-end; gap: 8px;
       padding: 14px 22px;
@@ -2518,16 +2521,16 @@ setTimeout(_ocultarOverlayCarga, 4000);
   let _nuevoCasoAttachFiles = [];
 
   function _onNuevoCasoAttach(input) {
-    Array.from(input.files || []).forEach(f => _nuevoCasoAttachFiles.push(f.name));
+    Array.from(input.files || []).forEach(f => _nuevoCasoAttachFiles.push(f));
     input.value = '';
     _renderNuevoCasoAttachList();
   }
 
   function _renderNuevoCasoAttachList() {
     const list = document.getElementById('nuevo-caso-attach-list');
-    list.innerHTML = _nuevoCasoAttachFiles.map((name, i) => `
+    list.innerHTML = _nuevoCasoAttachFiles.map((f, i) => `
       <span class="nuevo-caso-attach-chip">
-        ${name}
+        ${f.name}
         <button type="button" onclick="_quitarNuevoCasoAttach(${i})" title="Quitar">×</button>
       </span>
     `).join('');
@@ -2538,6 +2541,33 @@ setTimeout(_ocultarOverlayCarga, 4000);
     _renderNuevoCasoAttachList();
   }
 
+  function _archivoABase64(file) {
+        return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+        });
+  }
+  
+    async function _subirAdjuntosNuevoCaso(casoId) {
+          if (!_nuevoCasoAttachFiles.length) return [];
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          const archivos = await Promise.all(_nuevoCasoAttachFiles.map(async f => ({
+                  nombre: f.name,
+                  tipo: f.type || 'application/octet-stream',
+                  contenidoBase64: await _archivoABase64(f),
+          })));
+          const resp = await fetch('/api/upload-nota-attachment', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+                  body: JSON.stringify({ casoId, archivos }),
+          });
+          const data = await resp.json();
+          if (!data.ok) throw new Error(data.error || 'Error subiendo adjuntos');
+          return data.adjuntos || [];
+    }
+  
   function closeModal() {
     document.getElementById('modal-nuevo').classList.remove('open');
   }
@@ -2630,6 +2660,18 @@ setTimeout(_ocultarOverlayCarga, 4000);
     if (errorCaso) {
       showToast('No se pudo guardar el caso en la base');
       console.error(errorCaso);
+
+          if (_nuevoCasoAttachFiles.length) {
+                  try {
+                            const subidos = await _subirAdjuntosNuevoCaso(casoInsertado.id);
+                            if (subidos.length) {
+                                        await supabaseClient.from('centralweb_casos').update({ adjuntos: subidos }).eq('id', casoInsertado.id);
+                            }
+                  } catch (e) {
+                            console.error(e);
+                            showToast('El caso se creó, pero no se pudieron subir los adjuntos');
+                  }
+          }
       return;
     }
 
