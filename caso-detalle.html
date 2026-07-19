@@ -3173,7 +3173,7 @@ function openNote() {
     footer.style.cssText = 'display:flex;gap:8px;padding:8px 16px;background:#f0f9ff;border-top:1px solid #bae6fd';
     footer.innerHTML = `
       <button class="btn-note-send" onclick="saveEditedNote('${noteId}')">Guardar</button>
-            <button class="action-btn" style="border:none;padding:6px 12px;font-size:12.5px;color:#374460" onclick="cancelEditNote('${noteId}','${encodeURIComponent(current)}')">Cancelar</button>
+            <button class="action-btn" style="border:none;padding:6px 12px;font-size:12.5px;color:#374460" onclick="cancelEditNote('${noteId}','${encodeURIComponent(current)}')">Cancelar</button>`;
     ta.after(footer);
     ta.dataset.editFooter = 'true';
   }
