@@ -69,7 +69,7 @@
   }
   .card {
     background: white;
-    border: 1px solid var(--border);
+    border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(13,34,68,.05);
     border-radius: 10px;
     padding: 20px 22px;
   }
@@ -107,9 +107,9 @@
   }
   label.field-label {
     display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #64748b;
     margin-bottom: 6px;
   }
   .row { display: flex; gap: 10px; }
@@ -118,11 +118,11 @@
   input[type=text], input[type=password] {
     width: 100%;
     padding: 9px 11px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
     font-size: 13.5px;
     color: var(--text-primary);
-    background: var(--blue-50);
+    background: white;
   }
   input[type=text]:focus, input[type=password]:focus { outline: 2px solid var(--blue-300); background: white; }
   input[disabled] {
@@ -132,9 +132,9 @@
   }
   button.btn {
     border: none;
-    border-radius: 7px;
-    padding: 9px 16px;
-    font-size: 13px;
+    border-radius: 6px;
+    padding: 8px 15px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
     background: var(--blue-600);
@@ -142,10 +142,10 @@
   }
   button.btn:hover { background: var(--blue-700); }
   button.btn.secondary {
-    background: var(--blue-100);
+    background: white; border: 1px solid #e2e8f0;
     color: var(--blue-700);
   }
-  button.btn.secondary:hover { background: var(--blue-200); }
+  button.btn.secondary:hover { background: #f8fafc; }
   .save-msg {
     font-size: 12px;
     color: #059669;
@@ -162,12 +162,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
     padding: 9px 11px;
     font-size: 13.5px;
     cursor: pointer;
-    background: var(--blue-50);
+    background: white; color: var(--text-secondary);
     user-select: none;
   }
   .bandejas-toggle .chevron { margin-left: auto; transition: transform .2s; width: 13px; height: 13px; }
@@ -186,7 +186,7 @@
     gap: 10px;
     padding: 9px 12px;
     font-size: 13px;
-    border-top: 1px solid var(--blue-50);
+    border-top: 1px solid #f1f5f9;
   }
   .bandeja-row .correo { margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
   .ver-otros-tag {
@@ -206,41 +206,41 @@
     margin-bottom: 14px;
   }
   .sig-tab {
-    border: 1px solid var(--border);
-    background: var(--blue-50);
+    border: 1px solid #e2e8f0;
+    background: white;
     color: var(--text-secondary);
-    border-radius: 7px;
+    border-radius: 6px;
     padding: 7px 14px;
     font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
   }
-  .sig-tab.active { background: var(--blue-600); color: white; border-color: var(--blue-600); }
+  .sig-tab.active { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); font-weight: 600; }
   textarea#firma-texto {
     width: 100%;
     min-height: 110px;
     padding: 11px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
     font-size: 13px;
     font-family: inherit;
     color: var(--text-primary);
-    background: var(--blue-50);
+    background: white;
     resize: vertical;
   }
-  textarea#firma-texto:focus { outline: 2px solid var(--blue-300); background: white; }
+  textarea#firma-texto:focus { outline: none; border-color: var(--blue-600); box-shadow: 0 0 0 3px rgba(26,108,212,.12); background: white; }
   .firma-file-zone {
-    border: 1.5px dashed var(--border);
+    border: 1.5px dashed #e2e8f0;
     border-radius: 8px;
     padding: 18px;
     text-align: center;
-    background: var(--blue-50);
+    background: #f8fafc;
   }
   .firma-file-zone .hint-small { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
   .firma-preview {
     margin-top: 12px;
     padding: 10px;
-    border: 1px solid var(--border);
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     background: white;
     display: none;
