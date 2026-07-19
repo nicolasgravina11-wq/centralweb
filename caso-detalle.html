@@ -3062,7 +3062,7 @@ function openNote() {
               </div>
             </div>
           </div>
-          <div class="email-body note-text" style="white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>${(adjuntos && adjuntos.length) ? '<div class="note-attachments" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + adjuntos.map(a => '<a href="' + a.url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:7px;padding:4px 9px;font-size:12px;color:var(--note-accent);text-decoration:none">📎 ' + a.nombre + '</a>').join('') + '</div>' : ''}
+                    <div class="email-body note-text" style="white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>${(adjuntos && adjuntos.length) ? '<div class="note-attachments" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + adjuntos.map(a => '<a href="' + a.url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:var(--note-accent-bg);border:1px solid var(--note-accent-light);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--note-accent);text-decoration:none">📎 ' + a.nombre + '</a>').join('') + '</div>' : ''}
         </div>
       </div>`;
     return entry;
