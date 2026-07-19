@@ -6,4 +6,4 @@ const SUPABASE_URL = 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_cgsEtiOH8219aUNTAllRlA_HPPdjzGq';
 
 // Cliente global, disponible como window.supabaseClient en todas las paginas
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: window.sessionStorage } });
