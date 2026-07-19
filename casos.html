@@ -2660,21 +2660,21 @@ setTimeout(_ocultarOverlayCarga, 4000);
     if (errorCaso) {
       showToast('No se pudo guardar el caso en la base');
       console.error(errorCaso);
-
-          if (_nuevoCasoAttachFiles.length) {
-                  try {
-                            const subidos = await _subirAdjuntosNuevoCaso(casoInsertado.id);
-                            if (subidos.length) {
-                                        await supabaseClient.from('centralweb_casos').update({ adjuntos: subidos }).eq('id', casoInsertado.id);
-                            }
-                  } catch (e) {
-                            console.error(e);
-                            showToast('El caso se creó, pero no se pudieron subir los adjuntos');
-                  }
-          }
       return;
     }
-
+    const advertencias = [];
+    if (_nuevoCasoAttachFiles.length) {
+            try {
+                      const subidos = await _subirAdjuntosNuevoCaso(casoInsertado.id);
+                      if (subidos.length) {
+                                  await supabaseClient.from('centralweb_casos').update({ adjuntos: subidos }).eq('id', casoInsertado.id);
+                      }
+            } catch (e) {
+                      console.error(e);
+        advertencias.push('no se pudieron subir los adjuntos');
+            }
+    }
+    
     const { fecha, hora } = _fechaHoraActual();
     const d = {
       subject: asunto,
@@ -2716,7 +2716,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
                       if (!envioData.ok) throw new Error(envioData.error || 'Error enviando bienvenida');
             } catch (e) {
                       console.error(e);
-                      showToast('El caso se creó, pero no se pudo enviar el correo de bienvenida');
+                                              advertencias.push('no se pudo enviar el correo de bienvenida');
             }
     }
     
@@ -2734,7 +2734,11 @@ setTimeout(_ocultarOverlayCarga, 4000);
     updateUnreadBadge();
     _persistAllCases();
     closeModal();
-    showCasoCreadoToast(ticket);
+      if (advertencias.length) {
+            showToast(`Caso ${ticket} creado, pero ${advertencias.join(' y ')}`);
+      } else {
+            showCasoCreadoToast(ticket);
+      }
   }
 
   // ════════════════════════════════
