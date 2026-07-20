@@ -1452,7 +1452,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
         </div></td>
         <td class="td-subject">
-          <div class="subject-line">${d.subject}</div>
+          <div class="subject-line">${d.subject.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
           <div class="from-line">De: ${d.from.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
         </td>
         <td><span class="ticket-num">${d.ticket}</span></td>
