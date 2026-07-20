@@ -12,6 +12,7 @@
 
 const busboy = require('busboy');
 const crypto = require('crypto');
+const sanitizeHtml = require('sanitize-html');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -120,7 +121,7 @@ function textoEntranteAHtml(texto) {
 function partirRemitente(remitenteCrudo) {
   const conNombre = (remitenteCrudo || '').match(/^(.*?)\s*<(.+)>$/);
   if (conNombre) {
-    return { nombre: conNombre[1].trim().replace(/^"|"$/g, ''), email: conNombre[2].trim() };
+    return { nombre: sanitizeHtml(conNombre[1].trim().replace(/^"|"$/g, ''), { allowedTags: [], allowedAttributes: {} }), email: conNombre[2].trim() };
   }
   return { nombre: '', email: (remitenteCrudo || '').trim() };
 }
@@ -178,7 +179,7 @@ module.exports = async (req, res) => {
   }
 
   const recipient = (fields.recipient || '').toLowerCase().trim();
-  const asunto = fields.subject || '(sin asunto)';
+  const asunto = sanitizeHtml(fields.subject || '(sin asunto)', { allowedTags: [], allowedAttributes: {} });
   const cuerpo = textoEntranteAHtml(limpiarCuerpoEntrante(fields['stripped-text'] || fields['body-plain'] || ''));
 
   const match = recipient.match(/^([a-z0-9.\-]+)@cweb\.novadgt\.com$/i);
