@@ -2241,7 +2241,7 @@
     const cont   = document.getElementById('case-tabs');
     cont.innerHTML = tabs.map(t => `
       <div class="case-tab${active === t.ticket ? ' active' : ''}" onclick="switchTab('${t.ticket}')">
-        <span class="tab-label" title="${t.subject}">${t.ticket} — ${(t.fromName||'').split(' ')[0]}</span>
+        <span class="tab-label" title="${(t.subject||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}">${t.ticket} — ${(t.fromName||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').split(' ')[0]}</span>
         <button class="tab-close" onclick="event.stopPropagation();closeTab('${t.ticket}')">×</button>
       </div>`).join('');
   }
