@@ -3,6 +3,7 @@
     "private": true,
     "version": "1.0.0",
     "dependencies": {
-          "busboy": "^1.6.0"
+        "busboy": "^1.6.0",
+        "sanitize-html": "^2.13.0"
     }
 }
