@@ -1884,7 +1884,7 @@
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">Nicolás Gravina</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
+          <strong style="color:#1e293b">Agente</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
         </div>
       </div>`;
     return entry;
@@ -2045,7 +2045,7 @@
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">Nicolás Gravina</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
+          <strong style="color:#1e293b">Agente</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
         </div>
       </div>`;
     return entry;
@@ -2955,7 +2955,7 @@ function openNote() {
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">Nicolás Gravina</strong> cambió el estado del caso <strong>${ev.ticket}</strong> a <strong style="color:${color}">${label}</strong> · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
+          <strong style="color:#1e293b">Agente</strong> cambió el estado del caso <strong>${ev.ticket}</strong> a <strong style="color:${color}">${label}</strong> · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
         </div>
       </div>`;
     return entry;
@@ -2965,7 +2965,7 @@ function openNote() {
     const now = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    const event = { transferId: 'tr_' + Date.now(), ticket, destino, actor: actor || (window._CURRENT_USER_NAME_REAL || 'Nicolás Gravina'), fecha, hora, ts: Date.now() };
+    const event = { transferId: 'tr_' + Date.now(), ticket, destino, actor: actor || (window._CURRENT_USER_NAME_REAL || 'Agente'), fecha, hora, ts: Date.now() };
     const key   = 'cw_transfers_' + ticket;
     const list  = JSON.parse(localStorage.getItem(key) || '[]');
     list.push(event);
