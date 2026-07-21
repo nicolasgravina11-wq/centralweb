@@ -2711,8 +2711,11 @@ setTimeout(_ocultarOverlayCarga, 4000);
     // Mensaje inicial y adjuntos cargados en el modal → se guardan para que caso-detalle.html
     // (todavía no migrado a Supabase) los muestre como el correo entrante real de este caso.
     localStorage.setItem('cw_mensaje_inicial_' + ticket, JSON.stringify({
-      texto: mensajeInicialHTML,
-      adjuntos: _nuevoCasoAttachFiles.slice(),
+      ts: Date.now(),
+      data: {
+        texto: mensajeInicialHTML,
+        adjuntos: _nuevoCasoAttachFiles.slice(),
+      }
     }));
 
     sortRows();
@@ -2805,7 +2808,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
         asignado:  tr.querySelector('.td-asignado')?.textContent.trim() || 'Sin asignar',
       };
     });
-    localStorage.setItem('cw_all_cases', JSON.stringify(all));
+    localStorage.setItem('cw_all_cases', JSON.stringify({ ts: Date.now(), data: all }));
   }
 
   // Casos dados de alta con "+ Nuevo Caso": el POOL/HTML estático no los conoce,
