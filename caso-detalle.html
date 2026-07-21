@@ -1555,10 +1555,19 @@
       }
     } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); 
 
+function _leerConVencimiento(clave, maxAgeMs) {
+    try {
+          const raw = localStorage.getItem(clave);
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object' || typeof parsed.ts !== 'number' || !('data' in parsed)) return null;
+          if (Date.now() - parsed.ts > maxAgeMs) return null;
+          return parsed.data;
+    } catch (e) { return null; }
+}
+
   function _allCasesMap() {
-    let fromStorage = {};
-    try { fromStorage = JSON.parse(localStorage.getItem('cw_all_cases') || '{}'); } catch {}
-    return Object.assign({}, fromStorage, window._supaHistCases || {});
+      const fromStorage = _leerConVencimiento('cw_all_cases', 24 * 60 * 60 * 1000) || {};
+      return Object.assign({}, fromStorage, window._supaHistCases || {});
   }
 
   function _estadoEfectivo(ticket, fallback) {
@@ -1730,13 +1739,8 @@
   const _MENSAJE_GENERICO_HTML = 'Estimados, me comunico para informar que detecté un cargo duplicado en mi cuenta correspondiente al mes de junio. El monto de $12.500 fue debitado dos veces el día 10/06/2026. Solicito la revisión y el reintegro del monto cobrado de más a la brevedad posible. Quedo a disposición ante cualquier consulta.';
 
   function _mensajeIngresoHTML(ticket) {
-    try {
-      const raw = localStorage.getItem('cw_mensaje_inicial_' + ticket);
-      if (raw) {
-        const mi = JSON.parse(raw);
-        if (mi.texto) return mi.texto;
-      }
-    } catch (e) {}
+  const mi = _leerConVencimiento('cw_mensaje_inicial_' + ticket, 60 * 60 * 1000);
+      if (mi && mi.texto) return mi.texto;
     if (window._supaMensajesByTicket && window._supaMensajesByTicket[ticket]) return window._supaMensajesByTicket[ticket]; return _MENSAJE_GENERICO_HTML;
   }
 
@@ -1922,13 +1926,8 @@
         return casoRef.adjuntos.map(a => ({ name: a.nombre, size: a.tamano, url: a.url }));
       }
     } catch (e) {}
-    try {
-      const raw = localStorage.getItem('cw_mensaje_inicial_' + ticket);
-      if (raw) {
-        const mi = JSON.parse(raw);
-        return (mi.adjuntos || []).map(name => ({ name, size: '' }));
-      }
-    } catch (e) {}
+  const mi = _leerConVencimiento('cw_mensaje_inicial_' + ticket, 60 * 60 * 1000);
+      if (mi) return (mi.adjuntos || []).map(name => ({ name, size: '' }));
     return [];
   }
 
@@ -2377,13 +2376,10 @@
 
     // Si el caso se creó desde "+ Nuevo Caso" con un mensaje inicial propio, reemplaza
     // el texto genérico de "ingreso correo" (que es el mismo para todos los casos mock).
-    const mensajeInicialRaw = localStorage.getItem('cw_mensaje_inicial_' + c.ticket);
-    if (mensajeInicialRaw) {
-      try {
-        const mi = JSON.parse(mensajeInicialRaw);
+const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60 * 1000);
+    if (_miIngreso) {
         const incomingBody = document.getElementById('incoming-email-body');
-        if (incomingBody) incomingBody.innerHTML = mi.texto || '<span style="color:var(--text-muted)">(sin mensaje)</span>';
-      } catch (e) {}
+        if (incomingBody) incomingBody.innerHTML = _miIngreso.texto || '<span style="color:var(--text-muted)">(sin mensaje)</span>';
     }
 
     // Si la bandeja de este caso tiene un mensaje de bienvenida configurado (admin.html),
@@ -3542,13 +3538,11 @@ function openNote() {
     if (!container) return;
     let ticket = null;
     try { ticket = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}').ticket; } catch (e) {}
-    const mensajeInicialRaw = ticket && localStorage.getItem('cw_mensaje_inicial_' + ticket);
-    if (mensajeInicialRaw) {
-      // Caso creado desde "+ Nuevo Caso": solo muestra los adjuntos reales que se cargaron ahí (puede ser ninguno).
-      try {
-        const adjuntos = JSON.parse(mensajeInicialRaw).adjuntos || [];
-        _renderAttachmentsConZip(container, adjuntos.map(name => ({ name, size: '' })));
-      } catch (e) {}
+  const _miAdj = ticket && _leerConVencimiento('cw_mensaje_inicial_' + ticket, 60 * 60 * 1000);
+    if (_miAdj) {
+          // Caso creado desde "+ Nuevo Caso": solo muestra los adjuntos reales que se cargaron ahí (puede ser ninguno).
+          const adjuntos = _miAdj.adjuntos || [];
+          _renderAttachmentsConZip(container, adjuntos.map(name => ({ name, size: '' })));
     } else {
       _renderAttachmentsConZip(container, [{ name:'extracto_junio.pdf', size:'284 KB' }, { name:'captura_cargo.png', size:'96 KB' }]);
     }
