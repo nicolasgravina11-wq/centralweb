@@ -163,7 +163,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
 
     const mgJson = await mgResp.json().catch(() => ({}));
     if (!mgResp.ok) {
-      console.error('Error enviando por Mailgun:', mgJson);
+      console.error('Error enviando por Mailgun:', mgJson && mgJson.message);
       res.status(502).json({ ok: false, error: mgJson.message || 'Error enviando el correo' });
       return;
     }
