@@ -980,14 +980,7 @@
     document.execCommand(comando, false, null);
   }
 
-  function rteUppercase() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed) return;
-    const texto = sel.toString();
-    document.execCommand('insertText', false, texto.toUpperCase());
-  }
-
-  function rteInsertCaso() {
+function rteInsertCaso() {
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
     const range = sel.getRangeAt(0);
