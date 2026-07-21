@@ -1384,7 +1384,7 @@
       return `
       <div class="bandeja-list-row">
         <span class="bandeja-orden">${ordenVisual(i)}</span>
-        <button class="bandeja-nombre-link" onclick="abrirDetalleBandeja('${b.id}')">${b.nombre}</button>
+      <button class="bandeja-nombre-link" onclick="abrirDetalleBandeja('${b.id}')">${String(b.nombre||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</button>
         ${nSub ? `<span class="subbandeja-count-pill">${nSub} sub-bandeja${nSub > 1 ? 's' : ''}</span>` : ''}
         <span class="correo">${correoDeBandeja(b.key)}</span>
         ${b.sector ? `<span class="correo" style="color:var(--text-muted)">· ${b.sector}</span>` : ''}
@@ -1422,7 +1422,7 @@
       <label class="bandeja-check-row">
         <input type="checkbox" value="${b.id}" ${marcadasIds.includes(b.id) ? 'checked' : ''} ${enabled ? '' : 'disabled'}
           onchange="${onToggle}('${b.id}', this.checked)">
-        ${b.nombre}
+        ${String(b.nombre||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
       </label>
     `).join('');
   }
@@ -2002,7 +2002,7 @@ async function eliminarUsuario(id) {
     listado.innerHTML = respuestas.map(r => `
       <div class="bandeja-list-row">
         <span class="bandeja-orden">@${r.codigo}</span>
-        <button class="bandeja-nombre-link" onclick="abrirDetalleRespuesta('${r.id}')">${r.nombre}</button>
+      <button class="bandeja-nombre-link" onclick="abrirDetalleRespuesta('${r.id}')">${String(r.nombre||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</button>
       </div>
     `).join('');
   }
@@ -2048,7 +2048,14 @@ async function eliminarUsuario(id) {
     document.getElementById('modal-detalle-respuesta-backdrop').classList.add('open');
   }
 
-  function renderDetalleRespuesta() {
+  function _sanitizarRico(html) {
+        return String(html || '')
+                .replace(/<script[\s\S]*?<\/script>/gi, '')
+                .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+                .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"');
+  }
+      
+      function renderDetalleRespuesta() {
     const r = _respuestasCache.find(x => x.id === detalleRespuestaActualId);
     if (!r) return;
     const editando = ES_ADMIN && _respuestaEditando;
@@ -2056,7 +2063,7 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-respuesta-codigo').textContent = `@${r.codigo}`;
     document.getElementById('detalle-respuesta-input-codigo').value = r.codigo;
     document.getElementById('detalle-respuesta-input-nombre').value = r.nombre;
-    document.getElementById('detalle-respuesta-input-texto').innerHTML = r.texto;
+    document.getElementById('detalle-respuesta-input-texto').innerHTML = _sanitizarRico(r.texto);
     document.getElementById('detalle-respuesta-input-codigo').disabled = !editando;
     document.getElementById('detalle-respuesta-input-nombre').disabled = !editando;
     document.getElementById('detalle-respuesta-input-texto').setAttribute('contenteditable', editando ? 'true' : 'false');
