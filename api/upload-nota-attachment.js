@@ -101,14 +101,14 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const perfiles = await supabaseFetch(`profiles?select=empresa_id&id=eq.${usuario.id}`);
+    const perfiles = await supabaseFetch(`profiles?select=empresa_id,rol&id=eq.${usuario.id}`);
     if (!perfiles || !perfiles.length) {
       res.status(403).json({ ok: false, error: 'Perfil no encontrado' });
       return;
     }
     const empresaId = perfiles[0].empresa_id;
 
-    const casos = await supabaseFetch(`centralweb_casos?select=id,empresa_id&id=eq.${casoId}`);
+    const casos = await supabaseFetch(`centralweb_casos?select=id,empresa_id,bandeja_id,asignado_user_id&id=eq.${casoId}`);
     if (!casos || !casos.length) {
       res.status(404).json({ ok: false, error: 'Caso no encontrado' });
       return;
@@ -117,6 +117,17 @@ module.exports = async (req, res) => {
       res.status(403).json({ ok: false, error: 'El caso no pertenece a tu empresa' });
       return;
     }
+
+          const esAdmin = perfiles[0].rol === 'Administrador';
+          const esAsignado = casos[0].asignado_user_id === usuario.id;
+          if (!esAdmin && !esAsignado) {
+                    const permisos = await supabaseFetch(`centralweb_permisos?select=acceso&bandeja_id=eq.${casos[0].bandeja_id}&user_id=eq.${usuario.id}`);
+                    const tieneAcceso = Array.isArray(permisos) && permisos.length && permisos[0].acceso === true;
+                    if (!tieneAcceso) {
+                                res.status(403).json({ ok: false, error: 'No tenes acceso a la bandeja de este caso' });
+                                return;
+                    }
+          }
 
     const empresas = await supabaseFetch(`empresas?select=sigla&id=eq.${empresaId}`);
     const sigla = (empresas && empresas[0] && empresas[0].sigla) || 'empresa';
