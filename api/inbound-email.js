@@ -82,7 +82,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
   for (const meta of (metaLista || [])) {
     try {
       const resp = await fetch(meta.url, { headers: { Authorization: auth } });
-      if (!resp.ok) { const detalle = await resp.text().catch(() => ''); console.error('No se pudo descargar adjunto de Mailgun:', meta.name, resp.status, detalle); continue; }
+      if (!resp.ok) { console.error('No se pudo descargar adjunto de Mailgun:', meta.name, resp.status); continue; }
       const buffer = Buffer.from(await resp.arrayBuffer());
       resultado.push({ nombre: meta.name || 'archivo', tipo: meta['content-type'] || 'application/octet-stream', buffer });
     } catch (e) {
@@ -184,7 +184,7 @@ module.exports = async (req, res) => {
 
   const match = recipient.match(/^([a-z0-9.\-]+)@cweb\.novadgt\.com$/i);
   if (!match) {
-    console.error('Destinatario con formato inesperado:', recipient);
+    console.error('Destinatario con formato inesperado');
     // Devolvemos 200 para que Mailgun no reintente algo que nunca va a poder procesar.
     res.status(200).send('Ignorado: formato de destinatario invalido');
     return;
