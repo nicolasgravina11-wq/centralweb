@@ -84,7 +84,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
       return;
     }
 
-    const perfiles = await supabaseFetch(`profiles?select=empresa_id,nombre&id=eq.${usuario.id}`);
+    const perfiles = await supabaseFetch(`profiles?select=empresa_id,nombre,rol&id=eq.${usuario.id}`);
     if (!perfiles || !perfiles.length) {
       res.status(403).json({ ok: false, error: 'Perfil no encontrado' });
       return;
@@ -93,7 +93,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     const empresaId = perfil.empresa_id;
 
     const casos = await supabaseFetch(
-      `centralweb_casos?select=id,ticket,asunto,bandeja_id,sub_bandeja_id,empresa_id,mensaje_inicial,from_name,from_email,creado_en&id=eq.${casoId}`
+      `centralweb_casos?select=id,ticket,asunto,bandeja_id,sub_bandeja_id,empresa_id,mensaje_inicial,from_name,from_email,creado_en,asignado_user_id&id=eq.${casoId}`
     );
     if (!casos || !casos.length) {
       res.status(404).json({ ok: false, error: 'Caso no encontrado' });
@@ -104,6 +104,17 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
       res.status(403).json({ ok: false, error: 'El caso no pertenece a tu empresa' });
       return;
     }
+
+          const esAdmin = perfil.rol === 'Administrador';
+          const esAsignado = caso.asignado_user_id === usuario.id;
+          if (!esAdmin && !esAsignado) {
+                    const permisos = await supabaseFetch(`centralweb_permisos?select=acceso&bandeja_id=eq.${caso.bandeja_id}&user_id=eq.${usuario.id}`);
+                    const tieneAcceso = Array.isArray(permisos) && permisos.length && permisos[0].acceso === true;
+                    if (!tieneAcceso) {
+                                res.status(403).json({ ok: false, error: 'No tenes acceso a la bandeja de este caso' });
+                                return;
+                    }
+          }
 
     const [empresas, bandejas] = await Promise.all([
       supabaseFetch(`empresas?select=sigla,nombre_formal&id=eq.${empresaId}`),
