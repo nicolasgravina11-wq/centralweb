@@ -1794,7 +1794,7 @@ async function eliminarUsuario(id) {
     if (_permisosPendientes) {
       for (const uId of Object.keys(_permisosPendientes)) {
         const p = _permisosPendientes[uId];
-        await guardarPermiso(detalleActualId, uId, { acceso: p.acceso, ver_otros: p.verOtros });
+        await guardarPermiso(detalleActualId, uId, { acceso: p.acceso });
       }
       _permisosPendientes = null;
     }
@@ -1853,12 +1853,12 @@ async function eliminarUsuario(id) {
 
     tabla.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>Usuario</th><th>Acceso</th><th>Ver casos de otros agentes</th></tr></thead>
+        <thead><tr><th>Usuario</th><th>Acceso</th></tr></thead>
         <tbody>
           ${usuarios.map(u => {
             const pend = _permisosPendientes[u.id];
             const real = permisoDe(detalleActualId, u.id);
-            const p = pend || { acceso: real.acceso, verOtros: real.ver_otros };
+            const p = pend || { acceso: real.acceso };
             return `
               <tr>
                 <td><span class="avatar" style="background:${u.gradiente}">${u.iniciales}</span>${u.nombre} ${u.apellido}</td>
@@ -1868,13 +1868,7 @@ async function eliminarUsuario(id) {
                     <span class="slider"></span>
                   </label>
                 </td>
-                <td>
-                  <label class="toggle">
-                    <input type="checkbox" ${p.verOtros ? 'checked' : ''} ${(p.acceso && ES_ADMIN && _bandejaEditando) ? '' : 'disabled'} onchange="togglePermisoDetalle('${u.id}','verOtros', this.checked)">
-                    <span class="slider"></span>
-                  </label>
-                </td>
-              </tr>
+                </tr>
             `;
           }).join('')}
         </tbody>
@@ -1886,9 +1880,8 @@ async function eliminarUsuario(id) {
     if (!ES_ADMIN) return;
     if (!_permisosPendientes) _permisosPendientes = {};
     const real = permisoDe(detalleActualId, userId);
-    if (!_permisosPendientes[userId]) _permisosPendientes[userId] = { acceso: real.acceso, verOtros: real.ver_otros };
+    if (!_permisosPendientes[userId]) _permisosPendientes[userId] = { acceso: real.acceso };
     _permisosPendientes[userId][campo] = checked;
-    if (campo === 'acceso' && !checked) _permisosPendientes[userId].verOtros = false;
     marcarCambiosBandeja();
     if (campo === 'acceso') renderDetallePermisos();
   }
