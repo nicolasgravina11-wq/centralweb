@@ -1555,38 +1555,10 @@
       }
     } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); 
 
-  // ── Dataset histórico (debe estar antes de _renderHistorico) ──
-  const _HIST_CASES = {
-    '10391': { ticket:'#10391', fromName:'Maria González',            fromEmail:'mgonzalez@empresa.com',      asunto:'Consulta sobre renovación de contrato',              estado:'cerrado', date:'28 may 2026', time:'11:02 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10254': { ticket:'#10254', fromName:'Maria González',            fromEmail:'mgonzalez@empresa.com',      asunto:'Problema para acceder al panel de usuario',          estado:'cerrado', date:'10 may 2026', time:'09:45 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10108': { ticket:'#10108', fromName:'Maria González',            fromEmail:'mgonzalez@empresa.com',      asunto:'Solicitud de cambio de datos de facturación',        estado:'cerrado', date:'02 abr 2026', time:'14:30 hs', bandeja:'facturacion', asignado:'María Fernández' },
-    '10455': { ticket:'#10455', fromName:'Tecnología TechCorp',       fromEmail:'it@techcorp.com.ar',         asunto:'Error 500 al consumir endpoint /orders',             estado:'cerrado', date:'02 jun 2026', time:'09:10 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10421': { ticket:'#10421', fromName:'Tecnología TechCorp',       fromEmail:'it@techcorp.com.ar',         asunto:'Límite de rate de la API superado en producción',    estado:'cerrado', date:'15 may 2026', time:'14:22 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10388': { ticket:'#10388', fromName:'Tecnología TechCorp',       fromEmail:'it@techcorp.com.ar',         asunto:'Documentación de webhooks desactualizada',           estado:'cerrado', date:'28 abr 2026', time:'11:40 hs', bandeja:'consultas',   asignado:'María Fernández' },
-    '10461': { ticket:'#10461', fromName:'Recursos Humanos Acme',     fromEmail:'rrhh@acme.com.ar',           asunto:'Retraso en activación de 12 nuevos usuarios',        estado:'cerrado', date:'08 jun 2026', time:'10:05 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10430': { ticket:'#10430', fromName:'Recursos Humanos Acme',     fromEmail:'rrhh@acme.com.ar',           asunto:'Solicitud de exportación masiva de datos',           estado:'cerrado', date:'20 may 2026', time:'16:30 hs', bandeja:'consultas',   asignado:'Nicolás Gravina' },
-    '10374': { ticket:'#10374', fromName:'Recursos Humanos Acme',     fromEmail:'rrhh@acme.com.ar',           asunto:'Renovación anticipada de licencias corporativas',    estado:'cerrado', date:'10 abr 2026', time:'09:15 hs', bandeja:'facturacion', asignado:'María Fernández' },
-    '10463': { ticket:'#10463', fromName:'Pedro Salas',               fromEmail:'psalas@globalnet.com',       asunto:'Factura incorrecta — empresa mal cargada',           estado:'cerrado', date:'10 jun 2026', time:'08:45 hs', bandeja:'facturacion', asignado:'María Fernández' },
-    '10435': { ticket:'#10435', fromName:'Pedro Salas',               fromEmail:'psalas@globalnet.com',       asunto:'Cambio de dirección fiscal en contrato',             estado:'cerrado', date:'22 may 2026', time:'13:20 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10396': { ticket:'#10396', fromName:'Pedro Salas',               fromEmail:'psalas@globalnet.com',       asunto:'Consulta sobre descuento por volumen',               estado:'cerrado', date:'12 abr 2026', time:'10:50 hs', bandeja:'consultas',   asignado:'Nicolás Gravina' },
-    '10470': { ticket:'#10470', fromName:'Gerencia Distribuidora Sur', fromEmail:'admin@distrsur.com.ar',     asunto:'Falla en módulo de reportes — datos incorrectos',    estado:'cerrado', date:'11 jun 2026', time:'17:00 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10444': { ticket:'#10444', fromName:'Gerencia Distribuidora Sur', fromEmail:'admin@distrsur.com.ar',     asunto:'Solicitud de acceso para 5 sucursales nuevas',       estado:'cerrado', date:'28 may 2026', time:'11:30 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10410': { ticket:'#10410', fromName:'Gerencia Distribuidora Sur', fromEmail:'admin@distrsur.com.ar',     asunto:'Error al generar remitos desde el portal',           estado:'cerrado', date:'05 may 2026', time:'09:00 hs', bandeja:'principal',   asignado:'María Fernández' },
-    '10458': { ticket:'#10458', fromName:'Ana Torres',                fromEmail:'atorres@clinicacentral.com', asunto:'No llegan notificaciones de turno por email',        estado:'cerrado', date:'05 jun 2026', time:'12:10 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10427': { ticket:'#10427', fromName:'Ana Torres',                fromEmail:'atorres@clinicacentral.com', asunto:'Consulta sobre módulo de telemedicina',              estado:'cerrado', date:'18 may 2026', time:'10:00 hs', bandeja:'consultas',   asignado:'María Fernández' },
-    '10381': { ticket:'#10381', fromName:'Ana Torres',                fromEmail:'atorres@clinicacentral.com', asunto:'Actualización de logo y datos de la clínica',        estado:'cerrado', date:'05 abr 2026', time:'15:45 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10466': { ticket:'#10466', fromName:'Fernando Díaz',             fromEmail:'fdiaz@logisticapro.com',     asunto:'Integración con sistema de tracking no sincroniza',  estado:'cerrado', date:'10 jun 2026', time:'14:00 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10440': { ticket:'#10440', fromName:'Fernando Díaz',             fromEmail:'fdiaz@logisticapro.com',     asunto:'Ajuste de permisos para rol de supervisor',          estado:'cerrado', date:'25 may 2026', time:'09:30 hs', bandeja:'principal',   asignado:'Nicolás Gravina' },
-    '10402': { ticket:'#10402', fromName:'Fernando Díaz',             fromEmail:'fdiaz@logisticapro.com',     asunto:'Cotización para plan con 50 usuarios',               estado:'cerrado', date:'18 abr 2026', time:'16:20 hs', bandeja:'consultas',   asignado:'María Fernández' },
-  };
-
-  // ── Dataset unificado: casos.html persiste TODOS sus casos (estáticos + pool)
-  // en cw_all_cases; eso es lo que vemos acá. _HIST_CASES queda solo como fallback
-  // por si se entra a caso-detalle.html sin haber pasado antes por casos.html.
   function _allCasesMap() {
     let fromStorage = {};
     try { fromStorage = JSON.parse(localStorage.getItem('cw_all_cases') || '{}'); } catch {}
-    return Object.assign({}, _HIST_CASES, fromStorage, window._supaHistCases || {});
+    return Object.assign({}, fromStorage, window._supaHistCases || {});
   }
 
   function _estadoEfectivo(ticket, fallback) {
