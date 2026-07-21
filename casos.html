@@ -1203,7 +1203,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     supabaseClient.from('centralweb_bandejas').select('*').eq('empresa_id', EMPRESA_ID),
     supabaseClient.from('profiles').select('*').eq('empresa_id', EMPRESA_ID),
     supabaseClient.from('centralweb_permisos').select('*').eq('empresa_id', EMPRESA_ID),
-    supabaseClient.from('centralweb_casos').select('*').eq('empresa_id', EMPRESA_ID).order('creado_en', { ascending: true }),
+    supabaseClient.from('centralweb_casos').select('id, empresa_id, ticket, estado, bandeja_id, sub_bandeja_id, asunto, from_name, from_email, asignado_user_id, combinado_con_id, creado_en, actualizado_en, leido').eq('empresa_id', EMPRESA_ID).order('creado_en', { ascending: true }),
   ]);
 
   // Mapa id -> bandeja (para resolver bandeja_id/sub_bandeja_id de cada caso a su "key")
