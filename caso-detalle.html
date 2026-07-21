@@ -2912,8 +2912,6 @@ function openNote() {
       </div>`);
   }
 
-  function closeNote() { _removeInlineCompose(); }
-
   function _notasKey() {
     try { return 'cw_notas_' + JSON.parse(localStorage.getItem('cw_caso_actual') || '{}').ticket; } catch { return null; }
   }
@@ -3571,15 +3569,6 @@ function openNote() {
   function _saveSelection() {
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) _savedSelection = sel.getRangeAt(0).cloneRange();
-  }
-
-  function _restoreSelection() {
-    if (!_savedSelection) return;
-    const editable = document.querySelector('#inline-compose-entry .compose-editable');
-    if (editable) editable.focus();
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(_savedSelection);
   }
 
   function _openAtRespuestas() {
@@ -4360,11 +4349,6 @@ function openNote() {
         ${cnt > 0 ? `<span class="dtm-user-count">${cnt}</span>` : ''}
       </div>`;
     }).join('');
-  }
-
-  function goToBandejaUser(key) {
-    localStorage.setItem('cw_bandeja', key);
-    window.location.href = 'casos.html';
   }
 
   function simularRespuestaCliente() {
