@@ -2590,18 +2590,6 @@ setTimeout(_ocultarOverlayCarga, 4000);
     };
   }
 
-  function _siguienteTicket() {
-    let max = 0;
-    document.querySelectorAll('[data-ticket]').forEach(el => {
-      const n = parseInt((el.dataset.ticket || '').replace('#', ''), 10);
-      if (!isNaN(n) && n > max) max = n;
-    });
-    const guardado = parseInt(localStorage.getItem('cw_ticket_counter') || '0', 10);
-    const siguiente = Math.max(max, guardado) + 1;
-    localStorage.setItem('cw_ticket_counter', String(siguiente));
-    return `#${siguiente}`;
-  }
-
   // Bandeja (o sub-bandeja) → mensaje de bienvenida configurado en admin.html, con el chip
   // "N° de caso" reemplazado por el ticket real. Las sub-bandejas heredan el de su bandeja padre.
   function _mensajeBienvenidaPara(bandejaKey, ticket) {
