@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Suscripción — CentralWeb</title>
+<style>
+:root {
+--blue-900: #0d2244;
+--blue-800: #0e3a6e;
+--blue-700: #1352a8;
+--blue-600: #1a6cd4;
+--blue-500: #2183f0;
+--blue-400: #4fa3f7;
+--blue-300: #7cc2fb;
+--blue-200: #bfdffd;
+--blue-100: #e8f3fe;
+--blue-50: #f4f9ff;
+
+--text-primary: #0d1f3c;
+--text-secondary: #4a6285;
+--text-muted: #8ba4c4;
+--border: #d0e2f7;
+--bg: #f0f5fc;
+}
+* { box-sizing: border-box; }
+body {
+margin: 0;
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
+color: var(--text-primary);
+padding: 24px;
+}
+.card {
+background: white;
+border-radius: 14px;
+padding: 40px 36px;
+max-width: 420px;
+width: 100%;
+text-align: center;
+box-shadow: 0 20px 60px rgba(13, 34, 68, 0.35);
+}
+.icon {
+width: 56px;
+height: 56px;
+margin: 0 auto 20px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+background: var(--blue-100);
+color: var(--blue-700);
+}
+.icon svg { width: 28px; height: 28px; }
+h1 {
+margin: 0 0 12px;
+font-size: 19px;
+font-weight: 700;
+color: var(--blue-900);
+}
+p {
+margin: 0 0 8px;
+font-size: 14px;
+line-height: 1.55;
+color: var(--text-secondary);
+}
+.hint {
+margin-top: 18px;
+font-size: 12.5px;
+color: var(--text-muted);
+}
+.actions {
+margin-top: 26px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+button, a.btn {
+display: inline-block;
+padding: 11px 18px;
+border-radius: 8px;
+font-size: 13.5px;
+font-weight: 600;
+text-decoration: none;
+cursor: pointer;
+border: none;
+}
+.btn-primary {
+background: var(--blue-600);
+color: white;
+}
+.btn-primary:hover { background: var(--blue-700); }
+.btn-secondary {
+background: var(--blue-50);
+color: var(--blue-700);
+border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--blue-100); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+  </div>
+  <h1 id="titulo">Tu acceso está pausado</h1>
+  <p id="mensaje">No pudimos confirmar el estado de tu suscripción.</p>
+  <p class="hint">Si creés que esto es un error, contactá a soporte de Nova Digital Services.</p>
+  <div class="actions">
+    <button class="btn-primary" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const motivo = params.get('motivo');
+  const titulo = document.getElementById('titulo');
+  const mensaje = document.getElementById('mensaje');
+
+  if (motivo === 'trial') {
+    titulo.textContent = 'Tu período de prueba terminó';
+    mensaje.textContent = 'El acceso a CentralWeb queda pausado hasta que se active una suscripción. Contactá a tu administrador o a Nova Digital Services para continuar.';
+  } else if (motivo === 'suspendida') {
+    titulo.textContent = 'Tu cuenta está suspendida';
+    mensaje.textContent = 'El acceso a CentralWeb está pausado temporalmente. Contactá a Nova Digital Services para regularizar la situación.';
+  } else if (motivo === 'cancelada') {
+    titulo.textContent = 'Tu suscripción fue cancelada';
+    mensaje.textContent = 'El acceso a CentralWeb ya no está disponible para tu empresa. Contactá a Nova Digital Services si querés reactivarlo.';
+  }
+})();
+
+async function cerrarSesion() {
+  try { await supabaseClient.auth.signOut(); } catch (e) {}
+  window.location.href = 'login.html';
+}
+</script>
+</body>
+</html>
