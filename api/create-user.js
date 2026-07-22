@@ -110,6 +110,13 @@ module.exports = async (req, res) => {
     const usuariosExistentes = await supabaseFetch(`profiles?select=id&empresa_id=eq.${empresaId}`);
     const cantidadActual = (usuariosExistentes || []).length;
 
+    const empresasInfo = await supabaseFetch(`empresas?select=limite_agentes&id=eq.${empresaId}`);
+    const limiteAgentes = empresasInfo && empresasInfo[0] ? empresasInfo[0].limite_agentes : null;
+    if (limiteAgentes != null && cantidadActual >= limiteAgentes) {
+      res.status(403).json({ ok: false, error: `Llegaste al límite de agentes de tu plan (${limiteAgentes}). Para sumar más, contactá a soporte.` });
+      return;
+    }
+
     const emailNormalizado = String(email).trim().toLowerCase();
 
     // Crea el usuario en estado "invitado" (sin contraseña) y le manda el
