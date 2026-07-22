@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Superadmin — CentralWeb</title>
+<style>
+:root {
+--blue-900: #0d2244;
+--blue-800: #0e3a6e;
+--blue-700: #1352a8;
+--blue-600: #1a6cd4;
+--blue-500: #2183f0;
+--blue-400: #4fa3f7;
+--blue-300: #7cc2fb;
+--blue-200: #bfdffd;
+--blue-100: #e8f3fe;
+--blue-50: #f4f9ff;
+
+--text-primary: #0d1f3c;
+--text-secondary: #4a6285;
+--text-muted: #8ba4c4;
+--border: #d0e2f7;
+--bg: #f0f5fc;
+}
+* { box-sizing: border-box; }
+body {
+margin: 0;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+background: var(--bg);
+color: var(--text-primary);
+}
+header.topbar {
+display: flex;
+align-items: center;
+gap: 16px;
+padding: 0 24px;
+height: 56px;
+background: linear-gradient(135deg, var(--blue-800), var(--blue-700));
+color: white;
+}
+header.topbar .page-title {
+display: flex;
+align-items: center;
+gap: 8px;
+font-weight: 700;
+font-size: 15px;
+}
+header.topbar .page-title svg { width: 18px; height: 18px; }
+.back-link {
+margin-left: auto;
+color: white;
+text-decoration: none;
+font-size: 13px;
+display: flex;
+align-items: center;
+gap: 6px;
+opacity: .9;
+}
+.back-link:hover { opacity: 1; }
+
+main {
+max-width: 1180px;
+margin: 0 auto;
+padding: 28px 24px 60px;
+display: flex;
+flex-direction: column;
+gap: 24px;
+}
+.card {
+background: white;
+border: 1px solid var(--border);
+border-radius: 10px;
+padding: 20px 22px;
+}
+.card h2 {
+margin: 0 0 4px;
+font-size: 15px;
+font-weight: 700;
+}
+.card .hint {
+margin: 0 0 16px;
+font-size: 12.5px;
+color: var(--text-muted);
+}
+table.empresas-table {
+width: 100%;
+border-collapse: collapse;
+font-size: 13px;
+}
+table.empresas-table th {
+text-align: left;
+padding: 10px 10px;
+color: var(--text-secondary);
+font-weight: 600;
+font-size: 11.5px;
+text-transform: uppercase;
+letter-spacing: .03em;
+border-bottom: 2px solid var(--border);
+}
+table.empresas-table td {
+padding: 10px 10px;
+border-bottom: 1px solid var(--border);
+vertical-align: middle;
+}
+table.empresas-table input[type=date],
+table.empresas-table input[type=number],
+table.empresas-table select {
+width: 100%;
+padding: 6px 8px;
+border: 1px solid var(--border);
+border-radius: 6px;
+font-size: 13px;
+color: var(--text-primary);
+background: var(--blue-50);
+}
+table.empresas-table input[type=number] { min-width: 80px; }
+.badge {
+display: inline-block;
+padding: 3px 9px;
+border-radius: 20px;
+font-size: 11.5px;
+font-weight: 600;
+}
+.badge.activa { background: #dcfce7; color: #166534; }
+.badge.trial { background: var(--blue-100); color: var(--blue-700); }
+.badge.suspendida { background: #fef3c7; color: #92400e; }
+.badge.cancelada { background: #fee2e2; color: #991b1b; }
+.save-btn {
+padding: 7px 14px;
+border: none;
+border-radius: 6px;
+background: var(--blue-600);
+color: white;
+font-size: 12.5px;
+font-weight: 600;
+cursor: pointer;
+white-space: nowrap;
+}
+.save-btn:hover { background: var(--blue-700); }
+.save-btn:disabled { background: var(--blue-300); cursor: default; }
+.row-status {
+font-size: 11.5px;
+color: var(--text-muted);
+margin-left: 8px;
+}
+.row-status.ok { color: #166534; }
+.row-status.error { color: #991b1b; }
+.agentes-count {
+font-weight: 700;
+color: var(--blue-700);
+}
+.msg-box {
+padding: 40px 20px;
+text-align: center;
+color: var(--text-secondary);
+font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="page-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Superadmin
+  </div>
+  <a class="back-link" href="casos.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Volver a Casos
+  </a>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Empresas y suscripciones</h2>
+    <p class="hint">Panel privado — solo visible para usuarios con acceso de superadministrador. Los cambios se aplican de inmediato.</p>
+    <div id="contenedor-tabla">
+      <div class="msg-box">Cargando...</div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+let _empresas = [];
+
+function fmtFechaInput(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toISOString().slice(0, 10); } catch (e) { return ''; }
+}
+
+function renderTabla() {
+  const cont = document.getElementById('contenedor-tabla');
+  if (!_empresas.length) {
+    cont.innerHTML = '<div class="msg-box">No hay empresas cargadas.</div>';
+    return;
+  }
+  const filas = _empresas.map(function(e) {
+    const estado = e.estado_suscripcion || 'activa';
+    return '<tr data-id="' + e.id + '">' +
+      '<td><strong>' + (e.nombre_formal || '') + '</strong><div style="color:var(--text-muted);font-size:11.5px">' + (e.sigla || '') + '</div></td>' +
+      '<td class="agentes-count">' + e.cantidad_agentes + '</td>' +
+      '<td>' +
+        '<select class="f-estado">' +
+          ['activa', 'trial', 'suspendida', 'cancelada'].map(function(op) {
+            return '<option value="' + op + '"' + (op === estado ? ' selected' : '') + '>' + op + '</option>';
+          }).join('') +
+        '</select>' +
+      '</td>' +
+      '<td><input type="date" class="f-trial" value="' + fmtFechaInput(e.trial_vence_en) + '"></td>' +
+      '<td><input type="number" class="f-limite" min="0" placeholder="Sin límite" value="' + (e.limite_agentes != null ? e.limite_agentes : '') + '"></td>' +
+      '<td><button class="save-btn" onclick="guardarFila(this)">Guardar</button><span class="row-status"></span></td>' +
+    '</tr>';
+  }).join('');
+
+  cont.innerHTML = '<table class="empresas-table"><thead><tr>' +
+    '<th>Empresa</th><th>Agentes</th><th>Estado</th><th>Trial vence</th><th>Límite agentes</th><th></th>' +
+    '</tr></thead><tbody>' + filas + '</tbody></table>';
+}
+
+async function cargarEmpresas() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    document.getElementById('contenedor-tabla').innerHTML = '<div class="msg-box">Sesión no encontrada. Volvé a <a href="login.html">iniciar sesión</a>.</div>';
+    return;
+  }
+  try {
+    const respuesta = await fetch('/api/superadmin-empresas', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${session.access_token}` }
+    });
+    if (respuesta.status === 403) {
+      document.getElementById('contenedor-tabla').innerHTML = '<div class="msg-box">No tenés permiso para ver este panel.</div>';
+      return;
+    }
+    const resultado = await respuesta.json();
+    if (!resultado.ok) {
+      document.getElementById('contenedor-tabla').innerHTML = '<div class="msg-box">Error: ' + (resultado.error || 'desconocido') + '</div>';
+      return;
+    }
+    _empresas = resultado.empresas || [];
+    renderTabla();
+  } catch (e) {
+    document.getElementById('contenedor-tabla').innerHTML = '<div class="msg-box">Error de red: ' + e.message + '</div>';
+  }
+}
+
+async function guardarFila(btn) {
+  const tr = btn.closest('tr');
+  const empresaId = tr.getAttribute('data-id');
+  const estado_suscripcion = tr.querySelector('.f-estado').value;
+  const trialInput = tr.querySelector('.f-trial').value;
+  const trial_vence_en = trialInput ? new Date(trialInput + 'T23:59:59').toISOString() : null;
+  const limiteInput = tr.querySelector('.f-limite').value;
+  const limite_agentes = limiteInput === '' ? null : parseInt(limiteInput, 10);
+  const status = tr.querySelector('.row-status');
+
+  btn.disabled = true;
+  status.textContent = 'Guardando...';
+  status.className = 'row-status';
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const respuesta = await fetch('/api/superadmin-empresas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ empresaId, estado_suscripcion, trial_vence_en, limite_agentes })
+    });
+    const resultado = await respuesta.json();
+    if (!resultado.ok) {
+      status.textContent = 'Error: ' + (resultado.error || 'desconocido');
+      status.className = 'row-status error';
+    } else {
+      status.textContent = 'Guardado ✓';
+      status.className = 'row-status ok';
+      setTimeout(function() { status.textContent = ''; }, 2500);
+    }
+  } catch (e) {
+    status.textContent = 'Error de red';
+    status.className = 'row-status error';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+cargarEmpresas();
+</script>
+</body>
+</html>
