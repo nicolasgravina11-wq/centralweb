@@ -1513,6 +1513,8 @@
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
+  function abrirAyuda(){ document.getElementById('modal-ayuda').classList.add('open'); }
+  function cerrarAyuda(){ document.getElementById('modal-ayuda').classList.remove('open'); }
   // Colorea en azul el nombre de la EMPRESA (nunca el del cliente) en los encabezados
   // De/Para del timeline, comparando contra el remitente original del caso.
   function _colorearIdentidadTimeline() {
@@ -4665,6 +4667,42 @@ function _imprimirCaso() {
       <div class="dtm-section-title">Usuarios</div>
       <div id="dtransfer-users-list"></div>
     </div>
+  </div>
+</div>
+<div class="help-modal-backdrop" id="modal-ayuda" onclick="if(event.target===this)cerrarAyuda()">
+  <div class="help-modal">
+    <div class="help-modal-header">
+      <div class="help-modal-title">Ayuda</div>
+      <button class="help-modal-close" onclick="cerrarAyuda()">&times;</button>
+    </div>
+    <div class="help-modal-body"><details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Responder un caso</summary>
+  <div class="help-topic-body">Boton "Responder"; el mensaje sale por correo al contacto.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Agregar una nota interna</summary>
+  <div class="help-topic-body">Boton "Nota"; no se envia al contacto, solo la ven los usuarios de la empresa.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Transferir este caso</summary>
+  <div class="help-topic-body">Boton "Transferir", elegi la bandeja destino.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Combinar con otro caso</summary>
+  <div class="help-topic-body">Une dos casos del mismo contacto en uno solo, para cuando se abrio un caso duplicado por error.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Cambiar el estado del caso</summary>
+  <div class="help-topic-body">Toca el estado (Abierto, En espera, Cerrado) arriba del caso.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Imprimir</summary>
+  <div class="help-topic-body">Icono de impresora; genera una version imprimible del caso.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Mover a una sub-bandeja</summary>
+  <div class="help-topic-body">Igual que en el listado, permite reubicar el caso sin sacarlo de la bandeja principal.</div>
+</details></div>
   </div>
 </div>
 </body>
