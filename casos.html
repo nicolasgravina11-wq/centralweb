@@ -223,14 +223,58 @@
     .icon-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); color: white; }
     .icon-btn svg { width: 16px; height: 16px; }
 
-    .notif-btn { position: relative; }
-    .notif-dot {
-      position: absolute; top: 6px; right: 6px;
-      width: 8px; height: 8px;
-      background: #f87171;
-      border-radius: 50%;
-      border: 2px solid var(--blue-700);
+    .help-icon-btn svg { width: 20px; height: 20px; }
+    .help-modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(10,22,40,.55);
+      backdrop-filter: blur(3px);
+      z-index: 2000;
+      align-items: center; justify-content: center;
     }
+    .help-modal-backdrop.open { display: flex; }
+    .help-modal {
+      background: var(--white);
+      border-radius: 14px;
+      box-shadow: var(--shadow-lg);
+      width: 560px;
+      max-width: 95vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .help-modal-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .help-modal-title { font-size: 16px; font-weight: 700; color: var(--text-primary); flex: 1; }
+    .help-modal-close {
+      width: 30px; height: 30px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none; background: transparent;
+      color: var(--text-secondary); font-size: 20px; line-height: 1;
+    }
+    .help-modal-close:hover { background: var(--bg); }
+    .help-modal-body { padding: 6px 0; overflow-y: auto; flex: 1; min-height: 0; }
+    .help-topic { border-bottom: 1px solid var(--blue-100); }
+    .help-topic:last-child { border-bottom: none; }
+    .help-topic summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 13px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 13.5px;
+      color: var(--text-primary);
+    }
+    .help-topic summary::-webkit-details-marker { display: none; }
+    .help-topic summary .chev { width: 15px; height: 15px; transition: transform .15s; color: var(--text-muted); flex-shrink: 0; }
+    .help-topic[open] summary .chev { transform: rotate(90deg); }
+    .help-topic-body { padding: 0 22px 15px 45px; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
 
     /* ── TOOLBAR ── */
     .toolbar {
@@ -924,9 +968,8 @@
     <div id="case-tabs"></div>
 
     <div class="topbar-right">
-      <div class="icon-btn notif-btn">
-        <div class="notif-dot"></div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <div class="icon-btn help-btn" title="Ayuda" onclick="abrirAyuda()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
       </div>
       <div class="dropdown-wrap">
         <div class="icon-btn" title="Configuración" onclick="toggleConfigMenu(event)">
