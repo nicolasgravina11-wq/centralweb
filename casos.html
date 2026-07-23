@@ -1872,11 +1872,11 @@ setTimeout(_ocultarOverlayCarga, 4000);
     try { localStorage.setItem('cw_bandeja_display_map', JSON.stringify(_bandejaDisplayMap)); } catch {}
   }
 
-  function _saveTransferEventBandeja(ticket, destinoLabel) {
+  function _saveTransferEventBandeja(ticket, origenLabel, destinoLabel) {
     const now   = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    const event = { transferId:'tr_'+Date.now(), ticket, destino:destinoLabel, fecha, hora, ts:Date.now() };
+    const event = { transferId:'tr_'+Date.now(), ticket, origen:origenLabel, destino:destinoLabel, fecha, hora, ts:Date.now() };
     const key   = 'cw_transfers_' + ticket;
     const list  = JSON.parse(localStorage.getItem(key) || '[]');
     list.push(event);
@@ -1935,7 +1935,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
       tr.dataset.bandeja = realBandeja;
       const cell = tr.querySelector('.td-asignado');
       if (cell) cell.innerHTML = buildAsignadoCell(ticket);
-      _saveTransferEventBandeja(ticket, 'la bandeja');
+      _saveTransferEventBandeja(ticket, (getUserInfoMap()[current]?.name || 'un usuario'), (bandejaLabels[realBandeja] || realBandeja));
     });
     if (!any) { closeTransferModal(); return; }
     saveBandejaMap(map);
@@ -1983,7 +1983,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
       if (cell) cell.innerHTML = buildAsignadoCell(ticket);
       // Guardar evento de transferencia en timeline del caso
       const destinoLabel = isUser ? getUserInfoMap()[targetBandeja].name : bandejaLabels[targetBandeja];
-      _saveTransferEventBandeja(ticket, destinoLabel);
+      _saveTransferEventBandeja(ticket, (_esUsuarioKey(currentBandeja) ? (getUserInfoMap()[currentBandeja]?.name || 'un usuario') : (bandejaLabels[currentBandeja] || currentBandeja || 'Sin bandeja')), destinoLabel);
     });
     saveBandejaMap(map);
     saveAsignadoMap();
