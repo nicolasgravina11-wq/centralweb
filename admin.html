@@ -566,6 +566,71 @@
   .modal input[type=text], .modal select { border-color: #e2e8f0; background: white; }
   .modal input[type=text]:focus, .modal select:focus { outline: none; border-color: var(--blue-600); box-shadow: 0 0 0 3px rgba(26,108,212,.12); background: white; }
   .modal label.field-label { color: #64748b; font-weight: 500; }
+    .help-icon-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 5px;
+      border: 1.5px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.12);
+      cursor: pointer;
+      color: rgba(255,255,255,.9);
+      transition: all .15s;
+      margin-left: auto;
+      margin-right: 10px;
+    }
+    .help-icon-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); color: white; }
+    .help-icon-btn svg { width: 18px; height: 18px; }
+    .help-modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(10,22,40,.55);
+      backdrop-filter: blur(3px);
+      z-index: 2000;
+      align-items: center; justify-content: center;
+    }
+    .help-modal-backdrop.open { display: flex; }
+    .help-modal {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(13,34,68,.14);
+      width: 560px;
+      max-width: 95vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .help-modal-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--blue-100);
+    }
+    .help-modal-title { font-size: 16px; font-weight: 700; color: var(--text-primary); flex: 1; }
+    .help-modal-close {
+      width: 30px; height: 30px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none; background: transparent;
+      color: var(--text-secondary); font-size: 20px; line-height: 1;
+    }
+    .help-modal-close:hover { background: var(--blue-50); }
+    .help-modal-body { padding: 6px 0; overflow-y: auto; flex: 1; min-height: 0; }
+    .help-topic { border-bottom: 1px solid var(--blue-100); }
+    .help-topic:last-child { border-bottom: none; }
+    .help-topic summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 13px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 13.5px;
+      color: var(--text-primary);
+    }
+    .help-topic summary::-webkit-details-marker { display: none; }
+    .help-topic summary .chev { width: 15px; height: 15px; transition: transform .15s; color: var(--text-muted); flex-shrink: 0; }
+    .help-topic[open] summary .chev { transform: rotate(90deg); }
+    .help-topic-body { padding: 0 22px 15px 45px; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -574,6 +639,9 @@
   <div class="page-title">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     Configuración
+  </div>
+  <div class="help-icon-btn" title="Ayuda" onclick="abrirAyuda()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
   </div>
   <a class="back-link" href="casos.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -902,6 +970,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script>
+  function abrirAyuda(){ document.getElementById('modal-ayuda').classList.add('open'); }
+  function cerrarAyuda(){ document.getElementById('modal-ayuda').classList.remove('open'); }
   let EMPRESA_ID = null;
   let EMPRESA_SIGLA = '';
   let CURRENT_USER = null;
@@ -2156,5 +2226,37 @@ async function eliminarUsuario(id) {
 
 </script>
 
+<div class="help-modal-backdrop" id="modal-ayuda" onclick="if(event.target===this)cerrarAyuda()">
+  <div class="help-modal">
+    <div class="help-modal-header">
+      <div class="help-modal-title">Ayuda</div>
+      <button class="help-modal-close" onclick="cerrarAyuda()">&times;</button>
+    </div>
+    <div class="help-modal-body"><details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Crear una bandeja</summary>
+  <div class="help-topic-body">Seccion "Bandejas", boton "Crear bandeja". Definí el nombre y la sigla (se usa para armar la direccion de correo, sigla@cweb.novadgt.com).</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Crear una sub-bandeja</summary>
+  <div class="help-topic-body">Entra al detalle de una bandeja y usa "+ Crear sub-bandeja". Sirve para organizar casos dentro de la misma bandeja sin crear una direccion de correo nueva.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Dar de alta un usuario</summary>
+  <div class="help-topic-body">Seccion "Usuarios", boton "Alta usuario". Completa nombre, correo y rol; el sistema respeta el limite de agentes contratado.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Eliminar un usuario</summary>
+  <div class="help-topic-body">Abri el detalle del usuario y usa "Eliminar usuario". Es una accion permanente: libera un lugar en el limite de agentes pero no se puede deshacer.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Crear una respuesta automatica</summary>
+  <div class="help-topic-body">Seccion "Respuestas automaticas", boton "Crear respuesta". Se envia sola cuando entra un caso nuevo a la bandeja que elijas.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Editar los datos de la empresa</summary>
+  <div class="help-topic-body">Arriba de todo, boton "Editar" sobre los datos de la empresa. Guarda los cambios con "Guardar".</div>
+</details></div>
+  </div>
+</div>
 </body>
 </html>
