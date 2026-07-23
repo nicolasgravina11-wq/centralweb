@@ -2568,6 +2568,9 @@ setTimeout(_ocultarOverlayCarga, 4000);
           return data.adjuntos || [];
     }
   
+  function abrirAyuda(){ document.getElementById('modal-ayuda').classList.add('open'); }
+  function cerrarAyuda(){ document.getElementById('modal-ayuda').classList.remove('open'); }
+
   function closeModal() {
     document.getElementById('modal-nuevo').classList.remove('open');
   }
@@ -2901,6 +2904,42 @@ setTimeout(_ocultarOverlayCarga, 4000);
       <div class="tm-section-title">Usuarios</div>
       <div id="transfer-users-list"></div>
     </div>
+  </div>
+</div>
+<div class="help-modal-backdrop" id="modal-ayuda" onclick="if(event.target===this)cerrarAyuda()">
+  <div class="help-modal">
+    <div class="help-modal-header">
+      <div class="help-modal-title">Ayuda</div>
+      <button class="help-modal-close" onclick="cerrarAyuda()">&times;</button>
+    </div>
+    <div class="help-modal-body"><details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Crear un caso nuevo</summary>
+  <div class="help-topic-body">Boton "Nuevo Caso", arriba a la derecha. Completa el destinatario y el mensaje; podes adjuntar archivos antes de enviarlo.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Transferir uno o varios casos</summary>
+  <div class="help-topic-body">Marca los casos con el checkbox y usa "Transferir" para moverlos a otra bandeja.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Cambiar el estado de varios casos a la vez</summary>
+  <div class="help-topic-body">Con casos seleccionados, elegi Abierto, En espera o Cerrado desde el menu de estado masivo.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Devolver casos a la bandeja</summary>
+  <div class="help-topic-body">Con casos seleccionados, "Devolver a la bandeja" los saca de donde esten asignados y los deja disponibles de nuevo.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Ver quien mas esta en la bandeja</summary>
+  <div class="help-topic-body">Boton "Usuarios", al lado del nombre de la bandeja.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>Sub-bandejas</summary>
+  <div class="help-topic-body">Dentro de una bandeja pueden aparecer sub-bandejas; sirven para agrupar o filtrar casos sin cambiar de direccion de correo.</div>
+</details>
+<details class="help-topic">
+  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>"Disponible / No disponible"</summary>
+  <div class="help-topic-body">Indica si estas recibiendo casos nuevos asignados automaticamente. Se cambia desde el boton correspondiente en la topbar.</div>
+</details></div>
   </div>
 </div>
 </body>
