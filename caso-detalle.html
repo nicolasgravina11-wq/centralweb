@@ -3004,11 +3004,11 @@ function openNote() {
     return entry;
   }
 
-  function _saveTransferEvent(ticket, destino, actor) {
+  function _saveTransferEvent(ticket, origen, destino, actor) {
     const now = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    const event = { transferId: 'tr_' + Date.now(), ticket, destino, actor: actor || (window._CURRENT_USER_NAME_REAL || 'Agente'), fecha, hora, ts: Date.now() };
+    const event = { transferId: 'tr_' + Date.now(), ticket, origen, destino, actor: actor || (window._CURRENT_USER_NAME_REAL || 'Agente'), fecha, hora, ts: Date.now() };
     const key   = 'cw_transfers_' + ticket;
     const list  = JSON.parse(localStorage.getItem(key) || '[]');
     list.push(event);
@@ -3029,7 +3029,7 @@ function openNote() {
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">${ev.actor || 'Agente'}</strong> transfirió el caso <strong>${ev.ticket}</strong> a <strong>${ev.destino}</strong> · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
+          <strong style="color:#1e293b">${ev.actor || 'Agente'}</strong> transfirió el caso <strong>${ev.ticket}</strong>${ev.origen ? ' de <strong>'+ev.origen+'</strong>' : ''} a <strong>${ev.destino}</strong> · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
         </div>
       </div>`;
     return entry;
@@ -4518,7 +4518,7 @@ function openNote() {
       // Evento en timeline
       const destinoLabel = !targetBandeja ? 'la bandeja' : (isUser
         ? _userNamesDetail[targetBandeja] : (_bandejaLabelsDetail[targetBandeja] || targetBandeja));
-      const ev  = _saveTransferEvent(c.ticket, destinoLabel, window._CURRENT_USER_NAME_REAL);
+      const ev  = _saveTransferEvent(c.ticket, (!currentBandeja ? 'Sin bandeja' : (_esUsrKeyDetail(currentBandeja) ? (_userNamesDetail[currentBandeja] || currentBandeja) : (_bandejaLabelsDetail[currentBandeja] || currentBandeja))), destinoLabel, window._CURRENT_USER_NAME_REAL);
       const el  = _buildTransferEntry(ev);
       el.classList.add('timeline-change');
       const changesOpen = document.getElementById('toggle-changes-btn')?.dataset.open === '1';
