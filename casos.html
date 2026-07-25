@@ -1872,7 +1872,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     try { localStorage.setItem('cw_bandeja_display_map', JSON.stringify(_bandejaDisplayMap)); } catch {}
   }
 
-  function _saveTransferEventBandeja(ticket, origenLabel, destinoLabel) {
+  function _saveCreacionEventBandeja(ticket, destinoLabel, asignadoLabel) { const now = new Date(); const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.',''); const hora = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' }); const event = { transferId:'tr_'+Date.now(), ticket, accion:'creacion', destino:destinoLabel, asignado:asignadoLabel||'', actor:((getUserInfoMap()[CURRENT_USER_ID]||{}).name||''), fecha, hora, ts:Date.now() }; const key = 'cw_transfers_' + ticket; const list = JSON.parse(localStorage.getItem(key) || '[]'); list.push(event); localStorage.setItem(key, JSON.stringify(list)); } function _saveTransferEventBandeja(ticket, origenLabel, destinoLabel) {
     const now   = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
@@ -2734,7 +2734,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
       saveBandejaDisplayMap();
     }
 
-    _guardarCasoCreado(d);
+    _guardarCasoCreado(d); _saveCreacionEventBandeja(ticket, (bandejaLabels[bandejaKey] || bandejaKey), (asignadoKey ? ((getUserInfoMap()[asignadoKey]||{}).name || asignadoKey) : ''));
 
     const bienvenida = _mensajeBienvenidaPara(bandejaKey, ticket);
     if (bienvenida) localStorage.setItem('cw_bienvenida_' + ticket, bienvenida);
