@@ -2123,7 +2123,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
     if (snap.display) dMap[absorbido] = snap.display; else delete dMap[absorbido];
     localStorage.setItem('cw_bandeja_display_map', JSON.stringify(dMap));
     const aMap = _asignadoMap();
-    if (snap.asignado) aMap[absorbido] = snap.asignado; else delete aMap[absorbido];
+    if (snap.asignado) aMap[absorbido] = snap.asignado; else delete aMap[absorbido]; try { _saveTransferEvent(absorbido, '', (snap.asignado ? (_userNamesDetail[snap.asignado] || snap.asignado) : (snap.display ? (_bandejaLabelsDetail[snap.display] || snap.display) : 'su bandeja')), window._CURRENT_USER_NAME_REAL, 'descombinar'); } catch (e) {}
     localStorage.setItem('cw_asignado_map', JSON.stringify(aMap));
 
     // Eliminar notas internas agregadas en el principal desde el merge
@@ -3004,11 +3004,11 @@ function openNote() {
     return entry;
   }
 
-  function _saveTransferEvent(ticket, origen, destino, actor) {
+  function _saveTransferEvent(ticket, origen, destino, actor, accion) {
     const now = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    const event = { transferId: 'tr_' + Date.now(), ticket, origen, destino, actor: actor || (window._CURRENT_USER_NAME_REAL || 'Agente'), fecha, hora, ts: Date.now() };
+    const event = { transferId: 'tr_' + Date.now(), ticket, origen, destino, accion: accion || '', actor: actor || (window._CURRENT_USER_NAME_REAL || 'Agente'), fecha, hora, ts: Date.now() };
     const key   = 'cw_transfers_' + ticket;
     const list  = JSON.parse(localStorage.getItem(key) || '[]');
     list.push(event);
@@ -3029,7 +3029,7 @@ function openNote() {
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">${ev.actor || 'Agente'}</strong> transfirió el caso <strong>${ev.ticket}</strong>${ev.origen ? ' de <strong>'+ev.origen+'</strong>' : ''} a <strong>${ev.destino}</strong> · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
+          <strong style="color:#1e293b">${ev.actor || 'Agente'}</strong> ${ev.accion === 'creacion' ? 'creó el caso' : (ev.accion === 'descombinar' ? 'descombinó el caso' : 'transfirió el caso')} <strong>${ev.ticket}</strong>${ev.origen ? ' de <strong>'+ev.origen+'</strong>' : ''} ${ev.accion === 'creacion' ? 'en' : (ev.accion === 'descombinar' ? 'devolviéndolo a' : 'a')} <strong>${ev.destino}</strong>${ev.asignado ? ' y lo asignó a <strong>'+ev.asignado+'</strong>' : ''} · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
         </div>
       </div>`;
     return entry;
