@@ -2359,7 +2359,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
     }));
   }
   const _userNamesDetail = {};
-  _getUsuariosDinamicosDetail().forEach(u => { _userNamesDetail[u.key] = u.name; }); function _rebuildLabelsDetail() { _getBandejasDinamicasDetail().forEach(b => { _bandejaLabelsDetail[b.key] = b.nombre; }); _getSubbandejasDinamicasDetail().forEach(s => { _bandejaLabelsDetail[s.key] = s.nombre; }); _getUsuariosDinamicosDetail().forEach(u => { _userNamesDetail[u.key] = u.name; }); }
+  _getUsuariosDinamicosDetail().forEach(u => { _userNamesDetail[u.key] = u.name; }); function _rebuildLabelsDetail() { _getBandejasDinamicasDetail().forEach(b => { _bandejaLabelsDetail[b.key] = b.nombre; }); _getSubbandejasDinamicasDetail().forEach(s => { _bandejaLabelsDetail[s.key] = s.nombre; }); _getUsuariosDinamicosDetail().forEach(u => { _userNamesDetail[u.key] = u.name; }); try { const _bkTop = localStorage.getItem('cw_bandeja') || ''; const _elTop = document.getElementById('bandeja-label'); const _lblTop = _bandejaLabelsDetail[_bkTop] || _userNamesDetail[_bkTop] || ''; if (_elTop && _lblTop) _elTop.textContent = _lblTop; } catch (eTop) {} }
 
   // ── Poblar datos del caso desde localStorage ──
   const avatarColors = {
