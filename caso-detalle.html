@@ -1783,7 +1783,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
 
   // Mismo texto genérico que usan todos los casos de muestra en "Ingreso correo"
   // (los casos de muestra no tienen cuerpo de mensaje propio, es siempre este).
-  const _MENSAJE_GENERICO_HTML = 'Estimados, me comunico para informar que detecté un cargo duplicado en mi cuenta correspondiente al mes de junio. El monto de $12.500 fue debitado dos veces el día 10/06/2026. Solicito la revisión y el reintegro del monto cobrado de más a la brevedad posible. Quedo a disposición ante cualquier consulta.';
+  const _MENSAJE_GENERICO_HTML = '<span style="color:var(--text-muted)">(el mensaje original de este caso no está disponible)</span>';
 
   function _mensajeIngresoHTML(ticket) {
   const mi = _leerConVencimiento('cw_mensaje_inicial_' + ticket, 60 * 60 * 1000);
@@ -2506,7 +2506,7 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
             const combineKey = 'cw_combine_events_' + c.ticket;
             const transferKey = 'cw_transfers_' + c.ticket;
             const localCombine = JSON.parse(localStorage.getItem(combineKey) || '[]');
-            const localTransfer = JSON.parse(localStorage.getItem(transferKey) || '[]');
+            const localTransfer = JSON.parse(localStorage.getItem(transferKey) || '[]'); const statusKey = 'cw_status_events_' + c.ticket; const localStatus = JSON.parse(localStorage.getItem(statusKey) || '[]'); let statusChanged = false;
             let combineChanged = false, transferChanged = false;
             eventosRemotos.forEach(function(er) {
               const ev = er.payload;
@@ -2520,7 +2520,7 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
                   const el = er.tipo === 'descombinar' ? _buildDescombineEntry(ev) : _buildCombineEntry(ev);
                   if (typeof _insertTimelineEntryChrono === 'function') _insertTimelineEntryChrono(el, ev.ts);
                 }
-              } else if (er.tipo === 'transferencia') {
+              } else if (er.tipo === 'estado') { if (ev && ev.statusEventId && !localStatus.some(function(le){ return le.statusEventId === ev.statusEventId; })) { localStatus.push(ev); statusChanged = true; const elSt = _buildStatusEntry(ev); if (typeof _insertTimelineEntryChrono === 'function') _insertTimelineEntryChrono(elSt, ev.ts); } } if (er.tipo === 'transferencia') {
                 if (!localTransfer.some(function(le){ return le.transferId === ev.transferId; })) {
                   localTransfer.push(ev);
                   transferChanged = true;
@@ -2530,7 +2530,7 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
               }
             });
             if (combineChanged) localStorage.setItem(combineKey, JSON.stringify(localCombine));
-            if (transferChanged) localStorage.setItem(transferKey, JSON.stringify(localTransfer));
+            if (transferChanged) localStorage.setItem(transferKey, JSON.stringify(localTransfer)); if (statusChanged) localStorage.setItem(statusKey, JSON.stringify(localStatus));
             (async function() {
               try {
                 const principales = localCombine.filter(function(pe){ return pe.tipo === 'combinar' && pe.rol === 'principal'; });
@@ -2976,7 +2976,7 @@ function openNote() {
     const now   = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    const event = { statusEventId:'st_'+Date.now(), ticket, status:newStatus, fecha, hora, ts:Date.now() };
+    const event = { statusEventId:'st_'+Date.now(), ticket, status:newStatus, actor:(window._CURRENT_USER_NAME_REAL || ''), fecha, hora, ts:Date.now() }; _syncCasoEventoSupabase(ticket, 'estado', event);
     const key   = 'cw_status_events_' + ticket;
     const list  = JSON.parse(localStorage.getItem(key) || '[]');
     list.push(event);
