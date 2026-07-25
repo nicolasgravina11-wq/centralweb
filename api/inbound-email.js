@@ -107,7 +107,7 @@ async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre, 
     const m = out.match(re);
     if (m && m.index > 0) { out = out.slice(0, m.index); break; }
   }
-  return out.trim();
+  out = out.replace(/(?:\s|&nbsp;|<br\s*\/?>)+$/gi, '');  return out.trim();
 }
 
 function textoEntranteAHtml(texto) {
