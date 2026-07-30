@@ -448,7 +448,7 @@
     .td-subject { min-width: 240px; }
     .td-ticket { width: 110px; }
     .td-estado { width: 120px; }
-    .td-usuario { width: 160px; }
+    .td-usuario { width: 160px; }    .td-bandeja { width: 150px; font-size: 12.5px; color: var(--text-secondary); }
     .td-fecha { width: 130px; }
 
     .mail-icon {
@@ -1076,7 +1076,7 @@
             <th class="td-subject sortable">Asunto / Remitente <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></th>
             <th class="td-ticket">N° Ticket</th>
             <th class="td-estado">Estado</th>
-            <th class="td-usuario sortable">Asignado a</th>
+            <th class="td-usuario sortable">Asignado a</th><th class="td-bandeja">Bandeja</th>
             <th class="td-fecha sortable">Ingreso <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></th>
           </tr>
         </thead>
@@ -1500,7 +1500,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
         </td>
         <td><span class="ticket-num">${d.ticket}</span></td>
         <td>${badgeMap[d.status]}</td>
-        <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>
+        <td class="td-asignado"><span class="sin-asignar">Sin asignar</span></td>        <td class="td-bandeja">${String((d.realBandeja && d.realBandeja !== 'sin-bandeja') ? (bandejaLabels[d.realBandeja] || d.realBandeja) : '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
         <td>
           <div class="fecha-cell">
             <div class="date">${d.date}</div>
