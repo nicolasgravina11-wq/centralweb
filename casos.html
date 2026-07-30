@@ -2638,11 +2638,11 @@ setTimeout(_ocultarOverlayCarga, 4000);
 
   // Bandeja (o sub-bandeja) → mensaje de bienvenida configurado en admin.html, con el chip
   // "N° de caso" reemplazado por el ticket real. Las sub-bandejas heredan el de su bandeja padre.
-  function _mensajeBienvenidaPara(bandejaKey, ticket) {
+  function _mensajeBienvenidaPara(bandejaKey, ticket, asuntoCaso) {
     const parentKey = bandejaKey.includes('::') ? bandejaKey.split('::')[0] : bandejaKey;
     const bandeja = getBandejasDinamicas().find(b => b.key === parentKey);
     if (!bandeja || !bandeja.mensajeBienvenida) return null;
-    return bandeja.mensajeBienvenida.replace(/<span class="var-chip"[^>]*>[^<]*<\/span>/gi, ticket);
+    return bandeja.mensajeBienvenida.replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? String(asuntoCaso || '(sin asunto)').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ticket);
   }
 
   async function crearCaso() {
@@ -2736,7 +2736,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
 
     _guardarCasoCreado(d); _saveCreacionEventBandeja(ticket, (bandejaLabels[bandejaKey] || bandejaKey), (asignadoKey ? ((getUserInfoMap()[asignadoKey]||{}).name || asignadoKey) : ''));
 
-    const bienvenida = _mensajeBienvenidaPara(bandejaKey, ticket);
+    const bienvenida = _mensajeBienvenidaPara(bandejaKey, ticket, asunto);
     if (bienvenida) localStorage.setItem('cw_bienvenida_' + ticket, bienvenida);
     if (bienvenida) {
             try {
