@@ -1976,8 +1976,8 @@ setTimeout(_ocultarOverlayCarga, 4000);
       }
       // Margen de error: si lo estabas viendo en esa bandeja, sigue apareciendo ahí (apagado)
       // hasta que cambies de bandeja o filtres "Abierto".
-      if (!_esUsuarioKey(currentBandeja) && currentBandeja === activeBandeja) {
-        _marcarEnGracia(ticket, currentBandeja);
+      if (currentBandeja === activeBandeja || (activeBandeja === 'asignados' && currentBandeja === CURRENT_USER_KEY)) {
+        _marcarEnGracia(ticket, activeBandeja);
       }
       const cell = tr.querySelector('.td-asignado');
       if (cell) cell.innerHTML = buildAsignadoCell(ticket);
