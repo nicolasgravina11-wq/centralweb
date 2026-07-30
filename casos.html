@@ -1876,7 +1876,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     const now   = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    const event = { transferId:'tr_'+Date.now(), ticket, origen:origenLabel, destino:destinoLabel, fecha, hora, ts:Date.now() }; _syncEventoSupabaseCasos(ticket, 'transferencia', event);
+    const event = { transferId:'tr_'+Date.now(), ticket, origen:origenLabel, destino:destinoLabel, actor:((getUserInfoMap()[CURRENT_USER_ID]||{}).name||''), fecha, hora, ts:Date.now() }; _syncEventoSupabaseCasos(ticket, 'transferencia', event);
     const key   = 'cw_transfers_' + ticket;
     const list  = JSON.parse(localStorage.getItem(key) || '[]');
     list.push(event);
