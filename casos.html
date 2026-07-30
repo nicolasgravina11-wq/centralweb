@@ -1532,7 +1532,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     if (!showCerrados && status === 'cerrado' && activeFilter !== 'cerrado' && !enGraciaCierre) return false;
     if (activeFilter && status !== activeFilter && !enGraciaCierre) return false;
     if (activeBandeja === 'asignados') {
-      if (bandeja !== 'asignados' && bandeja !== CURRENT_USER_KEY) return false;
+      if (bandeja !== 'asignados' && bandeja !== CURRENT_USER_KEY) { if (!(ticket && _gracia[ticket] === activeBandeja)) return false; }
     } else {
       if (bandeja !== activeBandeja) {
         // Margen de error: si este caso se transfirió afuera de la bandeja que estás mirando,
