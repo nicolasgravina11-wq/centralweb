@@ -1365,7 +1365,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     if (_mapaCambio) { try { localStorage.setItem('cw_status_map', JSON.stringify(_mapaSync)); } catch {} }
   }
 
-  const CASOS_REALES = (casosDB || []).map(c => {
+  { let _aSync={}, _bSync={}; try{ _aSync=JSON.parse(localStorage.getItem('cw_asignado_map')||'{}'); }catch(e){} try{ _bSync=JSON.parse(localStorage.getItem('cw_bandeja_map')||'{}'); }catch(e){} let _aCambio=false, _bCambio=false; (casosDB||[]).forEach(function(c){ if(!c.ticket) return; var real=c.asignado_user_id||''; if(real){ if(_aSync[c.ticket]!==real){ _aSync[c.ticket]=real; _aCambio=true; } if(_bSync[c.ticket]!==real){ _bSync[c.ticket]=real; _bCambio=true; } } else { if(_aSync[c.ticket]!==undefined){ delete _aSync[c.ticket]; _aCambio=true; } var kb=''; try{ kb=_bandejaKeyReal(c)||''; }catch(e){} if(kb&&_bSync[c.ticket]!==kb){ _bSync[c.ticket]=kb; _bCambio=true; } } }); if(_aCambio){ try{ localStorage.setItem('cw_asignado_map', JSON.stringify(_aSync)); }catch(e){} } if(_bCambio){ try{ localStorage.setItem('cw_bandeja_map', JSON.stringify(_bSync)); }catch(e){} } }  const CASOS_REALES = (casosDB || []).map(c => {
     const { fecha, hora } = _formatFechaHora(c.creado_en);
     return {
       _id: c.id,
