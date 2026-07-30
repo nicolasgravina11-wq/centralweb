@@ -1050,7 +1050,7 @@
     document.execCommand(comando, false, null);
   }
 
-function rteInsertCaso() {
+function rteInsertCaso(tipo) {
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
     const range = sel.getRangeAt(0);
@@ -1059,7 +1059,7 @@ function rteInsertCaso() {
     const chip = document.createElement('span');
     chip.className = 'var-chip';
     chip.setAttribute('contenteditable', 'false');
-    chip.textContent = 'N° de caso';
+    chip.setAttribute('data-var', tipo === 'asunto' ? 'asunto' : 'caso'); chip.textContent = tipo === 'asunto' ? 'Asunto' : 'N° de caso';
     const space = document.createTextNode(' ');
 
     const frag = document.createDocumentFragment();
@@ -1150,7 +1150,7 @@ function rteInsertCaso() {
         Adjuntar archivo
       </button>
       <input type="file" id="rte_file_input_${tid}" multiple style="display:none" onchange="_rteOnAttachFiles('${tid}', this)">` : ''}
-      ${showInsertCaso ? `<div class="rte-sep"></div><button type="button" class="rte-btn rte-insert" onmousedown="event.preventDefault()" onclick="rteInsertCaso()">+ N° de caso</button>` : ''}
+      ${showInsertCaso ? `<div class="rte-sep"></div><button type="button" class="rte-btn rte-insert" onmousedown="event.preventDefault()" onclick="rteInsertCaso()">+ N° de caso</button><button type="button" class="rte-btn rte-insert" onmousedown="event.preventDefault()" onclick="rteInsertCaso('asunto')">+ Asunto</button>` : ''}
     `;
     const fontDd = document.getElementById(`rfp_dd_${tid}`);
     fontDd.innerHTML = _RTE_FONTS.map(f =>
