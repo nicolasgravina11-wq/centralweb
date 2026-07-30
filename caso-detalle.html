@@ -1961,7 +1961,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
     }
     if (!msg) msg = bandeja.mensajeBienvenida;
     if (!msg) return null;
-    return msg.replace(/<span class="var-chip"[^>]*>[^<]*<\/span>/gi, ticket);
+    return msg.replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? String((info && info.asunto) || '(sin asunto)').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ticket);
   }
 
   // Adjuntos del correo de ingreso de un ticket: los reales si se creó con "+ Nuevo Caso",
@@ -3716,9 +3716,9 @@ function openNote() {
     sel.addRange(newRange);
     editable.focus();
 
-    let ticket = '';
-    try { ticket = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}').ticket || ''; } catch (err) {}
-    const html = respuesta.texto.replace(/<span class="var-chip"[^>]*>[^<]*<\/span>/gi, ticket);
+    let ticket = '', asuntoCaso = '';
+    try { const _ca = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}'); ticket = _ca.ticket || ''; asuntoCaso = _ca.subject || ''; } catch (err) {}
+    const html = respuesta.texto.replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? String(asuntoCaso || '(sin asunto)').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ticket);
     document.execCommand('insertHTML', false, html + '&nbsp;');
     if (respuesta.archivos_adjuntos && respuesta.archivos_adjuntos.length) {
       respuesta.archivos_adjuntos.forEach(a => {
