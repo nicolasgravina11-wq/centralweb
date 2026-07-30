@@ -3020,7 +3020,7 @@ function openNote() {
   function _buildTransferEntry(ev) {
     const entry = document.createElement('div');
     entry.className = 'timeline-entry';
-    entry.id = ev.transferId;
+    entry.classList.add('timeline-change'); var _tgBtn = document.getElementById('toggle-changes-btn'); if (!_tgBtn || _tgBtn.dataset.open !== '1') entry.style.display = 'none';    entry.id = ev.transferId;
     entry.innerHTML = `
       <div class="timeline-marker">
         <div class="timeline-arrow" style="background:#eff6ff">
