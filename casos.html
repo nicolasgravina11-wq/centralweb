@@ -2642,7 +2642,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     const parentKey = bandejaKey.includes('::') ? bandejaKey.split('::')[0] : bandejaKey;
     const bandeja = getBandejasDinamicas().find(b => b.key === parentKey);
     if (!bandeja || !bandeja.mensajeBienvenida) return null;
-    return bandeja.mensajeBienvenida.replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? String(asuntoCaso || '(sin asunto)').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ticket);
+    return bandeja.mensajeBienvenida.replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? '<em>' + String(asuntoCaso || '(sin asunto)').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</em>' : ticket);
   }
 
   async function crearCaso() {
