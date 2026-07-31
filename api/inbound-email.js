@@ -182,15 +182,19 @@ module.exports = async (req, res) => {
   const asunto = sanitizeHtml(fields.subject || '(sin asunto)', { allowedTags: [], allowedAttributes: {} });
   const cuerpo = textoEntranteAHtml(limpiarCuerpoEntrante(fields['stripped-text'] || fields['body-plain'] || ''));
 
-  const match = recipient.match(/^([a-z0-9.\-]+)@cweb\.novadgt\.com$/i);
-  if (!match) {
+  // Un mismo correo puede venir dirigido a varias casillas nuestras. Gmail hace que Mailgun
+  // dispare un webhook por destinatario, pero Outlook los manda juntos en uno solo, y antes
+  // ese caso se descartaba entero. Extraemos todas las direcciones y creamos un caso por cada una.
+  const destinatarios = [...new Set((recipient.match(/[a-z0-9._\-]+@cweb\.novadgt\.com/gi) || []).map(function(d){ return d.toLowerCase(); }))];
+  if (!destinatarios.length) {
     console.error('Destinatario con formato inesperado');
     // Devolvemos 200 para que Mailgun no reintente algo que nunca va a poder procesar.
     res.status(200).send('Ignorado: formato de destinatario invalido');
     return;
   }
 
-  const partes = match[1].split('.');
+  for (const destinatario of destinatarios) {
+  const partes = destinatario.split('@')[0].split('.');
   const sigla = partes[partes.length - 1];
   const bandejaKey = partes[0];
   const subBandejaKey = partes.length > 2 ? partes[1] : null;
@@ -264,8 +268,7 @@ module.exports = async (req, res) => {
       });
 
       console.log(`Respuesta entrante sumada al caso ${casoExistente.ticket}`);
-      res.status(200).send('OK');
-      return;
+      continue;
     }
 
     const numeroTicket = await supabaseFetch('rpc/centralweb_next_ticket', {
@@ -302,13 +305,15 @@ module.exports = async (req, res) => {
         data: { from: fromEmail, asunto } }) }); try { const sectorBandeja = subBandejaSector || (bandejas[0] && bandejas[0].sector) || null;
     const remitenteDisplay = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
     const mensajeBienvenida = subBandejaMensaje || (bandejas[0] && bandejas[0].mensaje_bienvenida) || null;
-    const autoResp = await enviarAutoRespuesta(recipient, fromEmail, ticket, remitenteDisplay, mensajeBienvenida, asunto); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
-    res.status(200).send('OK');
+    const autoResp = await enviarAutoRespuesta(destinatario, fromEmail, ticket, remitenteDisplay, mensajeBienvenida, asunto); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
   } catch (e) {
+    // Un fallo en una casilla no debe impedir el procesamiento de las demas.
     console.error('Error creando el caso desde el correo entrante:', e.message);
-    // 200 para que Mailgun no reintente en loop; el error queda en los logs de Vercel.
-    res.status(200).send('Error registrado, ver logs de Vercel');
   }
+  }
+
+  // 200 siempre, para que Mailgun no reintente en loop; los errores quedan en los logs de Vercel.
+  res.status(200).send('OK');
 };
 
 module.exports.config = config;
