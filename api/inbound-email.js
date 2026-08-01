@@ -92,7 +92,17 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
   return resultado;
 }
 
-async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre, mensajeBienvenida, asuntoOriginal) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = (mensajeBienvenida || `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`).replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? '<em>' + (asuntoOriginal || '(sin asunto)') + '</em>' : ticket); const asuntoAuto = 'Confirmación de ingreso'; const form = new FormData(); form.append('from', `${empresaNombre || 'CentralWeb'} <${fromAddress}>`); form.append('to', toEmail); form.append('subject', asuntoAuto); const htmlParaEnvio = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8" /></head><body>${cuerpoHtml}<span style="display:none">\u200B</span></body></html>`; // zero-width space: obliga a Mailgun a codificar el envio como utf-8 real (no ascii)
+// El nombre del remitente va entre comillas en el header From: los sectores traen
+// puntos ("Dpto.", "Div.") y por RFC 5322 un display-name sin comillas no puede
+// contener puntos — Outlook lo descarta y muestra la direccion pelada al abrir el
+// correo. Se limpian comillas, barras y saltos de linea (estos ultimos para que un
+// nombre cargado en la base no pueda inyectar headers).
+function nombreParaHeader(nombre) {
+  const limpio = String(nombre || '').replace(/[\r\n]+/g, ' ').replace(/["\\]/g, '').trim();
+  return limpio ? `"${limpio}"` : '';
+}
+
+async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre, mensajeBienvenida, asuntoOriginal) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = (mensajeBienvenida || `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`).replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? '<em>' + (asuntoOriginal || '(sin asunto)') + '</em>' : ticket); const asuntoAuto = 'Confirmación de ingreso'; const form = new FormData(); form.append('from', `${nombreParaHeader(empresaNombre || 'CentralWeb')} <${fromAddress}>`); form.append('to', toEmail); form.append('subject', asuntoAuto); const htmlParaEnvio = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8" /></head><body>${cuerpoHtml}<span style="display:none">\u200B</span></body></html>`; // zero-width space: obliga a Mailgun a codificar el envio como utf-8 real (no ascii)
     form.append('html', htmlParaEnvio); form.append('h:Reply-To', fromAddress); form.append('h:Content-Language', 'es'); const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form }); const mgJson = await mgResp.json().catch(() => ({})); if (!mgResp.ok) throw new Error(mgJson.message || 'Error enviando auto-respuesta'); return { mailgunId: mgJson.id || null, cuerpoHtml, asunto: asuntoAuto }; } function limpiarCuerpoEntrante(texto) {
   if (!texto) return '';
   let out = String(texto);
@@ -303,7 +313,7 @@ module.exports = async (req, res) => {
         caso_id: caso.id,
         tipo: 'caso_creado_por_email',
         data: { from: fromEmail, asunto } }) }); try { const sectorBandeja = subBandejaSector || (bandejas[0] && bandejas[0].sector) || null;
-    const remitenteDisplay = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
+    const remitenteDisplay = sectorBandeja ? `${sectorBandeja} - ${empresaNombre.toUpperCase()}` : empresaNombre.toUpperCase();
     const mensajeBienvenida = subBandejaMensaje || (bandejas[0] && bandejas[0].mensaje_bienvenida) || null;
     const autoResp = await enviarAutoRespuesta(destinatario, fromEmail, ticket, remitenteDisplay, mensajeBienvenida, asunto); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
   } catch (e) {
