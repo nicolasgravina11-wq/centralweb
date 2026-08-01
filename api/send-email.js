@@ -16,6 +16,16 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
 const MAILGUN_DOMAIN = 'cweb.novadgt.com';
 
+// El nombre del remitente va entre comillas en el header From: los sectores traen
+// puntos ("Dpto.", "Div.") y por RFC 5322 un display-name sin comillas no puede
+// contener puntos — Outlook lo descarta y muestra la direccion pelada al abrir el
+// correo. Se limpian comillas, barras y saltos de linea (estos ultimos para que un
+// nombre cargado en la base no pueda inyectar headers).
+function nombreParaHeader(nombre) {
+  const limpio = String(nombre || '').replace(/[\r\n]+/g, ' ').replace(/["\\]/g, '').trim();
+  return limpio ? `"${limpio}"` : '';
+}
+
 async function supabaseFetch(path, options = {}) {
   const headers = {
     apikey: SERVICE_KEY,
@@ -136,8 +146,8 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     partes.push(sigla);
     const fromAddress = `${partes.join('.')}@${MAILGUN_DOMAIN}`;
     const sectorBandeja = (bandeja && bandeja.sector) || null;
-    const remitenteNombre = sectorBandeja ? `${empresaNombre.toUpperCase()} - ${sectorBandeja}` : empresaNombre.toUpperCase();
-    const fromDisplay = `${remitenteNombre} <${fromAddress}>`;
+    const remitenteNombre = sectorBandeja ? `${sectorBandeja} - ${empresaNombre.toUpperCase()}` : empresaNombre.toUpperCase();
+    const fromDisplay = `${nombreParaHeader(remitenteNombre)} <${fromAddress}>`;
     const asuntoBase = asunto || `Re: ${caso.asunto || ''}`.trim();
     let asuntoFinal;
     if (asuntoBase.includes(caso.ticket)) {
