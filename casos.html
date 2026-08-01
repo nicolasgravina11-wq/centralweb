@@ -2547,7 +2547,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   // ════════════════════════════════
   //  MODAL NUEVO CASO
   // ════════════════════════════════
-  document.getElementById('btn-nuevo-caso').addEventListener('click', () => {
+  function abrirModalNuevoCaso() {
     ['nuevo-caso-nombre','nuevo-caso-apellido','nuevo-caso-email','nuevo-caso-asunto'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
@@ -2559,9 +2559,23 @@ setTimeout(_ocultarOverlayCarga, 4000);
     _nuevoCasoAttachFiles = [];
     document.getElementById('nuevo-caso-attach-list').innerHTML = '';
     document.getElementById('modal-nuevo').classList.add('open');
-  });
+  }
+  document.getElementById('btn-nuevo-caso').addEventListener('click', abrirModalNuevoCaso);
 
   let _nuevoCasoAttachFiles = [];
+
+  // El boton "Nuevo Caso" del detalle de un caso no puede abrir este modal (vive solo
+  // aca), asi que manda para esta pagina con ?nuevo=1 y lo abrimos al llegar. El
+  // parametro se saca de la URL para que recargar no lo vuelva a abrir.
+  (function _abrirNuevoCasoDesdeQuery() {
+    try {
+      const url = new URL(location.href);
+      if (url.searchParams.get('nuevo') !== '1') return;
+      url.searchParams.delete('nuevo');
+      history.replaceState({}, '', url.pathname + (url.search || '') + url.hash);
+      abrirModalNuevoCaso();
+    } catch (e) {}
+  })();
 
   function _onNuevoCasoAttach(input) {
     Array.from(input.files || []).forEach(f => _nuevoCasoAttachFiles.push(f));
