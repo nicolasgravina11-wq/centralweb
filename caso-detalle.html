@@ -365,6 +365,17 @@
     .tab-pane::-webkit-scrollbar { width: 4px; }
     .tab-pane::-webkit-scrollbar-thumb { background: var(--blue-200); border-radius: 2px; }
 
+    /* "Informacion personal" se queda con el alto sobrante y scrollea sola, asi
+       "Detalle del caso" (numero, estado, bandeja) queda siempre a la vista sin
+       tener que scrollear todo el panel. */
+    #tab-contacto { overflow: hidden; }
+    #tab-contacto > .panel-section { flex: 1 1 auto; min-height: 110px; overflow-y: auto; }
+    #tab-contacto > .case-section { flex: 0 0 auto; max-height: 55%; overflow-y: auto; }
+    #tab-contacto > .panel-section::-webkit-scrollbar,
+    #tab-contacto > .case-section::-webkit-scrollbar { width: 4px; }
+    #tab-contacto > .panel-section::-webkit-scrollbar-thumb,
+    #tab-contacto > .case-section::-webkit-scrollbar-thumb { background: var(--blue-200); border-radius: 2px; }
+
     /* Contact section */
     .panel-section {
       padding: 20px 18px;
