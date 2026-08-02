@@ -2243,6 +2243,55 @@ setTimeout(_ocultarOverlayCarga, 4000);
   // El acceso a admin.html es solo para administradores — simulado con "Ver como [usuario]".
   document.getElementById('config-menu-admin-item').style.display = ES_ADMIN ? '' : 'none';
 
+    async function mostrarBienvenidaSiCorresponde() {
+          try {
+                  if (!ES_ADMIN) return;
+                  if (localStorage.getItem('cw_bienvenida_vista')) return;
+                  const { data: empresaInfo } = await supabaseClient
+                    .from('empresas')
+                    .select('estado_suscripcion, trial_vence_en')
+                    .eq('id', EMPRESA_ID)
+                    .single();
+                  if (!empresaInfo || empresaInfo.estado_suscripcion !== 'trial') return;
+
+                  const venceTexto = empresaInfo.trial_vence_en
+                    ? new Date(empresaInfo.trial_vence_en).toLocaleDateString('es-AR')
+                            : null;
+                  const trialLinea = venceTexto
+                    ? 'Estás usando una prueba gratuita que vence el <b>' + venceTexto + '</b>. Mientras dure, tenés acceso a todo CentralWeb.'
+                            : 'Estás usando una prueba gratuita. Mientras dure, tenés acceso a todo CentralWeb.';
+
+                  const back = document.createElement('div');
+                  back.className = 'help-modal-backdrop open';
+                  back.innerHTML = `
+                          <div class="help-modal">
+                                    <div class="help-modal-header">
+                                                <div class="help-modal-title">¡Bienvenido a CentralWeb!</div>
+                                                            <button class="help-modal-close" id="bienvenida-cerrar-x">&times;</button>
+                                                                      </div>
+                                                                                <div class="help-modal-body">
+                                                                                            <p>${trialLinea}</p>
+                                                                                                        <p>Para que los correos de tu empresa empiecen a llegar como casos, entrá a <b>Configuración → Bandejas</b>, abrí una bandeja y configurá el reenvío en <b>"Configurar casilla de correo"</b>.</p>
+                                                                                                                  </div>
+                                                                                                                            <div class="help-modal-footer" style="padding:14px 22px;text-align:right;border-top:1px solid var(--border);">
+                                                                                                                                        <button class="btn" id="bienvenida-entendido" style="background:var(--blue-500);color:#fff;">Entendido</button>
+                                                                                                                                                  </div>
+                                                                                                                                                          </div>`;
+                  document.body.appendChild(back);
+                  back.onclick = function(e) { if (e.target === back) cerrarBienvenida(); };
+                  document.getElementById('bienvenida-cerrar-x').onclick = cerrarBienvenida;
+                  document.getElementById('bienvenida-entendido').onclick = cerrarBienvenida;
+                  function cerrarBienvenida() {
+                            localStorage.setItem('cw_bienvenida_vista', '1');
+                            back.remove();
+                  }
+          } catch (eBien) {
+                  console.error('No se pudo mostrar la bienvenida:', eBien.message);
+          }
+    }
+    mostrarBienvenidaSiCorresponde();
+  
+
   // Las sub-bandejas heredan el permiso de su bandeja padre (no se configuran aparte, ver admin.html).
   function tieneAccesoBandeja(key) {
     if (ES_ADMIN) return true;
