@@ -631,6 +631,9 @@
     .help-topic summary .chev { width: 15px; height: 15px; transition: transform .15s; color: var(--text-muted); flex-shrink: 0; }
     .help-topic[open] summary .chev { transform: rotate(90deg); }
     .help-topic-body { padding: 0 22px 15px 45px; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+    .proveedor-tab.active { background: var(--blue-600); color: #fff; border-color: var(--blue-600); }
+    .proveedor-instrucciones ol { margin: 0; padding-left: 18px; }
+    .proveedor-instrucciones li { margin-bottom: 8px; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -679,6 +682,16 @@
       </button>
     </div>
     <p class="hint">Cada bandeja obtiene su propia casilla (bandeja.sigla@cweb.novadgt.com).</p>
+        <details class="help-topic">
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>¿Cómo funciona la recepción de correo en CentralWeb?</summary>
+          <div class="help-topic-body">
+            CentralWeb no reemplaza la casilla de correo que ya usan. Cuando les llega un correo a la dirección que tienen publicada en su sitio, redes sociales o facturación, ese correo sigue llegando ahí exactamente igual que siempre — ustedes solo agregan una copia adicional hacia CentralWeb, para que se convierta automáticamente en un caso.
+            <br><br>
+            Eso significa que la dirección que sus clientes ya conocen nunca cambia, sin importar qué pase con CentralWeb en el futuro. CentralWeb no pide acceso a su dominio ni a su servidor de correo: solo recibe una copia de lo que ustedes decidan reenviarle.
+            <br><br>
+            Con esa copia, CentralWeb arma el caso, lo asigna, guarda el historial de la conversación y permite responder desde acá, sin que su casilla original deje de funcionar como siempre lo hizo. Toda la información de su empresa queda separada de la de cualquier otro cliente de CentralWeb.
+          </div>
+        </details>
     <div id="bandejas-listado"></div>
   </div>
 
@@ -854,6 +867,41 @@
         <input type="text" id="detalle-bandeja-input-sector" placeholder="ej. Dpto. de entradas y salidas generales" oninput="marcarCambiosBandeja(); actualizarPreviewFirmaDetalle();">
         <p class="hint" id="detalle-bandeja-sector-preview"></p>
       </div>
+
+            <div class="detalle-section">
+              <h3>Configurar casilla de correo</h3>
+              <p class="hint">Para que los correos que llegan a la casilla real de la empresa se conviertan en casos acá, hay que configurar un reenvío hacia esta dirección.</p>
+              <div class="domain-preview" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <b id="detalle-bandeja-correo-configurar"></b>
+                <button type="button" class="btn-cancel" onclick="copiarCorreoBandeja(this)">Copiar</button>
+              </div>
+              <div style="display:flex;gap:8px;margin:14px 0 12px;flex-wrap:wrap">
+                <button type="button" class="btn-cancel proveedor-tab active" data-proveedor="gmail" onclick="mostrarInstruccionesProveedor('gmail')">Gmail / Google Workspace</button>
+                <button type="button" class="btn-cancel proveedor-tab" data-proveedor="m365" onclick="mostrarInstruccionesProveedor('m365')">Microsoft 365 / Outlook</button>
+                <button type="button" class="btn-cancel proveedor-tab" data-proveedor="otro" onclick="mostrarInstruccionesProveedor('otro')">Otro proveedor</button>
+              </div>
+              <div id="instrucciones-gmail" class="proveedor-instrucciones">
+                <ol>
+                  <li>Entrá a <b>Configuración → Ver toda la configuración → Reenvío y POP/IMAP</b>.</li>
+                  <li>Hacé clic en <b>"Agregar una dirección de reenvío"</b> y pegá la dirección de arriba.</li>
+                  <li>Gmail va a mandar un código de confirmación a esa dirección — como esa dirección ya es de CentralWeb, <b>el código va a llegar como un caso nuevo</b>. Buscalo en la lista de casos, copiá el código y volvé a pegarlo en Gmail para confirmar.</li>
+                  <li>Una vez confirmado, elegí <b>"Reenviar una copia del correo entrante a"</b> y seleccioná la dirección.</li>
+                  <li>Decidí qué hacer con la copia que queda en Gmail: <b>mantenerla</b> (conservan un respaldo propio, pero van a tener que liberar espacio de vez en cuando) o <b>eliminarla automáticamente</b> (evita que la casilla se llene, pero CentralWeb pasa a ser el único lugar donde queda el historial completo).</li>
+                  <li>Guardá los cambios y mandá un correo de prueba para confirmar que aparece como caso nuevo en CentralWeb.</li>
+                </ol>
+              </div>
+              <div id="instrucciones-m365" class="proveedor-instrucciones" style="display:none">
+                <ol>
+                  <li>Entrá al <b>Centro de administración de Exchange</b> (admin.microsoft.com → Exchange).</li>
+                  <li>Buscá la casilla correspondiente y configurá una regla de reenvío hacia la dirección de arriba.</li>
+                  <li><b>Importante:</b> Microsoft 365 bloquea por defecto el reenvío automático a dominios externos por seguridad. Si el reenvío no funciona, pedile al sector de sistemas que revise la política antiphishing / reglas de flujo de correo y agregue una excepción para esta dirección.</li>
+                  <li>Mandá un correo de prueba y confirmá que aparece como caso nuevo en CentralWeb.</li>
+                </ol>
+              </div>
+              <div id="instrucciones-otro" class="proveedor-instrucciones" style="display:none">
+                <p class="hint">Buscá en la configuración de la casilla una opción de "reenvío" o "forwarding" y agregá la dirección de arriba como destino. Si el proveedor pide confirmar la dirección, el código de confirmación va a llegar como un caso nuevo en CentralWeb.</p>
+              </div>
+            </div>
 
       <div class="detalle-section">
         <h3>Mensaje de bienvenida</h3>
@@ -1385,6 +1433,24 @@ function rteInsertCaso(tipo) {
     return EMPRESA_SIGLA ? `${bandejaKey}.${EMPRESA_SIGLA}@cweb.novadgt.com` : `${bandejaKey}@(sigla sin definir)`;
   }
 
+        function mostrarInstruccionesProveedor(prov) {
+              document.querySelectorAll('.proveedor-instrucciones').forEach(el => el.style.display = 'none');
+              document.querySelectorAll('.proveedor-tab').forEach(el => el.classList.remove('active'));
+              const panel = document.getElementById('instrucciones-' + prov);
+              if (panel) panel.style.display = '';
+              const tab = document.querySelector('.proveedor-tab[data-proveedor="' + prov + '"]');
+              if (tab) tab.classList.add('active');
+        }
+
+        function copiarCorreoBandeja(btn) {
+              const texto = document.getElementById('detalle-bandeja-correo-configurar').textContent;
+              navigator.clipboard.writeText(texto).then(() => {
+                      const original = btn.textContent;
+                      btn.textContent = 'Copiado';
+                      setTimeout(() => { btn.textContent = original; }, 1500);
+              });
+        }
+
   let _empresaEditando = false;
 
   function renderEmpresa() {
@@ -1814,6 +1880,8 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-bandeja-nombre').textContent = `${ordenVisual(index)} ${b.nombre}`;
     document.getElementById('detalle-bandeja-correo').textContent = correoDeBandeja(b.key);
     document.getElementById('detalle-bandeja-correo-hint').textContent = correoDeBandeja(b.key);
+        document.getElementById('detalle-bandeja-correo-configurar').textContent = correoDeBandeja(b.key);
+        mostrarInstruccionesProveedor('gmail');
     document.getElementById('detalle-bandeja-input-nombre').value = b.nombre;
     document.getElementById('detalle-bandeja-input-nombre').disabled = !editando;
     document.getElementById('detalle-bandeja-input-sector').value = b.sector || '';
