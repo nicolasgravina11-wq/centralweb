@@ -257,6 +257,19 @@
       return;
     }
 
+            // Aviso de alta nueva + trial automatico (no bloquea el flujo si falla)
+        fetch('/api/registro-empresa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                          sigla,
+                          empresaNombre,
+                          adminNombre: nombre,
+                          adminApellido: apellido,
+                          adminEmail: email
+                })
+        }).catch(() => {});
+
     // Si el proyecto pide confirmar el email, todavia no hay sesion activa
     if (!data.session) {
       document.querySelector('.wrap').innerHTML = `
