@@ -1641,9 +1641,11 @@ function _leerConVencimiento(clave, maxAgeMs) {
 
   const MONTHS_HIST = {ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,oct:10,nov:11,dic:12};
   function _parseFechaHist(dateStr) {
-    const [d, m, y] = (dateStr || '').trim().split(' ');
-    if (!d || !m || !y || !MONTHS_HIST[m]) return null;
-    return new Date(parseInt(y,10), MONTHS_HIST[m] - 1, parseInt(d,10));
+    const parts = (dateStr || '').trim().split(' ').filter(p => p && p.toLowerCase() !== 'de');
+    const [d, m, y] = parts;
+    const mesKey = (m || '').toLowerCase().slice(0, 3);
+    if (!d || !mesKey || !y || !MONTHS_HIST[mesKey]) return null;
+    return new Date(parseInt(y,10), MONTHS_HIST[mesKey] - 1, parseInt(d,10));
   }
   // "Hoy" fijo del mock (consistente con las fechas de prueba de la app)
   const _HOY_HIST = new Date(2026, 5, 22);
@@ -1667,10 +1669,12 @@ function _leerConVencimiento(clave, maxAgeMs) {
       _setHistTabBadge(0);
       return;
     }
-    todos.sort((a, b) => (_parseFechaHist(b.date) || 0) - (_parseFechaHist(a.date) || 0));
+    const actual = todos.find(c => c.ticket === currentTicket);
+    const resto  = todos.filter(c => c.ticket !== currentTicket);
+      resto.sort((a, b) => (_parseFechaHist(b.date) || 0) - (_parseFechaHist(a.date) || 0));
     const recientes = [];
     const antiguos = [];
-    todos.forEach(c => {
+    resto.forEach(c => {
       const fecha = _parseFechaHist(c.date);
       const diasAtras = fecha ? Math.floor((_HOY_HIST - fecha) / 86400000) : 0;
       (diasAtras <= 30 ? recientes : antiguos).push(c);
@@ -1728,10 +1732,11 @@ function _leerConVencimiento(clave, maxAgeMs) {
       </div>`;
     };
 
-    let html = `<div class="hist-header">Casos de ${todos[0].fromName} (últimos 30 días)</div>`;
+    let html = `<div class="hist-header">Casos de ${(actual || todos[0]).fromName} (últimos 30 días)</div>`;
+    html += actual ? renderItem(actual) : '';
     html += recientes.length
       ? recientes.map(renderItem).join('')
-      : `<div style="padding:14px;font-size:11.5px;color:var(--text-muted);text-align:center">Sin casos en los últimos 30 días</div>`;
+      : (actual ? '' : `<div style="padding:14px;font-size:11.5px;color:var(--text-muted);text-align:center">Sin casos en los últimos 30 días</div>`);
     if (antiguos.length) {
       html += `<button id="hist-ver-antiguos-btn" onclick="_toggleHistAntiguos()" style="width:100%;padding:9px;font-size:11.5px;font-weight:600;color:var(--blue-600);background:var(--blue-50);border:none;border-top:1px solid var(--blue-100);cursor:pointer;font-family:inherit">
         ${_histMostrarAntiguos ? 'Ocultar casos anteriores' : `Ver casos más antiguos (${antiguos.length})`}
@@ -1739,7 +1744,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
       if (_histMostrarAntiguos) html += antiguos.map(renderItem).join('');
     }
     pane.innerHTML = html;
-    _setHistTabBadge(recientes.length);
+    _setHistTabBadge(recientes.length + (actual ? 1 : 0));
   }
 
   function _toggleHistAntiguos() {
