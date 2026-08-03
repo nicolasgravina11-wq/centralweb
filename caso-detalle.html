@@ -1647,8 +1647,8 @@ function _leerConVencimiento(clave, maxAgeMs) {
     if (!d || !mesKey || !y || !MONTHS_HIST[mesKey]) return null;
     return new Date(parseInt(y,10), MONTHS_HIST[mesKey] - 1, parseInt(d,10));
   }
-  // "Hoy" fijo del mock (consistente con las fechas de prueba de la app)
-  const _HOY_HIST = new Date(2026, 5, 22);
+  // "Hoy" real, para clasificar recientes/antiguos correctamente
+  const _HOY_HIST = new Date();
 
   let _histMostrarAntiguos = false;
 
