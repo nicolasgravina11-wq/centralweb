@@ -1234,6 +1234,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   // iniciado sesión antes en este mismo navegador (localStorage es por
   // dominio, no por usuario). Si el usuario logueado cambió, limpiamos
   // todo el estado visual "cw_*" antes de que se lea/renderice.
+  localStorage.removeItem('cw_read');   // resto de cuando el leido era local
   const _cwUsuarioGuardado = localStorage.getItem('cw_usuario_activo');
   if (_cwUsuarioGuardado !== CURRENT_USER_ID) {
     Object.keys(localStorage)
@@ -1345,10 +1346,6 @@ setTimeout(_ocultarOverlayCarga, 4000);
     return _bandejaKeyReal(c);
   }
 
-  const _readSetInicial = (() => {
-    try { return new Set(JSON.parse(localStorage.getItem('cw_read') || '[]')); } catch { return new Set(); }
-  })();
-
   // Reconciliar el mapa local de estados con el estado real de Supabase.
   // Sin esto, un caso reabierto por el backend (ej: respuesta del cliente a un caso cerrado)
   // seguia mostrandose como "Cerrado" indefinidamente porque applyStatusMap() confiaba
@@ -1395,21 +1392,14 @@ setTimeout(_ocultarOverlayCarga, 4000);
     }, 15000);
   }
 
-  function aplicarLeidos() {
-    // No-op: el estado leido ahora es global (Supabase, columna leido) y se aplica
-    // directamente al renderizar cada fila (ver CASOS_REALES / unread: !c.leido).
-  }
   function reabrirPorRespuesta(ticket) {
     // Cambia estado a abierto
     const map = getStatusMap();
     map[ticket] = 'abierto';
     saveStatusMap(map);
 
-    // Marca como no leído
-    const read = getReadSet();
-    read.delete(ticket);
-    localStorage.setItem('cw_read', JSON.stringify([...read]));
-
+    // Marca como no leído en pantalla. No se escribe en Supabase: el backend
+    // (api/inbound-email.js) ya puso leido=false al entrar la respuesta.
     // Actualiza DOM si la fila ya está renderizada
     const tr = tbody.querySelector(`tr[data-ticket="${ticket}"]`);
     if (tr) {
@@ -1444,9 +1434,8 @@ setTimeout(_ocultarOverlayCarga, 4000);
   }
 
   // Corre tanto en carga normal como al volver desde bfcache
-  aplicarLeidos();
   aplicarUltimoVisto();
-  window.addEventListener('pageshow', () => { procesarReaperturasPendientes(); aplicarLeidos(); aplicarUltimoVisto(); scrollToLastIfPending(); });
+  window.addEventListener('pageshow', () => { procesarReaperturasPendientes(); aplicarUltimoVisto(); scrollToLastIfPending(); });
 
   // ════════════════════════════════
   //  DATA (real, desde Supabase — ver CASOS_REALES más arriba)
@@ -1489,7 +1478,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
     const _accesoOk = tieneAccesoCaso(d.subBandeja, d.realBandeja);
     const _rowClasses = [d.unread ? 'unread' : '', _accesoOk ? '' : 'sin-acceso-bandeja'].filter(Boolean).join(' ');
     return `
-      <tr${_rowClasses ? ` class="${_rowClasses}"` : ''} data-status="${d.status}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-real-bandeja="${d.realBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
+      <tr${_rowClasses ? ` class="${_rowClasses}"` : ''} data-status="${d.status}" data-id="${d._id || ''}" data-ticket="${d.ticket}" data-bandeja="${d.subBandeja}" data-real-bandeja="${d.realBandeja}" data-ts="${dateToTs(d.date, d.time)}" style="cursor:pointer">
         <td class="td-check" onclick="_toggleRowCheckbox(event, this)"><input type="checkbox" onclick="event.stopPropagation()" /></td>
         <td class="td-icon"><div class="mail-icon ${d.unread ? 'unread' : 'read'}">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
@@ -1617,7 +1606,6 @@ setTimeout(_ocultarOverlayCarga, 4000);
       document.getElementById('scroll-spinner').style.display = 'none';
       loading = false;
       applyStatusMap();
-      aplicarLeidos();
       aplicarUltimoVisto();
       updateShownCount();
       sortRows();
@@ -2182,19 +2170,8 @@ setTimeout(_ocultarOverlayCarga, 4000);
   // ════════════════════════════════
   //  READ STATE (persiste en localStorage)
   // ════════════════════════════════
-  function getReadSet() {
-    try { return new Set(JSON.parse(localStorage.getItem('cw_read') || '[]')); }
-    catch { return new Set(); }
-  }
-  function markTicketRead(ticket) {
-    const s = getReadSet();
-    s.add(ticket);
-    localStorage.setItem('cw_read', JSON.stringify([...s]));
-  }
-  function applyReadState() {
-    // No-op: el estado leido ahora es global (Supabase, columna leido).
-    updateUnreadBadge();
-  }
+  // El estado de leido vive en Supabase (centralweb_casos.leido) y se aplica al
+  // renderizar cada fila (ver CASOS_REALES / unread: !c.leido). Ya no hay copia local.
 
   // ════════════════════════════════
   //  ROW CLICK → DETAIL
@@ -2231,9 +2208,21 @@ setTimeout(_ocultarOverlayCarga, 4000);
     }
     setActiveTab(caso.ticket);
 
-    // Marcar como leído (local + Supabase, global para todos los usuarios)
-    if (caso.ticket) markTicketRead(caso.ticket);
-    if (caso.ticket) { try { await supabaseClient.from('centralweb_casos').update({ leido: true }).eq('ticket', caso.ticket); } catch (eLeido) {} }
+    // Marcar como leido en Supabase (es global: lo ven todos los usuarios de la empresa).
+    // Se filtra por id y por empresa_id: el ticket solo es unico DENTRO de una empresa,
+    // asi que el filtro por ticket suelto podia alcanzar el caso homonimo de otra.
+    // Si falla no se revierte ni se avisa, a diferencia del estado y la bandeja: aca no
+    // hay mentira que deshacer. La fila se repinta desde c.leido y vuelve a verse como
+    // no leida, que es la verdad. cwSyncCritico deja el motivo en la consola.
+    const _casoId = tr.dataset.id;
+    if (_casoId) {
+      await cwSyncCritico(
+        supabaseClient.from('centralweb_casos').update({ leido: true }).eq('id', _casoId).eq('empresa_id', EMPRESA_ID),
+        'marcar caso como leido'
+      );
+    } else {
+      console.error('CentralWeb: la fila no tiene id, no se pudo marcar como leida:', caso.ticket);
+    }
     tr.classList.remove('unread');
     tr.querySelector('.mail-icon')?.classList.replace('unread', 'read');
     updateUnreadBadge();
@@ -3050,7 +3039,7 @@ setTimeout(_ocultarOverlayCarga, 4000);
   applyBandejaMap();
   applyStatusMap();
   applyAsignadoMap();
-  applyReadState();
+  updateUnreadBadge();
   _persistAllCases();
   setActiveTab('bandeja');
   renderTabs();
