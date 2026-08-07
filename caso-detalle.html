@@ -459,10 +459,13 @@
     /* Chevron del boton de estado. Va en ::after y no como elemento del DOM porque
        el badge se reescribe con textContent en varios lugares (y eso borraria un
        hijo), y ademas el PDF lee su textContent para sacar el estado. */
+    /* Ancho fijo para que no salte al cambiar de estado: "Abierto" (109px),
+       "Cerrado" (114px) y "En espera" (125px) median distinto. */
+    #status-badge-detail { min-width: 150px; padding: 9px 14px; }
     #status-badge-detail::after {
       content: '';
       width: 5px; height: 5px;
-      margin-left: 3px;
+      margin-left: auto;
       border-right: 2px solid currentColor;
       border-bottom: 2px solid currentColor;
       transform: translateY(-2px) rotate(45deg);
