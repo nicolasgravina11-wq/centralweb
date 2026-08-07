@@ -1951,11 +1951,90 @@ setTimeout(_ocultarOverlayCarga, 4000);
     _syncBandejaCambios(checked);
   }
 
-  function _syncBandejaCambios(checked) { const porDestino = {}; checked.forEach(c => { const tr = c.closest('tr'); const ticket = tr && tr.dataset.ticket; if (!ticket) return; const destino = tr.dataset.bandeja; (porDestino[destino] = porDestino[destino] || []).push(ticket); }); Object.entries(porDestino).forEach(([destino, tks]) => { const resuelto = _bandejaIdPorKey[destino]; const patch = resuelto ? { bandeja_id: resuelto.id, sub_bandeja_id: resuelto.subId, asignado_user_id: null } : (_esUsuarioKey(destino) ? { asignado_user_id: destino === 'user_ng' ? CURRENT_USER_ID : destino } : null); if (!patch) return; supabaseClient.from('centralweb_casos').update(patch).eq('empresa_id', EMPRESA_ID).in('ticket', tks).then(({ error }) => { if (error) console.error('No se pudo sincronizar la bandeja en Supabase:', error); }); }); } function transferCases(targetBandeja) {
+  function _snapBandejas(checked) {
+    // Foto de todo lo que toca una transferencia, para poder deshacerla si no se guarda.
+    const filas = {}, eventos = {};
+    checked.forEach(c => {
+      const tr = c.closest('tr');
+      if (!tr || !tr.dataset.ticket) return;
+      filas[tr.dataset.ticket] = tr.dataset.bandeja;
+      eventos[tr.dataset.ticket] = localStorage.getItem('cw_transfers_' + tr.dataset.ticket);
+    });
+    return {
+      filas, eventos,
+      bandeja:  JSON.stringify(getBandejaMap()),
+      asignado: JSON.stringify(_asignadoMap),
+      display:  JSON.stringify(_bandejaDisplayMap),
+      prev:     JSON.stringify(_prevBandejaMap)
+    };
+  }
+
+  function _revertirBandejas(snap) {
+    try {
+      const bandeja = JSON.parse(snap.bandeja);
+      saveBandejaMap(bandeja);
+      _asignadoMap = JSON.parse(snap.asignado);            saveAsignadoMap();
+      _bandejaDisplayMap = JSON.parse(snap.display);       saveBandejaDisplayMap();
+      _prevBandejaMap = JSON.parse(snap.prev);             savePrevBandejaMap();
+      Object.keys(snap.filas).forEach(tk => {
+        const tr = document.querySelector(`tbody tr[data-ticket="${tk}"]`);
+        if (!tr) return;
+        tr.dataset.bandeja = snap.filas[tk] || '';
+        const cell = tr.querySelector('.td-asignado');
+        if (cell) cell.innerHTML = buildAsignadoCell(tk);
+        try {
+          const g = JSON.parse(sessionStorage.getItem('cw_casos_en_gracia') || '{}');
+          delete g[tk];
+          sessionStorage.setItem('cw_casos_en_gracia', JSON.stringify(g));
+        } catch (e) {}
+        // El evento de timeline tambien se deshace: la transferencia no ocurrio.
+        const ev = snap.eventos[tk];
+        if (ev === null) localStorage.removeItem('cw_transfers_' + tk);
+        else localStorage.setItem('cw_transfers_' + tk, ev);
+      });
+      const t = document.getElementById('toast');
+      if (t) t.classList.remove('show');   // el toast de exito ya no aplica
+      applyVisibility(); recountFilters(); updateBandejaCounts(); _persistAllCases();
+    } catch (e) { console.error('CentralWeb: no se pudo revertir la transferencia en pantalla:', e); }
+  }
+
+  async function _syncBandejaCambios(checked, snap) {
+    const porDestino = {};
+    checked.forEach(c => {
+      const tr = c.closest('tr');
+      const ticket = tr && tr.dataset.ticket;
+      if (!ticket) return;
+      (porDestino[tr.dataset.bandeja] = porDestino[tr.dataset.bandeja] || []).push(ticket);
+    });
+    let ok = true;
+    for (const destino of Object.keys(porDestino)) {
+      const tks = porDestino[destino];
+      const resuelto = _bandejaIdPorKey[destino];
+      const patch = resuelto
+        ? { bandeja_id: resuelto.id, sub_bandeja_id: resuelto.subId, asignado_user_id: null }
+        : (_esUsuarioKey(destino) ? { asignado_user_id: destino === 'user_ng' ? CURRENT_USER_ID : destino } : null);
+      if (!patch) {
+        // Antes esto era un `return` mudo: la fila se movia en pantalla y en la base no pasaba nada.
+        console.error('CentralWeb: destino de transferencia no reconocido:', destino);
+        ok = false;
+        continue;
+      }
+      const bien = await cwSyncCritico(
+        supabaseClient.from('centralweb_casos').update(patch).eq('empresa_id', EMPRESA_ID).in('ticket', tks),
+        'transferencia de casos'
+      );
+      if (!bien) ok = false;
+    }
+    if (!ok) {
+      if (snap) _revertirBandejas(snap);
+      cwAvisarFalloSync('No se pudo guardar la transferencia; se deshizo en pantalla.');
+    }
+  } function transferCases(targetBandeja) {
     const checked = getRowChecks().filter(c => c.checked);
     if (!checked.length) { showToast('Seleccioná al menos un caso'); return; }
     const map = getBandejaMap();
     const isUser = _esUsuarioKey(targetBandeja);
+    const _snap = _snapBandejas(checked);   // antes de mutar nada, para poder deshacer
     checked.forEach(c => {
       const tr = c.closest('tr');
       const ticket = tr.dataset.ticket;
@@ -1995,16 +2074,18 @@ setTimeout(_ocultarOverlayCarga, 4000);
     updateBandejaCounts();
     clearSelection();
     _persistAllCases();
-    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} transferido${checked.length > 1 ? 's' : ''} a ${bandejaLabels[targetBandeja]}`); _syncBandejaCambios(checked);
+    showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} transferido${checked.length > 1 ? 's' : ''} a ${bandejaLabels[targetBandeja]}`); _syncBandejaCambios(checked, _snap);
   }
 
-  function bulkEstado(newStatus) {
+  async function bulkEstado(newStatus) {
     const checked = getRowChecks().filter(c => c.checked);
     if (!checked.length) { showToast('Seleccioná al menos un caso'); return; }
     const map = getStatusMap();
     const tickets = [];
+    const previos = {};   // ticket -> estado anterior, para revertir si no se guarda
     checked.forEach(c => {
       const tr = c.closest('tr');
+      if (tr.dataset.ticket) previos[tr.dataset.ticket] = tr.dataset.status;
       tr.dataset.status = newStatus;
       tr.querySelector('td:nth-child(5)').innerHTML = badgeMap[newStatus];
       if (tr.dataset.ticket) { map[tr.dataset.ticket] = newStatus; tickets.push(tr.dataset.ticket); }
@@ -2017,11 +2098,40 @@ setTimeout(_ocultarOverlayCarga, 4000);
     clearSelection();
     _persistAllCases();
     showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} marcado${checked.length > 1 ? 's' : ''} como ${newStatus}`);
-    // Guarda el cambio de estado en Supabase (no bloquea la UI, que ya se actualizó arriba)
-    if (tickets.length) {
-      supabaseClient.from('centralweb_casos').update({ estado: newStatus }).eq('empresa_id', EMPRESA_ID).in('ticket', tickets)
-        .then(({ error }) => { if (error) console.error('No se pudo actualizar el estado en Supabase:', error); });
-    }
+    // Guarda el cambio en Supabase y CONFIRMA que se aplico. Si no se guardo,
+    // deshace la pantalla y el localStorage: mostrar un estado que la base no
+    // tiene es peor que no haber hecho el cambio.
+    if (!tickets.length) return;
+    const ok = await cwSyncCritico(
+      supabaseClient.from('centralweb_casos').update({ estado: newStatus }).eq('empresa_id', EMPRESA_ID).in('ticket', tickets),
+      'estado de casos'
+    );
+    if (ok) return;
+    const revertido = getStatusMap();
+    tickets.forEach(tk => {
+      const previo = previos[tk];
+      if (previo) revertido[tk] = previo; else delete revertido[tk];
+      const tr = document.querySelector(`tbody tr[data-ticket="${tk}"]`);
+      if (tr && previo) {
+        tr.dataset.status = previo;
+        const celda = tr.querySelector('td:nth-child(5)');
+        if (celda && badgeMap[previo]) celda.innerHTML = badgeMap[previo];
+      }
+      if (newStatus === 'cerrado') {
+        try {
+          const g = JSON.parse(sessionStorage.getItem('cw_cierre_en_gracia') || '{}');
+          delete g[tk];
+          sessionStorage.setItem('cw_cierre_en_gracia', JSON.stringify(g));
+        } catch (e) {}
+      }
+    });
+    saveStatusMap(revertido);
+    const _t = document.getElementById('toast');
+    if (_t) _t.classList.remove('show');   // el toast de exito ya no aplica
+    applyVisibility();
+    recountFilters();
+    _persistAllCases();
+    cwAvisarFalloSync('No se pudo guardar el cambio de estado; se deshizo en pantalla.');
   }
 
   function applyStatusMap() {
