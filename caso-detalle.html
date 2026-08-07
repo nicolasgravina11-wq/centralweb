@@ -2995,6 +2995,9 @@ function openNote() {
             <textarea class="compose-inline-ta" placeholder="Escribí tu nota acá…"></textarea>
             <div class="compose-inline-attachbar" id="nota-attachbar" style="padding:8px 16px 0">
               <div class="toolbar-attach-row">
+                <button class="toolbar-at-btn" style="margin-right:8px" onmousedown="event.preventDefault()" onclick="_openAtRespuestasNota(this)" title="Respuestas prediseñadas">
+                  @ Respuestas
+                </button>
                 <button class="toolbar-attach-btn files" title="Adjuntar archivos" onmousedown="event.preventDefault()" onclick="document.getElementById('nota-file-input').click()">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                   Adjuntar archivos
@@ -3710,7 +3713,43 @@ function openNote() {
     return el;
   }
 
+  // La nota es un <textarea> de texto plano, asi que no sirve Selection/Range:
+  // se mira directamente el value y el cursor.
+  function _checkMentionTriggerTextarea(ta) {
+    const pos = ta.selectionStart;
+    const match = ta.value.slice(0, pos).match(/@([a-z0-9]*)$/i);
+    if (!match) { _hideMentionDropdown(); return; }
+    const query = match[1].toLowerCase();
+    const respuestas = _getRespuestasAutomaticas().filter(r => r.codigo.includes(query));
+    _showMentionDropdown(ta, null, pos, match[0].length, query, respuestas);
+  }
+
+  // La plantilla puede tener HTML; en una nota entra como texto plano, con el chip
+  // "N° de caso" (o el de asunto) ya reemplazado por los datos del caso abierto.
+  function _plantillaComoTextoPlano(respuesta) {
+    let ticket = '', asuntoCaso = '';
+    try { const _ca = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}'); ticket = _ca.ticket || ''; asuntoCaso = _ca.subject || ''; } catch (err) {}
+    const html = (respuesta.texto || '').replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? (asuntoCaso || '(sin asunto)') : ticket);
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|tr)>/gi, '</$1>\n');
+    return (tmp.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  function _openAtRespuestasNota(btn) {
+    const cont = (btn && btn.closest('.timeline-entry')) || document;
+    const ta = cont.querySelector('.compose-inline-ta');
+    if (!ta) return;
+    ta.focus();
+    setTimeout(() => {
+      const pos = ta.selectionStart;
+      ta.value = ta.value.slice(0, pos) + '@' + ta.value.slice(pos);
+      ta.setSelectionRange(pos + 1, pos + 1);
+      _checkMentionTriggerTextarea(ta);
+    }, 0);
+  }
+
   function _checkMentionTrigger(editable) {
+    if (editable && editable.tagName === 'TEXTAREA') { _checkMentionTriggerTextarea(editable); return; }
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) { _hideMentionDropdown(); return; }
     const range = sel.getRangeAt(0);
@@ -3766,6 +3805,18 @@ function openNote() {
     if (!respuesta) return;
     const { node, offset, matchLen, editable } = _mentionContext;
 
+    if (editable && editable.tagName === 'TEXTAREA') {
+      const texto = _plantillaComoTextoPlano(respuesta);
+      const antes = editable.value.slice(0, offset - matchLen);
+      const despues = editable.value.slice(offset);
+      editable.value = antes + texto + despues;
+      const cursor = (antes + texto).length;
+      editable.focus();
+      editable.setSelectionRange(cursor, cursor);
+      _hideMentionDropdown();
+      return;
+    }
+
     // Quita el "@query" recién tipeado y deja el cursor en su lugar
     node.textContent = node.textContent.slice(0, offset - matchLen) + node.textContent.slice(offset);
     const sel = window.getSelection();
@@ -3789,15 +3840,21 @@ function openNote() {
     _hideMentionDropdown();
   }
 
+  function _editableDeMenciones(target) {
+    if (!target || !target.closest) return null;
+    if (target.matches && target.matches('.compose-inline-ta')) return target;
+    return target.closest('.compose-editable');
+  }
+
   document.addEventListener('input', e => {
-    const editable = e.target.closest && e.target.closest('.compose-editable');
+    const editable = _editableDeMenciones(e.target);
     if (!editable) { return; }
     _checkMentionTrigger(editable);
   });
 
   document.addEventListener('keydown', e => {
     if (!_mentionDropdownEl || _mentionDropdownEl.style.display !== 'flex') return;
-    if (!e.target.closest || !e.target.closest('.compose-editable')) return;
+    if (!_editableDeMenciones(e.target)) return;
     const items = _mentionDropdownEl.querySelectorAll('.mention-item');
     if (e.key === 'ArrowDown') {
       e.preventDefault();
