@@ -1707,7 +1707,8 @@
       const displayMap = JSON.parse(localStorage.getItem('cw_bandeja_display_map') || '{}');
       const asignadoMap = JSON.parse(localStorage.getItem('cw_asignado_map') || '{}');
       const detailVals = document.querySelectorAll('.detail-val');
-      const dk = displayMap[snap.ticket] || '';
+      let dk = displayMap[snap.ticket] || '';
+      if (!dk) { try { dk = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}').bandeja || ''; } catch (e) {} }
       if (detailVals[2]) detailVals[2].textContent = _bandejaLabelsDetail[dk] || dk;
       const asignadoVal = document.getElementById('detail-asignado');
       if (asignadoVal) {
@@ -4839,6 +4840,7 @@ function openNote() {
         ? _userNamesDetail[targetBandeja] : (_bandejaLabelsDetail[targetBandeja] || targetBandeja));
       const ev  = _saveTransferEvent(c.ticket, (!currentBandeja ? 'Sin bandeja' : (_esUsrKeyDetail(currentBandeja) ? (_userNamesDetail[currentBandeja] || currentBandeja) : (_bandejaLabelsDetail[currentBandeja] || currentBandeja))), destinoLabel, window._CURRENT_USER_NAME_REAL);
       const el  = _buildTransferEntry(ev);
+      if (window.__snapTransfer) window.__snapTransfer.el = el;   // para poder quitarlo si no se guarda
       el.classList.add('timeline-change');
       const changesOpen = document.getElementById('toggle-changes-btn')?.dataset.open === '1';
       if (!changesOpen) el.style.display = 'none';
