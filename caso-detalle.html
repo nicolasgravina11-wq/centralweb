@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CentralWeb — Caso #10482</title>
+  <title>CentralWeb</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1389,15 +1389,15 @@
           <div class="panel-section-title">Información personal</div>
           <div class="field-row">
             <div class="field-label">Nombre</div>
-            <input class="field-input" type="text" value="María" />
+            <input class="field-input" type="text" value="" />
           </div>
           <div class="field-row">
             <div class="field-label">Apellido</div>
-            <input class="field-input" type="text" value="González" />
+            <input class="field-input" type="text" value="" />
           </div>
           <div class="field-row">
             <div class="field-label">Email</div>
-            <input class="field-input" type="email" value="mgonzalez@empresa.com" />
+            <input class="field-input" type="email" value="" />
           </div>
           <div class="field-row">
             <div class="field-label">Teléfono</div>
@@ -1412,7 +1412,7 @@
           <div class="case-section-header">
             <div class="case-section-header-left">
               <span class="case-section-label">Detalle del caso</span>
-              <span class="ticket-chip">#10482</span>
+              <span class="ticket-chip"></span>
             </div>
             <button class="print-btn" onclick="_imprimirCaso()" title="Generar PDF del caso">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1424,7 +1424,7 @@
           </div>
           <div class="detail-row">
             <span class="detail-key">Asunto</span>
-            <span class="detail-val">Error en facturación — cargo duplicado</span>
+            <span class="detail-val"></span>
           </div>
           <div class="detail-row" style="position:relative">
             <span class="detail-key">Estado</span>
@@ -1502,14 +1502,12 @@
                   </div>
                   <div class="email-addr-tooltip" id="incoming-tooltip">
                     <div class="tt-row"><span class="tt-label">De:</span><span class="tt-val" id="email-from-addr"></span></div>
-                    <div class="tt-row"><span class="tt-label">Para:</span><span class="tt-val" id="email-to-addr">soporte@empresa.com</span></div>
+                    <div class="tt-row"><span class="tt-label">Para:</span><span class="tt-val" id="email-to-addr"></span></div>
                   </div>
                 </div>
-                <div class="email-date">13 jun 2026 · 09:14</div>
+                <div class="email-date"></div>
               </div>
-              <div class="email-body" id="incoming-email-body">
-                Estimados, me comunico para informar que detecté un cargo duplicado en mi cuenta correspondiente al mes de junio. El monto de $12.500 fue debitado dos veces el día 10/06/2026. Solicito la revisión y el reintegro del monto cobrado de más a la brevedad posible. Quedo a disposición ante cualquier consulta.
-              </div>
+              <div class="email-body" id="incoming-email-body"></div>
               <div class="email-attachments" id="static-attachments"></div>
             </div>
           </div>
@@ -1543,7 +1541,7 @@
                     <div class="tt-row"><span class="tt-label">Para:</span><span class="tt-val" id="auto-reply-to-email"></span></div>
                   </div>
                 </div>
-                <div class="email-date">13 jun 2026 · 09:15</div>
+                <div class="email-date"></div>
               </div>
               <div class="email-body" id="auto-reply-body" style="color:var(--text-muted);font-style:italic">
                 <strong style="font-style:normal;color:var(--text-secondary)">Respuesta Automática — Caso <span class="auto-ticket-num"></span></strong><br><br>
@@ -1557,7 +1555,7 @@
         <div class="timeline-entry">
           <div class="timeline-marker" style="width:28px;flex-shrink:0"></div>
           <div class="action-bar" id="action-bar" style="flex:1;margin:0">
-          <button class="action-btn reply-action" onclick="openCompose('María González', 'mgonzalez@empresa.com')">
+          <button class="action-btn reply-action" onclick="openCompose('', '')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
             Responder
           </button>
@@ -3044,6 +3042,10 @@ function openNote() {
   // serializaba antes de que volviera el insert, el dbId quedaba siempre en null y
   // borrar una nota la sacaba de la pantalla pero no de la base: reaparecia al
   // recargar. El id real de la fila se guarda ahora en el DOM (data-db-id).
+  // Las notas ya no se guardan en localStorage: se limpian las claves que hayan
+  // quedado de la version anterior para no dejar rastros en la maquina.
+  try { Object.keys(localStorage).filter(k => k.startsWith('cw_notas_')).forEach(k => localStorage.removeItem(k)); } catch (eLimpieza) {}
+
   function _dbIdDeNota(noteId) {
     const el = document.getElementById(noteId);
     if (el && el.dataset && el.dataset.dbId) return el.dataset.dbId;
@@ -3694,7 +3696,7 @@ function openNote() {
           const adjuntos = _miAdj.adjuntos || [];
           _renderAttachmentsConZip(container, adjuntos.map(name => ({ name, size: '' })));
     } else {
-      _renderAttachmentsConZip(container, [{ name:'extracto_junio.pdf', size:'284 KB' }, { name:'captura_cargo.png', size:'96 KB' }]);
+      _renderAttachmentsConZip(container, []);
     }
   }, 0);
 
