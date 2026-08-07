@@ -456,6 +456,22 @@
     .badge-sm.cerrado  { background: #cbd5e1; color: #1e293b; }
     .badge-sm.cerrado::before { background: #64748b; }
 
+    /* Chevron del boton de estado. Va en ::after y no como elemento del DOM porque
+       el badge se reescribe con textContent en varios lugares (y eso borraria un
+       hijo), y ademas el PDF lee su textContent para sacar el estado. */
+    #status-badge-detail::after {
+      content: '';
+      width: 5px; height: 5px;
+      margin-left: 3px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: translateY(-2px) rotate(45deg);
+      opacity: .6;
+      flex-shrink: 0;
+      transition: transform .15s;
+    }
+    #status-badge-detail.menu-abierto::after { transform: translateY(1px) rotate(-135deg); }
+
     .detail-row {
       display: flex; align-items: flex-start; gap: 8px;
       padding: 11px 0; border-bottom: 1px solid var(--blue-50);
@@ -2719,7 +2735,15 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
 
   function toggleStatusMenu() {
     const menu = document.getElementById('status-menu-detail');
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    _setMenuEstadoAbierto(menu.style.display === 'none');
+  }
+
+  // El chevron apunta para arriba mientras el menu esta abierto.
+  function _setMenuEstadoAbierto(abierto) {
+    const menu = document.getElementById('status-menu-detail');
+    const badge = document.getElementById('status-badge-detail');
+    if (menu) menu.style.display = abierto ? 'block' : 'none';
+    if (badge) badge.classList.toggle('menu-abierto', abierto);
   }
 
   // Margen de error al cerrar: sigue apareciendo en la bandeja (ver casos.html)
@@ -2759,7 +2783,7 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
       document.getElementById('action-bar').closest('.timeline-entry').before(el);
       _renderHistorico(c.ticket, c.fromEmail);
     } catch(e) {}
-    document.getElementById('status-menu-detail').style.display = 'none';
+    _setMenuEstadoAbierto(false);
   }
 
   function _currentEstadoActual() {
@@ -2803,7 +2827,7 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
 
   document.addEventListener('click', e => {
     if (!e.target.closest('#status-badge-detail') && !e.target.closest('#status-menu-detail')) {
-      document.getElementById('status-menu-detail').style.display = 'none';
+      _setMenuEstadoAbierto(false);
     }
   });
 
