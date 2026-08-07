@@ -4467,12 +4467,19 @@ function openNote() {
     if (!label) return;
     let chip = label.querySelector('.envio-chip');
     if (!chip) { chip = document.createElement('span'); chip.className = 'envio-chip'; label.appendChild(chip); }
-    if (estado === 'ok') { chip.remove(); return; }
+    // Mientras el correo esta en vuelo, la tarjeta se ve atenuada: el chip de arriba
+    // solo no se notaba. Se aclara al confirmarse el envio (o al fallar, para que el
+    // error se lea bien).
+    const card = entry.querySelector('.email-card');
+    if (card) card.style.transition = 'opacity .25s';
+    if (estado === 'ok') { chip.remove(); if (card) card.style.opacity = ''; return; }
     if (estado === 'enviando') {
+      if (card) card.style.opacity = '.45';
       chip.style.cssText = 'margin-left:8px;font-size:11px;font-weight:600;color:var(--text-muted);display:inline-flex;align-items:center;gap:5px';
       chip.textContent = 'Enviando…';
       return;
     }
+    if (card) card.style.opacity = '';
     chip.style.cssText = 'margin-left:8px;font-size:11px;font-weight:700;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:2px 7px;display:inline-flex;align-items:center;gap:6px';
     chip.textContent = 'No se pudo enviar' + (detalle ? ': ' + detalle : '');
     if (typeof reintentar === 'function') {
