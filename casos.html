@@ -1953,10 +1953,15 @@ setTimeout(_ocultarOverlayCarga, 4000);
 
   function _snapBandejas(checked) {
     // Foto de todo lo que toca una transferencia, para poder deshacerla si no se guarda.
-    const filas = {};
-    checked.forEach(c => { const tr = c.closest('tr'); if (tr && tr.dataset.ticket) filas[tr.dataset.ticket] = tr.dataset.bandeja; });
+    const filas = {}, eventos = {};
+    checked.forEach(c => {
+      const tr = c.closest('tr');
+      if (!tr || !tr.dataset.ticket) return;
+      filas[tr.dataset.ticket] = tr.dataset.bandeja;
+      eventos[tr.dataset.ticket] = localStorage.getItem('cw_transfers_' + tr.dataset.ticket);
+    });
     return {
-      filas,
+      filas, eventos,
       bandeja:  JSON.stringify(getBandejaMap()),
       asignado: JSON.stringify(_asignadoMap),
       display:  JSON.stringify(_bandejaDisplayMap),
@@ -1982,7 +1987,13 @@ setTimeout(_ocultarOverlayCarga, 4000);
           delete g[tk];
           sessionStorage.setItem('cw_casos_en_gracia', JSON.stringify(g));
         } catch (e) {}
+        // El evento de timeline tambien se deshace: la transferencia no ocurrio.
+        const ev = snap.eventos[tk];
+        if (ev === null) localStorage.removeItem('cw_transfers_' + tk);
+        else localStorage.setItem('cw_transfers_' + tk, ev);
       });
+      const t = document.getElementById('toast');
+      if (t) t.classList.remove('show');   // el toast de exito ya no aplica
       applyVisibility(); recountFilters(); updateBandejaCounts(); _persistAllCases();
     } catch (e) { console.error('CentralWeb: no se pudo revertir la transferencia en pantalla:', e); }
   }
@@ -2115,6 +2126,8 @@ setTimeout(_ocultarOverlayCarga, 4000);
       }
     });
     saveStatusMap(revertido);
+    const _t = document.getElementById('toast');
+    if (_t) _t.classList.remove('show');   // el toast de exito ya no aplica
     applyVisibility();
     recountFilters();
     _persistAllCases();
