@@ -3055,8 +3055,8 @@ function openNote() {
     _syncNotaSupabase(nota, 'add');
   }
 
-  function _deleteNota(noteId) {
-    const dbId = _dbIdDeNota(noteId);
+  function _deleteNota(noteId, dbIdPrevio) {
+    const dbId = dbIdPrevio || _dbIdDeNota(noteId);
     if (!dbId) { console.error('No se pudo borrar la nota en Supabase: sin id de base', noteId); return; }
     supabaseClient.from('centralweb_notas').delete().eq('id', dbId).then(({ error }) => {
       if (error) console.error('No se pudo borrar la nota en Supabase:', error);
@@ -3257,8 +3257,11 @@ function openNote() {
 
   function deleteNote(noteId) {
     const entry = document.getElementById(noteId);
+    // El id de la fila hay que leerlo ANTES de sacar la entry del DOM: si no,
+    // _dbIdDeNota no encuentra el data-db-id y la nota no se borra en la base.
+    const dbId = _dbIdDeNota(noteId);
     if (entry) entry.remove();
-    _deleteNota(noteId);
+    _deleteNota(noteId, dbId);
   }
 
   function editNote(noteId) {
