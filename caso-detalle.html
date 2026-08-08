@@ -3357,7 +3357,7 @@ function openNote() {
     // abierto con el texto intacto: mejor que perderlo mostrando una nota falsa.
     const guardada = await _guardarNotaConfirmada(nota);
     if (!guardada) {
-      cwAvisarFalloSync('No se pudo guardar la nota. Tu texto sigue en el editor, no lo cierres.');
+      cwAvisarFalloSync('No se pudo guardar la nota. Tu texto sigue en el editor: copialo antes de cerrarlo.', true);
       return;
     }
     _removeInlineCompose();
@@ -3444,13 +3444,13 @@ function openNote() {
     const dbId = _dbIdDeNota(noteId);
     if (!dbId) {
       console.error('CentralWeb: no se pudo actualizar la nota, sin id de base:', noteId);
-      cwAvisarFalloSync('No se pudo guardar el cambio de la nota. Tu texto sigue en el editor.');
+      cwAvisarFalloSync('No se pudo guardar el cambio de la nota. Tu texto sigue en el editor: copialo antes de cerrarlo.', true);
       return;
     }
     const ok = await cwSyncCritico(
       supabaseClient.from('centralweb_notas').update({ texto: newText }).eq('id', dbId), 'edicion de nota');
     if (!ok) {
-      cwAvisarFalloSync('No se pudo guardar el cambio de la nota. Tu texto sigue en el editor.');
+      cwAvisarFalloSync('No se pudo guardar el cambio de la nota. Tu texto sigue en el editor: copialo antes de cerrarlo.', true);
       return;
     }
     const div = document.createElement('div');
