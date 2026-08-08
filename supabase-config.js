@@ -63,7 +63,11 @@ async function cwBorradoConfirmado(query, etiqueta, exigirFilas) {
 // no quedo guardado. Se ofrece recargar, que es lo que reconcilia contra la base.
 // sinRecargar: para los casos en que recargar seria contraproducente (p. ej. el
 // texto de una nota que no se guardo sigue vivo en el editor y una recarga lo perderia).
-function cwAvisarFalloSync(detalle, sinRecargar) {
+// secundario: avisos de fallos accesorios (p. ej. el evento de historial de un
+// cambio). No pisan un aviso ya puesto, y un aviso principal SI los pisa a ellos:
+// el mensaje del cambio en si siempre es el que importa, gane quien gane la
+// carrera entre las dos promesas.
+function cwAvisarFalloSync(detalle, sinRecargar, secundario) {
   try {
     let barra = document.getElementById('cw-fallo-sync');
     if (!barra) {
@@ -94,10 +98,8 @@ function cwAvisarFalloSync(detalle, sinRecargar) {
       barra.appendChild(cerrar);
       document.body.appendChild(barra);
     }
-    // El primer aviso gana: si un cambio principal ya fallo y aviso, un fallo
-    // secundario (p. ej. su evento de historial) no debe tapar ese mensaje.
-    const yaHabia = document.getElementById('cw-fallo-sync-texto').textContent.trim();
-    if (yaHabia) return;
+    const barraTexto = document.getElementById('cw-fallo-sync-texto');
+    if (secundario && barraTexto.textContent.trim()) return;
     document.getElementById('cw-fallo-sync-texto').textContent = sinRecargar
       ? (detalle || 'Un cambio no se pudo guardar.')
       : (detalle || 'Un cambio no se pudo guardar.') + ' Recargá para ver el estado real.';
