@@ -1610,12 +1610,24 @@ function rteInsertCaso(tipo) {
   
 async function eliminarUsuario(id) {
     if (!ES_ADMIN) return;
-    await supabaseClient.from('profiles').delete().eq('id', id);
+    // Se confirma el borrado ANTES de sacarlo de la lista. Antes no se miraba el
+    // resultado: la pantalla decia "eliminado" y el usuario podia seguir en la
+    // base con sus permisos, es decir con acceso.
+    const ok = await cwBorradoConfirmado(
+      supabaseClient.from('profiles').delete().eq('id', id), 'usuario', true);
+    if (!ok) {
+      alert('No se pudo eliminar el usuario: sigue existiendo y conserva su acceso. Revisá la conexión y probá de nuevo.');
+      return;
+    }
     _usuariosCache = _usuariosCache.filter(u => u.id !== id);
     const relacionados = _permisosCache.filter(p => p.user_id === id);
-    for (const p of relacionados) { await supabaseClient.from('centralweb_permisos').delete().eq('id', p.id); }
+    let permisosOk = true;
+    for (const p of relacionados) {
+      if (!await cwBorradoConfirmado(supabaseClient.from('centralweb_permisos').delete().eq('id', p.id), 'permisos del usuario', false)) permisosOk = false;
+    }
     _permisosCache = _permisosCache.filter(p => p.user_id !== id);
     renderUsuariosListado();
+    if (!permisosOk) alert('El usuario se eliminó, pero quedaron permisos suyos sin borrar. Recargá para ver el estado real.');
   }
 
   // ── Detalle de usuario ──
@@ -1841,13 +1853,30 @@ async function eliminarUsuario(id) {
     if (!ES_ADMIN) return;
     const b = _bandejasCache.find(x => x.id === id);
     const subIds = (b?.subbandejas || []).map(s => s.id);
-    for (const sid of subIds) { await supabaseClient.from('centralweb_bandejas').delete().eq('id', sid); }
-    await supabaseClient.from('centralweb_bandejas').delete().eq('id', id);
+    // Se confirma cada borrado antes de sacar la bandeja de la pantalla. Antes no
+    // se miraba el resultado: una bandeja "eliminada" podia seguir en la base y,
+    // peor, su casilla de correo seguia activa recibiendo casos.
+    for (const sid of subIds) {
+      if (!await cwBorradoConfirmado(supabaseClient.from('centralweb_bandejas').delete().eq('id', sid), 'sub-bandeja', true)) {
+        alert('No se pudo eliminar una sub-bandeja. Puede que algunas sí se hayan borrado: recargá para ver cómo quedó.');
+        renderBandejas();
+        return;
+      }
+    }
+    if (!await cwBorradoConfirmado(supabaseClient.from('centralweb_bandejas').delete().eq('id', id), 'bandeja', true)) {
+      alert('No se pudo eliminar la bandeja: sigue existiendo y su casilla de correo sigue activa. Recargá para ver el estado real.');
+      renderBandejas();
+      return;
+    }
     const relacionados = _permisosCache.filter(p => p.bandeja_id === id || subIds.includes(p.bandeja_id));
-    for (const p of relacionados) { await supabaseClient.from('centralweb_permisos').delete().eq('id', p.id); }
+    let permisosOk = true;
+    for (const p of relacionados) {
+      if (!await cwBorradoConfirmado(supabaseClient.from('centralweb_permisos').delete().eq('id', p.id), 'permisos de la bandeja', false)) permisosOk = false;
+    }
     _permisosCache = _permisosCache.filter(p => p.bandeja_id !== id && !subIds.includes(p.bandeja_id));
     _bandejasCache = _bandejasCache.filter(x => x.id !== id);
     renderBandejas();
+    if (!permisosOk) alert('La bandeja se eliminó, pero quedaron permisos suyos sin borrar. Recargá para ver el estado real.');
   }
 
   // ── Detalle de bandeja ──
@@ -1929,7 +1958,9 @@ async function eliminarUsuario(id) {
     const sector = document.getElementById('detalle-bandeja-input-sector').value.trim();
     if (nombre) {
       const { error } = await supabaseClient.from('centralweb_bandejas').update({ nombre, sector: sector || null }).eq('id', b.id);
-      if (!error) { b.nombre = nombre; b.sector = sector || null; }
+      // Antes un error aca no avisaba nada y el nombre quedaba sin guardar en silencio.
+      if (error) { alert('No se pudo guardar la bandeja: ' + error.message); return; }
+      b.nombre = nombre; b.sector = sector || null;
     }
     if (_permisosPendientes) {
       for (const uId of Object.keys(_permisosPendientes)) {
@@ -2263,7 +2294,12 @@ async function eliminarUsuario(id) {
     const r = _respuestasCache.find(x => x.id === detalleRespuestaActualId);
     if (!r) return;
     abrirModalConfirmar(`¿Eliminar la respuesta "${r.nombre}" (@${r.codigo})? Esta acción no se puede deshacer.`, async () => {
-      await supabaseClient.from('centralweb_respuestas_automaticas').delete().eq('id', r.id);
+      // Confirmar antes de sacarla de la lista: sin esto, un fallo la hacia
+      // desaparecer de la pantalla mientras seguia activa en la base.
+      if (!await cwBorradoConfirmado(supabaseClient.from('centralweb_respuestas_automaticas').delete().eq('id', r.id), 'respuesta automatica', true)) {
+        alert('No se pudo eliminar la respuesta automática: sigue existiendo. Revisá la conexión y probá de nuevo.');
+        return;
+      }
       _respuestasCache = _respuestasCache.filter(x => x.id !== r.id);
       cerrarDetalleRespuesta();
       renderRespuestasListado();
