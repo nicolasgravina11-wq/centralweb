@@ -41,9 +41,15 @@ async function supabaseFetch(path, options = {}) {
     const texto = await respuesta.text();
     throw new Error(`Supabase ${path} -> ${respuesta.status}: ${texto}`);
   }
+  // Las respuestas con Prefer: return=minimal vuelven 204 sin cuerpo y, segun el
+  // caso, sin header content-length: llamar a .json() ahi tira "Unexpected end of
+  // JSON input" y hace fallar toda la operacion.
+  if (respuesta.status === 204 || respuesta.status === 205) return null;
   const contentLength = respuesta.headers.get('content-length');
   if (contentLength === '0') return null;
-  return respuesta.json();
+  const texto = await respuesta.text();
+  if (!texto) return null;
+  return JSON.parse(texto);
 }
 
 // Valida el access_token del usuario contra el endpoint de auth de Supabase
