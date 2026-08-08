@@ -61,7 +61,9 @@ async function cwBorradoConfirmado(query, etiqueta, exigirFilas) {
 
 // Aviso persistente (no un toast que se va solo): la pantalla mostro algo que
 // no quedo guardado. Se ofrece recargar, que es lo que reconcilia contra la base.
-function cwAvisarFalloSync(detalle) {
+// sinRecargar: para los casos en que recargar seria contraproducente (p. ej. el
+// texto de una nota que no se guardo sigue vivo en el editor y una recarga lo perderia).
+function cwAvisarFalloSync(detalle, sinRecargar) {
   try {
     let barra = document.getElementById('cw-fallo-sync');
     if (!barra) {
@@ -79,6 +81,7 @@ function cwAvisarFalloSync(detalle) {
       btn.textContent = 'Recargar';
       btn.style.cssText = 'background:#fff;color:#b91c1c;border:0;border-radius:6px;' +
         'padding:6px 14px;font:700 13px system-ui,sans-serif;cursor:pointer';
+      btn.id = 'cw-fallo-sync-recargar';
       btn.onclick = function() { window.location.reload(); };
       const cerrar = document.createElement('button');
       cerrar.type = 'button';
@@ -91,8 +94,11 @@ function cwAvisarFalloSync(detalle) {
       barra.appendChild(cerrar);
       document.body.appendChild(barra);
     }
-    document.getElementById('cw-fallo-sync-texto').textContent =
-      (detalle || 'Un cambio no se pudo guardar.') + ' Recargá para ver el estado real.';
+    document.getElementById('cw-fallo-sync-texto').textContent = sinRecargar
+      ? (detalle || 'Un cambio no se pudo guardar.')
+      : (detalle || 'Un cambio no se pudo guardar.') + ' Recargá para ver el estado real.';
+    const btnRecargar = document.getElementById('cw-fallo-sync-recargar');
+    if (btnRecargar) btnRecargar.style.display = sinRecargar ? 'none' : '';
   } catch (e) {
     console.error('CentralWeb: fallo el guardado y ademas no se pudo mostrar el aviso:', detalle);
   }
