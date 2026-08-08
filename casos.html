@@ -1860,7 +1860,18 @@ setTimeout(_ocultarOverlayCarga, 4000);
     try { localStorage.setItem('cw_bandeja_display_map', JSON.stringify(_bandejaDisplayMap)); } catch {}
   }
 
-  function _syncEventoSupabaseCasos(ticket, tipo, payload) { try { if (typeof EMPRESA_ID === 'undefined' || !EMPRESA_ID) return; supabaseClient.from('centralweb_caso_eventos').insert({ ticket: ticket, empresa_id: EMPRESA_ID, tipo: tipo, payload: payload }).then(function(r){ if (r && r.error) console.error('No se pudo sincronizar el evento en Supabase:', r.error); }); } catch (e) {} } function _saveCreacionEventBandeja(ticket, destinoLabel, asignadoLabel) { const now = new Date(); const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.',''); const hora = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' }); const event = { transferId:'tr_'+Date.now(), ticket, accion:'creacion', destino:destinoLabel, asignado:asignadoLabel||'', actor:((getUserInfoMap()[CURRENT_USER_ID]||{}).name||''), fecha, hora, ts:Date.now() }; _syncEventoSupabaseCasos(ticket, 'transferencia', event); const key = 'cw_transfers_' + ticket; const list = JSON.parse(localStorage.getItem(key) || '[]'); list.push(event); localStorage.setItem(key, JSON.stringify(list)); } function _saveTransferEventBandeja(ticket, origenLabel, destinoLabel) {
+  // Ver la nota en caso-detalle.html: el evento no se revierte, pero se avisa.
+  async function _syncEventoSupabaseCasos(ticket, tipo, payload) {
+    if (typeof EMPRESA_ID === 'undefined' || !EMPRESA_ID) {
+      console.error('CentralWeb: sin empresa, no se registro el evento:', tipo, ticket);
+      return false;
+    }
+    const ok = await cwSyncCritico(
+      supabaseClient.from('centralweb_caso_eventos').insert({ ticket: ticket, empresa_id: EMPRESA_ID, tipo: tipo, payload: payload }),
+      'evento de historial');
+    if (!ok) cwAvisarFalloSync('El cambio se guardó, pero no se pudo registrar en el historial del caso.');
+    return ok;
+  } function _saveCreacionEventBandeja(ticket, destinoLabel, asignadoLabel) { const now = new Date(); const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.',''); const hora = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' }); const event = { transferId:'tr_'+Date.now(), ticket, accion:'creacion', destino:destinoLabel, asignado:asignadoLabel||'', actor:((getUserInfoMap()[CURRENT_USER_ID]||{}).name||''), fecha, hora, ts:Date.now() }; _syncEventoSupabaseCasos(ticket, 'transferencia', event); const key = 'cw_transfers_' + ticket; const list = JSON.parse(localStorage.getItem(key) || '[]'); list.push(event); localStorage.setItem(key, JSON.stringify(list)); } function _saveTransferEventBandeja(ticket, origenLabel, destinoLabel) {
     const now   = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora  = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
