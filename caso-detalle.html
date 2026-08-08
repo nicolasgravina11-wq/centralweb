@@ -1708,7 +1708,7 @@
     const ok = await cwSyncCritico(
       supabaseClient.from('centralweb_caso_eventos').insert({ ticket: ticket, empresa_id: empresaId, tipo: tipo, payload: payload }),
       'evento de historial');
-    if (!ok) cwAvisarFalloSync('El cambio se guardó, pero no se pudo registrar en el historial del caso.');
+    if (!ok) cwAvisarFalloSync('No se pudo registrar el cambio en el historial del caso.', false, true);
     return ok;
   } async function _syncCaseDetailToSupabase(targetBandeja, snap) {
     const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}');
