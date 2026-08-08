@@ -94,6 +94,10 @@ function cwAvisarFalloSync(detalle, sinRecargar) {
       barra.appendChild(cerrar);
       document.body.appendChild(barra);
     }
+    // El primer aviso gana: si un cambio principal ya fallo y aviso, un fallo
+    // secundario (p. ej. su evento de historial) no debe tapar ese mensaje.
+    const yaHabia = document.getElementById('cw-fallo-sync-texto').textContent.trim();
+    if (yaHabia) return;
     document.getElementById('cw-fallo-sync-texto').textContent = sinRecargar
       ? (detalle || 'Un cambio no se pudo guardar.')
       : (detalle || 'Un cambio no se pudo guardar.') + ' Recargá para ver el estado real.';
