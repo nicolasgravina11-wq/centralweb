@@ -38,6 +38,27 @@ async function cwSyncCritico(query, etiqueta) {
   }
 }
 
+// Igual que cwSyncCritico pero para borrados. exigirFilas=false para los borrados
+// en cascada donde no encontrar filas es legitimo (p. ej. un usuario que no tenia
+// permisos asignados); true cuando la fila tiene que estar si o si.
+async function cwBorradoConfirmado(query, etiqueta, exigirFilas) {
+  try {
+    const { data, error } = await query.select('id');
+    if (error) {
+      console.error('CentralWeb: no se pudo borrar (' + etiqueta + '):', error);
+      return false;
+    }
+    if (exigirFilas && (!data || !data.length)) {
+      console.error('CentralWeb: el borrado no afecto ninguna fila (' + etiqueta + ')');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('CentralWeb: no se pudo borrar (' + etiqueta + '):', e);
+    return false;
+  }
+}
+
 // Aviso persistente (no un toast que se va solo): la pantalla mostro algo que
 // no quedo guardado. Se ofrece recargar, que es lo que reconcilia contra la base.
 function cwAvisarFalloSync(detalle) {
