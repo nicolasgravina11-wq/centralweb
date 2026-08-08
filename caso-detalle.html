@@ -1670,9 +1670,47 @@
     _revertirEventoEstado();
     cwAvisarFalloSync('No se pudo guardar el cambio de estado; se deshizo en pantalla.');
     return false;
-  } async function _syncCombinarSupabase(absorbido, principal) { try { const a = window._supaCasosPorTicket && window._supaCasosPorTicket[absorbido]; const p = window._supaCasosPorTicket && window._supaCasosPorTicket[principal]; if (!a || !p) return true; const { data, error } = await supabaseClient.from('centralweb_casos').update({ combinado_con_id: p.id, estado: 'cerrado' }).eq('id', a.id).eq('estado', 'abierto').select('id'); if (error) { console.error('No se pudo combinar en Supabase:', error); return true; } if (!data || !data.length) { return false; } return true; } catch (e) { return true; } } function _syncDescombinarSupabase(absorbido, snap) { try { const a = window._supaCasosPorTicket && window._supaCasosPorTicket[absorbido]; if (!a) return; supabaseClient.from('centralweb_casos').update({ combinado_con_id: null, estado: (snap && snap.status) || 'abierto' }).eq('id', a.id).then(({ error }) => { if (error) console.error('No se pudo descombinar en Supabase:', error); }); } catch (e) {} }
+  } // Devuelve true si se combino; 'conflicto' si el caso ya no estaba abierto
+  // (otro usuario lo toco), 'error' si el guardado fallo. Antes devolvia true
+  // ante un error de red y ante no encontrar las filas: la UI seguia adelante
+  // combinando en pantalla algo que en la base no habia pasado.
+  async function _syncCombinarSupabase(absorbido, principal) {
+    try {
+      const a = window._supaCasosPorTicket && window._supaCasosPorTicket[absorbido];
+      const p = window._supaCasosPorTicket && window._supaCasosPorTicket[principal];
+      if (!a || !p) { console.error('CentralWeb: no se encontraron los casos a combinar'); return 'error'; }
+      const { data, error } = await supabaseClient.from('centralweb_casos')
+        .update({ combinado_con_id: p.id, estado: 'cerrado' })
+        .eq('id', a.id).eq('estado', 'abierto').select('id');
+      if (error) { console.error('CentralWeb: no se pudo combinar:', error); return 'error'; }
+      if (!data || !data.length) return 'conflicto';
+      a.combinado_con_id = p.id; a.estado = 'cerrado';
+      return true;
+    } catch (e) { console.error('CentralWeb: no se pudo combinar:', e); return 'error'; }
+  } async function _syncDescombinarSupabase(absorbido, snap) {
+    const a = window._supaCasosPorTicket && window._supaCasosPorTicket[absorbido];
+    if (!a) { console.error('CentralWeb: no se encontro el caso a descombinar:', absorbido); return false; }
+    const estado = (snap && snap.status) || 'abierto';
+    const ok = await cwSyncCritico(
+      supabaseClient.from('centralweb_casos').update({ combinado_con_id: null, estado: estado }).eq('id', a.id),
+      'descombinar');
+    if (ok) { a.combinado_con_id = null; a.estado = estado; }
+    return ok;
+  }
 
-  function _syncCasoEventoSupabase(ticket, tipo, payload) { try { const casoRef = window._supaCasosPorTicket && window._supaCasosPorTicket[ticket]; const empresaId = casoRef ? casoRef.empresa_id : null; if (!empresaId) return; supabaseClient.from('centralweb_caso_eventos').insert({ ticket: ticket, empresa_id: empresaId, tipo: tipo, payload: payload }).then(({ error }) => { if (error) console.error('No se pudo sincronizar el evento en Supabase:', error); }); } catch (e) {} } async function _syncCaseDetailToSupabase(targetBandeja, snap) {
+  // El evento de historial no se revierte si falla: describe un cambio que SI
+  // ocurrio. Pero se avisa, porque el timeline lo muestra igual y en otra maquina
+  // no va a estar (se pierde la trazabilidad de quien hizo que y cuando).
+  async function _syncCasoEventoSupabase(ticket, tipo, payload) {
+    const casoRef = window._supaCasosPorTicket && window._supaCasosPorTicket[ticket];
+    const empresaId = casoRef ? casoRef.empresa_id : null;
+    if (!empresaId) { console.error('CentralWeb: sin empresa, no se registro el evento:', tipo, ticket); return false; }
+    const ok = await cwSyncCritico(
+      supabaseClient.from('centralweb_caso_eventos').insert({ ticket: ticket, empresa_id: empresaId, tipo: tipo, payload: payload }),
+      'evento de historial');
+    if (!ok) cwAvisarFalloSync('El cambio se guardó, pero no se pudo registrar en el historial del caso.');
+    return ok;
+  } async function _syncCaseDetailToSupabase(targetBandeja, snap) {
     const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}');
     const row = window._supaCasosPorTicket && window._supaCasosPorTicket[c.ticket];
     if (!row) {
@@ -2020,7 +2058,12 @@ function _leerConVencimiento(clave, maxAgeMs) {
     const checked = document.querySelector('input[name="combine-principal"]:checked');
     const principal = checked ? checked.value : ticketA;
     const absorbido = principal === ticketA ? ticketB : ticketA;
-    _syncCombinarSupabase(absorbido, principal).then(function(ok) { if (ok) { _ejecutarCombinar(principal, absorbido); } else { alert('No se pudo combinar: el caso ' + absorbido + ' ya fue modificado por otro usuario (probablemente combinado o cerrado desde otra sesión). Refrescá la página para ver el estado actual.'); } });
+    _syncCombinarSupabase(absorbido, principal).then(function(res) {
+      if (res === true) { _ejecutarCombinar(principal, absorbido); return; }
+      alert(res === 'conflicto'
+        ? 'No se pudo combinar: el caso ' + absorbido + ' ya fue modificado por otro usuario (probablemente combinado o cerrado desde otra sesión). Refrescá la página para ver el estado actual.'
+        : 'No se pudo combinar: falló el guardado en la base. Revisá la conexión y probá de nuevo.');
+    });
     _closeCombinarModal();
   }
 
@@ -2046,7 +2089,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
     // Flags de combinación
     const conMap = _combinadoConMap();
     conMap[absorbido] = principal;
-    localStorage.setItem('cw_combinado_con_map', JSON.stringify(conMap)); _syncCombinarSupabase(absorbido, principal);
+    localStorage.setItem('cw_combinado_con_map', JSON.stringify(conMap));
     const deMap = _combinadoDeMap();
     deMap[principal] = deMap[principal] || [];
     if (!deMap[principal].includes(absorbido)) deMap[principal].push(absorbido);
@@ -2295,7 +2338,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
     } catch { return false; }
   }
 
-  function _descombinar(absorbido) {
+  async function _descombinar(absorbido) {
     let actual;
     try { actual = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}'); } catch { actual = {}; }
     const principal = actual.ticket;
@@ -2303,6 +2346,15 @@ function _leerConVencimiento(clave, maxAgeMs) {
     const snap = JSON.parse(localStorage.getItem('cw_pre_combine_' + absorbido) || 'null');
     if (!snap) return;
     if (_combineInvalidada(principal, snap.mergeTs)) return;
+
+    // Se confirma en la base ANTES de deshacer nada. Deshacer primero y sincronizar
+    // despues dejaba, si el guardado fallaba, dos casos separados en pantalla que
+    // en la base seguian combinados. Aca no se puede revertir a mano: este flujo
+    // toca media docena de claves de localStorage y borra notas del merge.
+    if (!await _syncDescombinarSupabase(absorbido, snap)) {
+      alert('No se pudo descombinar: el caso sigue combinado en la base. Revisá la conexión y probá de nuevo.');
+      return;
+    }
 
     // Restaurar estado y bandeja original del absorbido
     const sMap = _statusMap(); sMap[absorbido] = snap.status; localStorage.setItem('cw_status_map', JSON.stringify(sMap));
@@ -2335,7 +2387,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
     const deMap = _combinadoDeMap();
     deMap[principal] = (deMap[principal] || []).filter(t => t !== absorbido);
     localStorage.setItem('cw_combinado_de_map', JSON.stringify(deMap));
-    localStorage.removeItem('cw_pre_combine_' + absorbido); _syncDescombinarSupabase(absorbido, snap);
+    localStorage.removeItem('cw_pre_combine_' + absorbido);
 
     const now = Date.now();
     _saveCombineEvent(principal, { tipo:'descombinar', otro: absorbido, rol:'principal', ts: now });
