@@ -1610,24 +1610,33 @@ function rteInsertCaso(tipo) {
   
 async function eliminarUsuario(id) {
     if (!ES_ADMIN) return;
-    // Se confirma el borrado ANTES de sacarlo de la lista. Antes no se miraba el
-    // resultado: la pantalla decia "eliminado" y el usuario podia seguir en la
-    // base con sus permisos, es decir con acceso.
-    const ok = await cwBorradoConfirmado(
-      supabaseClient.from('profiles').delete().eq('id', id), 'usuario', true);
-    if (!ok) {
-      alert('No se pudo eliminar el usuario: sigue existiendo y conserva su acceso. Revisá la conexión y probá de nuevo.');
+    // El borrado va por /api/delete-user, que ademas elimina la cuenta de Auth.
+    // Borrar solo la fila de `profiles` desde aca dejaba al usuario con su cuenta
+    // viva (podia seguir autenticandose) y su email tomado para siempre: volver a
+    // darlo de alta devolvia "A user with this email address has already been
+    // registered". Eliminar de Auth necesita la service role key, que vive en el
+    // servidor. Se confirma la respuesta antes de sacarlo de la lista.
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { alert('Se venció la sesión. Volvé a iniciar sesión e intentá de nuevo.'); return; }
+      const resp = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+        body: JSON.stringify({ userId: id })
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok || !json.ok) {
+        alert('No se pudo eliminar el usuario: ' + (json.error || ('error ' + resp.status)));
+        return;
+      }
+    } catch (e) {
+      console.error('CentralWeb: no se pudo eliminar el usuario:', e);
+      alert('No se pudo eliminar el usuario: ' + e.message);
       return;
     }
     _usuariosCache = _usuariosCache.filter(u => u.id !== id);
-    const relacionados = _permisosCache.filter(p => p.user_id === id);
-    let permisosOk = true;
-    for (const p of relacionados) {
-      if (!await cwBorradoConfirmado(supabaseClient.from('centralweb_permisos').delete().eq('id', p.id), 'permisos del usuario', false)) permisosOk = false;
-    }
     _permisosCache = _permisosCache.filter(p => p.user_id !== id);
     renderUsuariosListado();
-    if (!permisosOk) alert('El usuario se eliminó, pero quedaron permisos suyos sin borrar. Recargá para ver el estado real.');
   }
 
   // ── Detalle de usuario ──
