@@ -301,8 +301,13 @@
   }
 
   // Si ya hay sesion activa, no hace falta loguearse de nuevo
-  supabaseClient.auth.getSession().then(({ data }) => {
-    if (data.session) window.location.href = 'casos.html';
+  supabaseClient.auth.getSession().then(async ({ data }) => {
+    if (!data.session) return;
+    // Sin esto, entrar por el atajo (sesion ya viva en la pestaña) no reclamaba
+    // el dispositivo: casos.html verificaba, no coincidia, y expulsaba de vuelta
+    // al login en un ida y vuelta sin explicacion.
+    await cwTomarSesion(data.session.user.id);
+    window.location.href = 'casos.html';
   });
 
   // Aviso cuando la sesion se cerro porque el usuario entro desde otro lado
