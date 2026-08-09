@@ -1795,6 +1795,95 @@
     window.location.href = 'login.html';
   }
 
+  // ── Timeline en vivo: notas y mensajes ────────────────────────────────────
+  // Hasta ahora solo se escuchaba centralweb_casos (estado/bandeja/asignado), asi
+  // que una nota de otro agente o una respuesta del cliente aparecian recien al
+  // recargar. Probado con dos usuarios reales: la nota no llegaba sola.
+  function _escucharTimelineEnVivo(casoDB) {
+    if (!casoDB || !casoDB.id) return;
+    const filtro = 'caso_id=eq.' + casoDB.id;
+
+    cwEscucharCambios('centralweb_notas', window._EMPRESA_ID_DETALLE, function(payload) {
+      if (payload.eventType === 'INSERT') _pintarNotaRemota(payload.new);
+      else if (payload.eventType === 'UPDATE') _actualizarNotaRemota(payload.new);
+      else if (payload.eventType === 'DELETE') _quitarNotaRemota(payload.old);
+    }, filtro);
+
+    cwEscucharCambios('centralweb_mensajes', window._EMPRESA_ID_DETALLE, function(payload) {
+      if (payload.eventType === 'INSERT') _pintarMensajeRemoto(payload.new);
+    }, filtro);
+  }
+
+  // Las acciones propias ya dejaron su marca en el DOM (data-db-id), asi que el
+  // evento que rebota encuentra la entrada y no duplica ni avisa de lo propio.
+  function _pintarNotaRemota(n) {
+    try {
+      if (!n || !n.id) return;
+      if (document.querySelector('[data-db-id="' + n.id + '"]')) return;
+      const d = new Date(n.creado_en);
+      const nota = {
+        noteId: 'dbnote-' + n.id, text: n.texto, dbId: n.id,
+        fecha: d.toLocaleDateString('es-AR', { day:'numeric', month:'short', year:'numeric' }),
+        hora:  d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' }),
+        ts: d.getTime(), adjuntos: n.adjuntos || []
+      };
+      _insertTimelineEntryChrono(_buildNoteEntry(nota), d.getTime());
+      cwAvisarCambioEnVivo('Se agregó una nota nueva en este caso.');
+    } catch (e) { console.error('CentralWeb: no se pudo pintar la nota en vivo:', e); }
+  }
+
+  function _actualizarNotaRemota(n) {
+    try {
+      if (!n || !n.id) return;
+      const el = document.querySelector('[data-db-id="' + n.id + '"]');
+      if (!el) return;
+      const cuerpo = el.querySelector('.note-text');
+      if (!cuerpo || cuerpo.textContent === n.texto) return;   // si la edite yo, ya coincide
+      cuerpo.textContent = n.texto;
+      cwAvisarCambioEnVivo('Se editó una nota de este caso.');
+    } catch (e) { console.error('CentralWeb: no se pudo actualizar la nota en vivo:', e); }
+  }
+
+  function _quitarNotaRemota(vieja) {
+    try {
+      if (!vieja || !vieja.id) return;
+      const el = document.querySelector('[data-db-id="' + vieja.id + '"]');
+      if (!el) return;   // si la borre yo, ya no esta en el DOM
+      el.remove();
+      cwAvisarCambioEnVivo('Se borró una nota de este caso.');
+    } catch (e) { console.error('CentralWeb: no se pudo quitar la nota en vivo:', e); }
+  }
+
+  function _pintarMensajeRemoto(m) {
+    try {
+      if (!m || !m.id) return;
+      const entrante = m.direccion === 'entrante';
+      const lista = entrante
+        ? (window._supaMensajesEntrantes = window._supaMensajesEntrantes || [])
+        : (window._supaMensajesSalientes = window._supaMensajesSalientes || []);
+      if (lista.some(function(x) { return x && x.id === m.id; })) return;
+      lista.push(m);
+
+      if (entrante) {
+        const d = new Date(m.creado_en);
+        const fecha = d.toLocaleDateString('es-AR', { day:'numeric', month:'short', year:'numeric' });
+        const hora  = d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+        _insertTimelineEntryChrono(
+          _buildIncomingCard(fecha, hora, m.cuerpo_html, m.adjuntos || [], m.para, window._supaFromAddress || ''),
+          d.getTime());
+        cwAvisarCambioEnVivo('Llegó una respuesta nueva del cliente en este caso.');
+        return;
+      }
+
+      // Saliente: el propio ya lo pinto quien lo envio. El de otro agente no se
+      // dibuja aca (reconstruir la tarjeta enviada necesita firma, adjuntos y
+      // destinatarios ya resueltos); se avisa y se ofrece recargar.
+      if (m.autor_id && m.autor_id !== window._CURRENT_USER_ID_DETALLE) {
+        cwAvisarCambioEnVivo('Otro agente respondió este caso. Recargá para ver la respuesta.');
+      }
+    } catch (e) { console.error('CentralWeb: no se pudo pintar el mensaje en vivo:', e); }
+  }
+
   // ── Cambios en vivo del caso abierto ──────────────────────────────────────
   // El detalle no tenia ningun mecanismo de refresco: el poller de novedades
   // vive solo en casos.html. Si otro agente cerraba o transferia el caso que
@@ -1889,7 +1978,7 @@
         const { data: perfilesAutorDB } = await supabaseClient.from('profiles').select('id,nombre,apellido').in('id', idsAutorHist);
         (perfilesAutorDB || []).forEach(p => { window._perfilesAutorPorId[p.id] = ((p.nombre || '') + ' ' + (p.apellido || '')).trim(); });
       }
-    } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _escucharCasoEnVivo(casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); 
+    } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _escucharCasoEnVivo(casoDB); _escucharTimelineEnVivo(casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); 
 
 function _leerConVencimiento(clave, maxAgeMs) {
     try {
