@@ -3134,16 +3134,24 @@ setTimeout(_ocultarOverlayCarga, 4000);
       }
 
       const keyNueva = _bandejaKeyDeCaso(fila) || 'sin-bandeja';
-      if (tr.dataset.bandeja !== keyNueva) {
+      const realNueva = _bandejaKeyReal(fila) || 'sin-bandeja';
+      if (tr.dataset.bandeja !== keyNueva || tr.dataset.realBandeja !== realNueva) {
         const keyAnterior = tr.dataset.bandeja;
         tr.dataset.bandeja = keyNueva;
-        tr.dataset.realBandeja = _bandejaKeyReal(fila) || 'sin-bandeja';
+        tr.dataset.realBandeja = realNueva;
         const bm = getBandejaMap(); bm[fila.ticket] = keyNueva; saveBandejaMap(bm);
         if (fila.asignado_user_id) _asignadoMap[fila.ticket] = fila.asignado_user_id;
         else delete _asignadoMap[fila.ticket];
         saveAsignadoMap();
+        _bandejaDisplayMap[fila.ticket] = realNueva;
+        saveBandejaDisplayMap();
         const cell = tr.querySelector('.td-asignado');
         if (cell) cell.innerHTML = buildAsignadoCell(fila.ticket);
+        // La columna BANDEJA muestra la bandeja real: sin esto seguia mostrando
+        // la vieja mientras el resto de la fila ya reflejaba la nueva.
+        const celdaBandeja = tr.querySelector('.td-bandeja');
+        if (celdaBandeja) celdaBandeja.textContent = (realNueva && realNueva !== 'sin-bandeja')
+          ? (bandejaLabels[realNueva] || realNueva) : '';
         // Si el caso se iba de la bandeja que estas mirando, no desaparece de
         // golpe: mismo margen de gracia que ya se usa para los cambios propios.
         if (keyAnterior === activeBandeja) { try { _marcarEnGracia(fila.ticket, activeBandeja); } catch (e) {} }
