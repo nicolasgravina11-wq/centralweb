@@ -3095,7 +3095,81 @@ setTimeout(_ocultarOverlayCarga, 4000);
     transferCases, _quitarNuevoCasoAttach, _copiarTicket, closeTransferModal, revertCases,
     _onNuevoCasoAttach, abrirAyuda, cerrarAyuda,
   });
-  _ocultarOverlayCarga();var _NOV_INT=45000; function _novFirma(c){ return [c.ticket,c.estado,c.bandeja_id,c.sub_bandeja_id,c.asignado_user_id].join('|'); } var _novConocidos={}; try{ (casosDB||[]).forEach(function(c){ _novConocidos[c.ticket]=_novFirma(c); }); }catch(e){} var _novBarra=null; function _novMostrar(n){ if(!_novBarra){ _novBarra=document.createElement('div'); _novBarra.id='aviso-novedades'; _novBarra.style.cssText='position:fixed;right:20px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:10px;background:#1a6cd4;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:13.5px;cursor:pointer'; _novBarra.title='Actualizar para ver las novedades'; _novBarra.addEventListener('click',function(){ location.reload(); }); document.body.appendChild(_novBarra); } _novBarra.innerHTML='<span>'+n+(n===1?' novedad':' novedades')+' en tus bandejas</span><span style="background:rgba(255,255,255,.22);padding:3px 9px;border-radius:6px">Actualizar</span>'; _novBarra.style.display='flex'; } async function _novChequear(){ try{ var r=await supabaseClient.from('centralweb_casos').select('ticket, estado, bandeja_id, sub_bandeja_id, asignado_user_id').eq('empresa_id', EMPRESA_ID); if(r.error||!r.data)return; var n=0; r.data.forEach(function(c){ var key=''; try{ key=_bandejaKeyDeCaso(c)||''; }catch(e){} var mio=(c.asignado_user_id===CURRENT_USER_ID); if(!mio&&key&&!tieneAccesoBandeja(key))return; if(_novConocidos[c.ticket]!==_novFirma(c)) n++; }); if(n>0) _novMostrar(n); }catch(e){} } setInterval(_novChequear,_NOV_INT);
+  
+  // ── Cambios en vivo de la bandeja ─────────────────────────────────────────
+  // Antes solo estaba el poller de 45s, que ademas no actualizaba nada: mostraba
+  // un cartel "N novedades" y recien al clickearlo recargaba la pagina entera.
+  // Ahora la fila se repinta sola; el poller queda de red de seguridad por si se
+  // corta el websocket.
+  function _escucharBandejaEnVivo() {
+    if (typeof EMPRESA_ID === 'undefined' || !EMPRESA_ID) return;
+    cwEscucharCambios('centralweb_casos', EMPRESA_ID, function(payload) {
+      if (payload.eventType === 'INSERT') {
+        // Un caso nuevo necesita construir la fila entera (permisos, formato de
+        // fecha, celdas derivadas): para eso ya esta el cartel de novedades.
+        try { _novMostrar(1); } catch (e) {}
+        return;
+      }
+      if (payload.eventType !== 'UPDATE' || !payload.new) return;
+      _aplicarCambioRemotoBandeja(payload.new);
+    });
+  }
+
+  function _aplicarCambioRemotoBandeja(fila) {
+    try {
+      if (!fila || !fila.ticket) return;
+      // Que el poller no vuelva a avisar de algo que ya se aplico aca.
+      try { _novConocidos[fila.ticket] = _novFirma(fila); } catch (e) {}
+
+      const tr = tbody.querySelector('tr[data-ticket="' + fila.ticket + '"]');
+      if (!tr) return;   // no esta renderizado: al recargar se lee de la base igual
+      let cambio = false;
+
+      if (fila.estado && tr.dataset.status !== fila.estado) {
+        tr.dataset.status = fila.estado;
+        const celda = tr.querySelector('td:nth-child(5)');
+        if (celda && badgeMap[fila.estado]) celda.innerHTML = badgeMap[fila.estado];
+        const m = getStatusMap(); m[fila.ticket] = fila.estado; saveStatusMap(m);
+        cambio = true;
+      }
+
+      const keyNueva = _bandejaKeyDeCaso(fila) || 'sin-bandeja';
+      if (tr.dataset.bandeja !== keyNueva) {
+        const keyAnterior = tr.dataset.bandeja;
+        tr.dataset.bandeja = keyNueva;
+        tr.dataset.realBandeja = _bandejaKeyReal(fila) || 'sin-bandeja';
+        const bm = getBandejaMap(); bm[fila.ticket] = keyNueva; saveBandejaMap(bm);
+        if (fila.asignado_user_id) _asignadoMap[fila.ticket] = fila.asignado_user_id;
+        else delete _asignadoMap[fila.ticket];
+        saveAsignadoMap();
+        const cell = tr.querySelector('.td-asignado');
+        if (cell) cell.innerHTML = buildAsignadoCell(fila.ticket);
+        // Si el caso se iba de la bandeja que estas mirando, no desaparece de
+        // golpe: mismo margen de gracia que ya se usa para los cambios propios.
+        if (keyAnterior === activeBandeja) { try { _marcarEnGracia(fila.ticket, activeBandeja); } catch (e) {} }
+        cambio = true;
+      }
+
+      const noLeido = !fila.leido;
+      if (noLeido !== tr.classList.contains('unread')) {
+        tr.classList.toggle('unread', noLeido);
+        const icono = tr.querySelector('.mail-icon');
+        if (icono) icono.classList.replace(noLeido ? 'read' : 'unread', noLeido ? 'unread' : 'read');
+        cambio = true;
+      }
+
+      if (cambio) {
+        applyVisibility();
+        recountFilters();
+        updateUnreadBadge();
+        _persistAllCases();
+      }
+    } catch (e) {
+      console.error('CentralWeb: no se pudo aplicar el cambio en vivo en la bandeja:', e);
+    }
+  }
+
+  _ocultarOverlayCarga();var _NOV_INT=45000; function _novFirma(c){ return [c.ticket,c.estado,c.bandeja_id,c.sub_bandeja_id,c.asignado_user_id].join('|'); } var _novConocidos={}; try{ (casosDB||[]).forEach(function(c){ _novConocidos[c.ticket]=_novFirma(c); }); }catch(e){} var _novBarra=null; function _novMostrar(n){ if(!_novBarra){ _novBarra=document.createElement('div'); _novBarra.id='aviso-novedades'; _novBarra.style.cssText='position:fixed;right:20px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:10px;background:#1a6cd4;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:13.5px;cursor:pointer'; _novBarra.title='Actualizar para ver las novedades'; _novBarra.addEventListener('click',function(){ location.reload(); }); document.body.appendChild(_novBarra); } _novBarra.innerHTML='<span>'+n+(n===1?' novedad':' novedades')+' en tus bandejas</span><span style="background:rgba(255,255,255,.22);padding:3px 9px;border-radius:6px">Actualizar</span>'; _novBarra.style.display='flex'; } async function _novChequear(){ try{ var r=await supabaseClient.from('centralweb_casos').select('ticket, estado, bandeja_id, sub_bandeja_id, asignado_user_id').eq('empresa_id', EMPRESA_ID); if(r.error||!r.data)return; var n=0; r.data.forEach(function(c){ var key=''; try{ key=_bandejaKeyDeCaso(c)||''; }catch(e){} var mio=(c.asignado_user_id===CURRENT_USER_ID); if(!mio&&key&&!tieneAccesoBandeja(key))return; if(_novConocidos[c.ticket]!==_novFirma(c)) n++; }); if(n>0) _novMostrar(n); }catch(e){} } setInterval(_novChequear,_NOV_INT); _escucharBandejaEnVivo();
 })();
 </script>
 
