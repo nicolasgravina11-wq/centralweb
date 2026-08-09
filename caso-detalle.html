@@ -1795,6 +1795,91 @@
     window.location.href = 'login.html';
   }
 
+  // ── Cambios en vivo del caso abierto ──────────────────────────────────────
+  // El detalle no tenia ningun mecanismo de refresco: el poller de novedades
+  // vive solo en casos.html. Si otro agente cerraba o transferia el caso que
+  // tenias abierto, seguias viendo (y operando sobre) datos viejos sin señal.
+  function _escucharCasoEnVivo(casoDB) {
+    if (!casoDB || !casoDB.id) return;
+    cwEscucharCambios('centralweb_casos', window._EMPRESA_ID_DETALLE, function(payload) {
+      if (payload.eventType !== 'UPDATE' || !payload.new) return;
+      _aplicarCambioRemotoDetalle(payload.new);
+    }, 'id=eq.' + casoDB.id);
+  }
+
+  function _nombreBandejaDeFila(fila) {
+    const porId = window._supaBandejaPorId || {};
+    const sub = fila.sub_bandeja_id ? porId[fila.sub_bandeja_id] : null;
+    const base = fila.bandeja_id ? porId[fila.bandeja_id] : null;
+    return (sub && sub.nombre) || (base && base.nombre) || 'Sin bandeja';
+  }
+
+  function _repintarUbicacionDetalle(ticket, fila) {
+    const porId = window._supaBandejaPorId || {};
+    const base = fila.bandeja_id ? porId[fila.bandeja_id] : null;
+    const sub = fila.sub_bandeja_id ? porId[fila.sub_bandeja_id] : null;
+    const key = (sub && base) ? (base.key + '::' + sub.key) : (base ? base.key : '');
+    // Los mapas locales son los que lee el resto de las pantallas: hay que
+    // dejarlos coherentes con lo que acaba de llegar, no solo repintar el DOM.
+    const bMap = _bandejaMap(), aMap = _asignadoMap(), dMap = _displayMap();
+    if (fila.asignado_user_id) { aMap[ticket] = fila.asignado_user_id; bMap[ticket] = fila.asignado_user_id; }
+    else { delete aMap[ticket]; if (key) bMap[ticket] = key; }
+    if (key) dMap[ticket] = key;
+    try {
+      localStorage.setItem('cw_bandeja_map', JSON.stringify(bMap));
+      localStorage.setItem('cw_asignado_map', JSON.stringify(aMap));
+      localStorage.setItem('cw_bandeja_display_map', JSON.stringify(dMap));
+    } catch (e) {}
+    const detailVals = document.querySelectorAll('.detail-val');
+    if (detailVals[2]) detailVals[2].textContent = _bandejaLabelsDetail[key] || _nombreBandejaDeFila(fila);
+    const asignadoVal = document.getElementById('detail-asignado');
+    if (asignadoVal) asignadoVal.textContent = fila.asignado_user_id
+      ? (_userNamesDetail[fila.asignado_user_id] || 'Asignado') : 'Sin asignar';
+    if (typeof updateDetailTransferCounts === 'function') updateDetailTransferCounts();
+  }
+
+  function _aplicarCambioRemotoDetalle(fila) {
+    try {
+      const ticket = fila.ticket;
+      const conocido = window._supaCasosPorTicket && window._supaCasosPorTicket[ticket];
+      if (!conocido) return;
+      const cambios = [];
+
+      // Comparar contra _supaCasosPorTicket es lo que evita avisar de los cambios
+      // propios: los writes de esta pestaña ya lo dejaron actualizado al confirmar,
+      // asi que el evento que rebota llega con los mismos valores y no dispara nada.
+      if (fila.estado !== conocido.estado) {
+        conocido.estado = fila.estado;
+        try {
+          const map = JSON.parse(localStorage.getItem('cw_status_map') || '{}');
+          map[ticket] = fila.estado;
+          localStorage.setItem('cw_status_map', JSON.stringify(map));
+        } catch (e) {}
+        // modo revert: repinta los badges sin volver a sincronizar ni generar evento
+        if (typeof setStatusDetail === 'function') setStatusDetail(fila.estado, true);
+        cambios.push('ahora está ' + (_statusLabels[fila.estado] || fila.estado));
+      }
+
+      const cambioBandeja = fila.bandeja_id !== conocido.bandeja_id || fila.sub_bandeja_id !== conocido.sub_bandeja_id;
+      const cambioAsignado = fila.asignado_user_id !== conocido.asignado_user_id;
+      if (cambioBandeja || cambioAsignado) {
+        const asignadoNuevo = fila.asignado_user_id;
+        conocido.bandeja_id = fila.bandeja_id;
+        conocido.sub_bandeja_id = fila.sub_bandeja_id;
+        conocido.asignado_user_id = fila.asignado_user_id;
+        _repintarUbicacionDetalle(ticket, fila);
+        if (cambioAsignado && asignadoNuevo) cambios.push('se asignó a ' + (_userNamesDetail[asignadoNuevo] || 'otro usuario'));
+        else cambios.push('se movió a ' + _nombreBandejaDeFila(fila));
+      }
+
+      if (cambios.length) {
+        cwAvisarCambioEnVivo('Este caso se actualizó desde otra sesión: ' + cambios.join(' y ') + '.');
+      }
+    } catch (e) {
+      console.error('CentralWeb: no se pudo aplicar el cambio en vivo:', e);
+    }
+  }
+
   async function _bootstrapDetalleSupabase() { try { let { data: { session } } = await supabaseClient.auth.getSession(); if (!session) { await new Promise(r => setTimeout(r, 400)); ({ data: { session } } = await supabaseClient.auth.getSession()); } if (!session) { _sinSesionAlLogin(); return; } sessionStorage.removeItem('cw_redirect_guard'); const { data: perfil } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single(); if (!perfil) return; const EMPRESA_ID = perfil.empresa_id; window._EMPRESA_ID_DETALLE = EMPRESA_ID; window._CURRENT_USER_ID_DETALLE = session.user.id; window._CURRENT_USER_NAME_REAL = ((perfil.nombre || '') + ' ' + (perfil.apellido || '')).trim() || perfil.email || 'Usuario'; window._CURRENT_USER_ROL_DETALLE = perfil.rol; window._ES_ADMIN_DETALLE = perfil.rol === 'Administrador'; (function _pintarBadgeUsuarioDetalle() { function intentarInfo() { var uid = window._CURRENT_USER_ID_DETALLE; if (!uid) return false; var avatarEl = document.getElementById('user-badge-avatar'); var nameEl = document.getElementById('user-badge-name'); if (!avatarEl || !nameEl) return false; var lista = (typeof _getUsuariosDinamicosDetail === 'function') ? _getUsuariosDinamicosDetail() : []; var info = lista.find(function(u){ return u.key === uid; }); if (!info) return false; avatarEl.style.background = info.gradient; avatarEl.textContent = info.initials; nameEl.textContent = info.name || ''; return true; } function pintarFallback() { var avatarEl = document.getElementById('user-badge-avatar'); var nameEl = document.getElementById('user-badge-name'); if (!avatarEl || !nameEl || !window._CURRENT_USER_NAME_REAL) return; nameEl.textContent = window._CURRENT_USER_NAME_REAL; avatarEl.style.background = '#475569'; avatarEl.textContent = window._CURRENT_USER_NAME_REAL.slice(0,2).toUpperCase(); } if (intentarInfo()) return; var tries = 0; var iv = setInterval(function(){ tries++; if (intentarInfo()) { clearInterval(iv); return; } if (tries > 30) { clearInterval(iv); pintarFallback(); } }, 200); })(); try { const { data: firmaRow } = await supabaseClient.from('centralweb_firmas').select('*').eq('user_id', session.user.id).maybeSingle(); window._FIRMA_USUARIO_REAL = firmaRow || null; } catch (eFirma) { window._FIRMA_USUARIO_REAL = null; } const [{ data: casosDB }, { data: bandejasDB }, { data: permisosDB }] = await Promise.all([ supabaseClient.from('centralweb_casos').select('id, empresa_id, ticket, estado, bandeja_id, sub_bandeja_id, asunto, from_name, from_email, asignado_user_id, combinado_con_id, creado_en, actualizado_en, leido').eq('empresa_id', EMPRESA_ID), supabaseClient.from('centralweb_bandejas').select('*').eq('empresa_id', EMPRESA_ID), supabaseClient.from('centralweb_permisos').select('*').eq('empresa_id', EMPRESA_ID) ]); const { data: usuariosDB } = await supabaseClient.from('profiles').select('*').eq('empresa_id', EMPRESA_ID); window._BANDEJAS_DETAIL_REAL = (bandejasDB || []).filter(b => !b.parent_id).map(b => ({ key: b.key, nombre: b.nombre, mensajeBienvenida: b.mensaje_bienvenida || null, subbandejas: (bandejasDB || []).filter(s => s.parent_id === b.id).map(s => ({ key: s.key, nombre: s.nombre, mensajeBienvenida: s.mensaje_bienvenida || null })) })); window._USUARIOS_DETAIL_REAL = (usuariosDB || []).map(u => ({ key: u.id, initials: u.iniciales || (u.nombre || '?').slice(0,1).toUpperCase(), nombre: u.nombre || '', apellido: u.apellido || '', gradient: u.gradiente || 'linear-gradient(135deg,#1a6cd4,#4fa3f7)', last_seen: u.last_seen || null })); _rebuildLabelsDetail(); const porId = {}; (bandejasDB || []).forEach(b => { porId[b.id] = b; }); const idPorKey = {}; (bandejasDB || []).forEach(b => { if (b.parent_id) { const p = porId[b.parent_id]; if (p) idPorKey[`${p.key}::${b.key}`] = { id: p.id, subId: b.id }; } else { idPorKey[b.key] = { id: b.id, subId: null }; } }); window._supaBandejaIdPorKey = idPorKey; window._supaBandejaPorId = porId; const permisosMap = {}; (permisosDB || []).forEach(function(p){ var bandejaRow = porId[p.bandeja_id]; if (!bandejaRow) return; var parentKey = bandejaRow.parent_id ? (porId[bandejaRow.parent_id] || {}).key : bandejaRow.key; if (!parentKey) return; permisosMap[parentKey] = permisosMap[parentKey] || {}; permisosMap[parentKey][p.user_id] = { acceso: p.acceso, ver_otros: p.ver_otros }; }); window._PERMISOS_DETALLE = permisosMap; const porTicket = {}; (casosDB || []).forEach(c2 => { porTicket[c2.ticket] = c2; }); window._supaCasosPorTicket = porTicket; const c = JSON.parse(localStorage.getItem('cw_caso_actual') || '{}'); if (!c.ticket) return; const casoDB = porTicket[c.ticket] || null; window._casoActualDB = casoDB; if (casoDB) { try { const { data: empresaRow } = await supabaseClient.from('empresas').select('sigla,nombre_formal').eq('id', EMPRESA_ID).single(); window._EMPRESA_NOMBRE_REAL = (empresaRow && empresaRow.nombre_formal) || 'CentralWeb'; const bandeja = window._supaBandejaPorId[casoDB.bandeja_id]; const subBandeja = casoDB.sub_bandeja_id ? window._supaBandejaPorId[casoDB.sub_bandeja_id] : null; const partes = []; if (bandeja) partes.push(bandeja.key); if (subBandeja) partes.push(subBandeja.key); if (empresaRow) partes.push(empresaRow.sigla); window._supaFromAddress = partes.length ? partes.join('.') + '@cweb.novadgt.com' : null; } catch (e) {} } const email = ((c.fromEmail || (casoDB && casoDB.from_email)) || '').toLowerCase().trim(); const _casoPorIdHist = {}; (casosDB || []).forEach(function(cx){ _casoPorIdHist[cx.id] = cx; });
     const hist = {}; (casosDB || []).forEach(cc => { if (cc.ticket === c.ticket || !email) return; if ((cc.from_email || '').toLowerCase().trim() !== email) return; const bandeja = porId[cc.bandeja_id]; const bandejaKey = cc.sub_bandeja_id ? `${bandeja ? bandeja.key : ''}::${(porId[cc.sub_bandeja_id] || {}).key}` : (bandeja ? bandeja.key : ''); const d = new Date(cc.creado_en); const fecha = d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', ''); const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs'; const usuarioAsig = cc.asignado_user_id ? (window._USUARIOS_DETAIL_REAL || []).find(u => u.key === cc.asignado_user_id) : null; const asignadoTxt = usuarioAsig ? (usuarioAsig.nombre + (usuarioAsig.apellido ? ' ' + usuarioAsig.apellido : '')).trim() : 'Sin asignar'; hist[cc.ticket.replace('#', '')] = { ticket: cc.ticket, fromName: cc.from_name, fromEmail: cc.from_email, asunto: cc.asunto, estado: cc.estado, date: fecha, time: hora, bandeja: bandejaKey, asignado: asignadoTxt, combinadoEn: cc.combinado_con_id ? ((_casoPorIdHist[cc.combinado_con_id] || {}).ticket || null) : null }; }); window._supaHistCases = hist; const mensajes = {}; (casosDB || []).forEach(cc => { if (cc.mensaje_inicial) mensajes[cc.ticket] = cc.mensaje_inicial; }); window._supaMensajesByTicket = mensajes; try { const _idsCasos = (casosDB || []).map(function(cc){ return cc.id; }).filter(Boolean); if (_idsCasos.length) { const _resEnt = await supabaseClient.from('centralweb_mensajes').select('caso_id,cuerpo_html,creado_en').eq('direccion', 'entrante').in('caso_id', _idsCasos).order('creado_en', { ascending: true }); const _ticketPorIdCaso = {}; (casosDB || []).forEach(function(cc){ _ticketPorIdCaso[cc.id] = cc.ticket; }); ((_resEnt && _resEnt.data) || []).forEach(function(mm){ const _tk = _ticketPorIdCaso[mm.caso_id]; if (_tk && !mensajes[_tk] && mm.cuerpo_html) mensajes[_tk] = mm.cuerpo_html; }); } } catch (eMsgEnt) {} try { if (casoDB && casoDB.id) { const _abs = (casosDB || []).filter(function(cc){ return cc.combinado_con_id === casoDB.id && cc.ticket && !mensajes[cc.ticket]; }); for (const _ab of _abs) { try { const { data: _rc } = await supabaseClient.rpc('centralweb_contenido_inicial', { p_caso_id: _ab.id }); const _cc = Array.isArray(_rc) ? _rc[0] : _rc; if (_cc && _cc.mensaje_inicial) mensajes[_ab.ticket] = _cc.mensaje_inicial; if (_cc && Array.isArray(_cc.adjuntos)) { window._supaAdjuntosByTicket = window._supaAdjuntosByTicket || {}; window._supaAdjuntosByTicket[_ab.ticket] = _cc.adjuntos; } } catch (eAb) {} } } } catch (eAbs) {} window._supaMensajesListos = true; /* Los adjuntos del absorbido tampoco vienen en el select masivo (igual que mensaje_inicial): los trae el RPC y se pintan aca. */ window._pintarAdjuntosAbsorbidos = function(){ try { var adj = window._supaAdjuntosByTicket || {}; Object.keys(adj).forEach(function(tk){ var lista = adj[tk]; if (!Array.isArray(lista) || !lista.length) return; var en = document.querySelector('.timeline-entry[data-combined-ticket="' + tk + '"]'); if (!en) return; var cont = en.querySelector('.email-attachments'); if (!cont || cont.dataset.absorbidoPintado === '1') return; cont.dataset.absorbidoPintado = '1'; cont.innerHTML = ''; var zipPrev = cont.nextElementSibling; if (zipPrev && zipPrev.classList && zipPrev.classList.contains('download-zip-btn')) zipPrev.remove(); _renderAttachmentsConZip(cont, lista.map(function(a){ return { name: a.nombre || a.name || 'Adjunto', size: _formatTamanoAdj(a.tamano || a.size), url: a.url }; })); }); } catch(ePA){} }; window._pintarAbsorbidosDesdeMapa = function(){ var mp = window._supaMensajesByTicket || {}; var faltan = []; document.querySelectorAll('.timeline-entry').forEach(function(en){ var mm = (en.textContent||'').match(/combinado desde\s*(#\d+)/i); if (!mm) return; var tk = mm[1]; var body = en.querySelector('.email-body'); if (!body || !/mensaje original de este caso/i.test(body.textContent||'')) return; if (mp[tk]) { body.innerHTML = (typeof _sanitizarRico === 'function') ? _sanitizarRico(mp[tk]) : mp[tk]; return; } faltan.push(tk); }); return faltan; }; window._refrescarAbsorbidos = async function(){ try { var mp = window._supaMensajesByTicket || {}; var faltan = window._pintarAbsorbidosDesdeMapa(); /* El mapa se arma al cargar la pagina, asi que un caso combinado EN VIVO nunca esta en el: se pide su contenido ahora, una sola vez por ticket. */ window._absorbidosPedidos = window._absorbidosPedidos || {}; var pedidos = 0; for (var _i = 0; _i < faltan.length; _i++) { var _tk = faltan[_i]; if (window._absorbidosPedidos[_tk]) continue; var _ref = window._supaCasosPorTicket && window._supaCasosPorTicket[_tk]; if (!_ref || !_ref.id) continue; window._absorbidosPedidos[_tk] = true; try { const { data: _rcv } = await supabaseClient.rpc('centralweb_contenido_inicial', { p_caso_id: _ref.id }); const _ccv = Array.isArray(_rcv) ? _rcv[0] : _rcv; if (_ccv && _ccv.mensaje_inicial) { mp[_tk] = _ccv.mensaje_inicial; pedidos++; } if (_ccv && Array.isArray(_ccv.adjuntos)) { window._supaAdjuntosByTicket = window._supaAdjuntosByTicket || {}; window._supaAdjuntosByTicket[_tk] = _ccv.adjuntos; } } catch (ePed) {} } if (pedidos) window._pintarAbsorbidosDesdeMapa(); window._pintarAdjuntosAbsorbidos(); } catch(eRa){} }; for (var _ra = 1; _ra <= 12; _ra++) setTimeout(window._refrescarAbsorbidos, _ra * 400); if (casoDB) { const { data: notasDB } = await supabaseClient.from('centralweb_notas').select('*').eq('caso_id', casoDB.id).order('creado_en', { ascending: true }); window._supaNotasCaso = notasDB || []; const { data: mensajesSalientesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'saliente').order('creado_en', { ascending: true }); window._supaMensajesSalientes = mensajesSalientesDB || [];
     window._perfilesAutorPorId = window._perfilesAutorPorId || {};
@@ -1804,7 +1889,7 @@
         const { data: perfilesAutorDB } = await supabaseClient.from('profiles').select('id,nombre,apellido').in('id', idsAutorHist);
         (perfilesAutorDB || []).forEach(p => { window._perfilesAutorPorId[p.id] = ((p.nombre || '') + ' ' + (p.apellido || '')).trim(); });
       }
-    } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); 
+    } catch (eAutor) { console.error('No se pudieron resolver nombres de agentes:', eAutor); } const { data: mensajesEntrantesDB } = await supabaseClient.from('centralweb_mensajes').select('*').eq('caso_id', casoDB.id).eq('direccion', 'entrante').order('creado_en', { ascending: true }); window._supaMensajesEntrantes = mensajesEntrantesDB || []; const { data: respuestasAutomaticasDB } = await supabaseClient.from('centralweb_respuestas_automaticas').select('*').eq('empresa_id', EMPRESA_ID).order('codigo', { ascending: true }); window._supaRespuestasAutomaticas = respuestasAutomaticasDB || []; } _aplicarDatosRealesDetalle(c.ticket, casoDB); _escucharCasoEnVivo(casoDB); _ocultarOverlayCarga(); } catch (e) { console.error('Bootstrap Supabase caso-detalle falló:', e); _ocultarOverlayCarga(); } } _bootstrapDetalleSupabase(); document.getElementById('auto-reply-to-addr')?.closest('.timeline-entry')?.remove(); 
 
 function _leerConVencimiento(clave, maxAgeMs) {
     try {

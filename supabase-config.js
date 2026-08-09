@@ -110,6 +110,73 @@ function cwAvisarFalloSync(detalle, sinRecargar, secundario) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CAMBIOS EN VIVO (Supabase Realtime)
+//  Antes, un cambio hecho desde otra sesion tardaba ~45s en avisarse en la
+//  bandeja (con un cartel que habia que clickear) y en el detalle no se avisaba
+//  nunca: dos personas con el mismo caso abierto se pisaban sin enterarse.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Escucha los cambios de una tabla. El filtro es OBLIGATORIO y por defecto acota
+// a la empresa: no se confia en que RLS filtre los eventos, igual que no se
+// confia en RLS para los UPDATE. Devuelve el canal (o null si no se pudo).
+function cwEscucharCambios(tabla, empresaId, onCambio, filtro) {
+  try {
+    if (!empresaId && !filtro) {
+      console.error('CentralWeb: no se puede escuchar ' + tabla + ' sin empresa ni filtro');
+      return null;
+    }
+    const condicion = filtro || ('empresa_id=eq.' + empresaId);
+    return supabaseClient
+      .channel('cw-' + tabla + '-' + condicion)
+      .on('postgres_changes', { event: '*', schema: 'public', table: tabla, filter: condicion }, onCambio)
+      .subscribe(function(estado) {
+        if (estado === 'CHANNEL_ERROR' || estado === 'TIMED_OUT' || estado === 'CLOSED') {
+          console.error('CentralWeb: se corto la conexion en vivo con ' + tabla + ' (' + estado + ')');
+        }
+      });
+  } catch (e) {
+    console.error('CentralWeb: no se pudo escuchar cambios de ' + tabla + ':', e);
+    return null;
+  }
+}
+
+// Aviso informativo, no de error: algo cambio desde otra sesion y ya se reflejo
+// en pantalla. Azul, y no se pisa con el rojo de cwAvisarFalloSync.
+function cwAvisarCambioEnVivo(detalle) {
+  try {
+    let barra = document.getElementById('cw-cambio-vivo');
+    if (!barra) {
+      barra = document.createElement('div');
+      barra.id = 'cw-cambio-vivo';
+      barra.setAttribute('role', 'status');
+      barra.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:2147483646;' +
+        'background:#1a6cd4;color:#fff;font:600 13.5px/1.45 system-ui,-apple-system,sans-serif;' +
+        'padding:11px 16px;border-radius:10px;display:flex;align-items:center;gap:12px;' +
+        'box-shadow:0 4px 16px rgba(0,0,0,.22);max-width:min(560px,92vw)';
+      const texto = document.createElement('span');
+      texto.id = 'cw-cambio-vivo-texto';
+      const cerrar = document.createElement('button');
+      cerrar.type = 'button';
+      cerrar.textContent = '\u00d7';
+      cerrar.setAttribute('aria-label', 'Cerrar aviso');
+      cerrar.style.cssText = 'background:transparent;color:#fff;border:0;font:700 18px/1 system-ui,sans-serif;cursor:pointer;padding:0 2px';
+      cerrar.onclick = function() { barra.remove(); };
+      barra.appendChild(texto);
+      barra.appendChild(cerrar);
+      document.body.appendChild(barra);
+    }
+    document.getElementById('cw-cambio-vivo-texto').textContent = detalle;
+    clearTimeout(window.__cwCambioVivoTimer);
+    window.__cwCambioVivoTimer = setTimeout(function() {
+      const b = document.getElementById('cw-cambio-vivo');
+      if (b) b.remove();
+    }, 15000);
+  } catch (e) {
+    console.error('CentralWeb: no se pudo mostrar el aviso de cambio en vivo:', detalle);
+  }
+}
+
 // Chequea si la empresa del usuario logueado tiene la suscripcion activa.
 // Si esta vencida/suspendida/cancelada, redirige a suscripcion-vencida.html.
 // Los superadmins (profiles.es_superadmin = true) quedan exentos de este chequeo.
