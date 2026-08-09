@@ -3452,6 +3452,11 @@ function openNote() {
   function _buildStatusEntry(ev) {
     const color = _statusColors[ev.status] || '#94a3b8';
     const label = _statusLabels[ev.status] || ev.status;
+    // El actor estaba hardcodeado como "Agente" aunque el evento SI guarda quien
+    // hizo el cambio: el timeline decia "Agente cambió el estado" para todos.
+    // El de transferencias ya usaba ev.actor; este quedo sin migrar.
+    const _actorEstado = String(ev.actor || window._CURRENT_USER_NAME_REAL || 'Agente')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const entry = document.createElement('div');
     entry.className = 'timeline-entry timeline-change';
     entry.id = ev.statusEventId;
@@ -3463,7 +3468,7 @@ function openNote() {
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">Agente</strong> cambió el estado del caso <strong>${ev.ticket}</strong> a <strong style="color:${color}">${label}</strong> · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
+          <strong style="color:#1e293b">${_actorEstado}</strong> cambió el estado del caso <strong>${ev.ticket}</strong> a <strong style="color:${color}">${label}</strong> · <span style="color:#94a3b8">${ev.fecha} · ${ev.hora} hs</span>
         </div>
       </div>`;
     return entry;
