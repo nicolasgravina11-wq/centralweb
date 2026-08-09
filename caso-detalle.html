@@ -2314,6 +2314,9 @@ function _leerConVencimiento(clave, maxAgeMs) {
   }
 
   function _saveCombineEvent(ticket, ev) {
+    // El actor se completa aca y no en cada llamador: combinar y descombinar
+    // guardan el evento desde varios lugares distintos.
+    if (!ev.actor) ev.actor = window._CURRENT_USER_NAME_REAL || '';
     const key = 'cw_combine_events_' + ticket;
     const list = JSON.parse(localStorage.getItem(key) || '[]');
     list.push(ev);
@@ -2324,6 +2327,8 @@ function _leerConVencimiento(clave, maxAgeMs) {
   function _buildCombineEntry(ev) {
     const entry = document.createElement('div');
     entry.className = 'timeline-entry timeline-change';
+    const _actorEv = String(ev.actor || 'Agente')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const texto = ev.rol === 'principal'
       ? `Caso combinado con <strong>${ev.otro}</strong> — caso ${ev.otro} cerrado. Se agregó su correo de ingreso al timeline.`
       : `Combinado dentro del caso <strong>${ev.otro}</strong>`;
@@ -2338,7 +2343,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">Agente</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
+          <strong style="color:#1e293b">${_actorEv}</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
         </div>
       </div>`;
     return entry;
@@ -2497,6 +2502,8 @@ function _leerConVencimiento(clave, maxAgeMs) {
   function _buildDescombineEntry(ev) {
     const entry = document.createElement('div');
     entry.className = 'timeline-entry timeline-change';
+    const _actorEv = String(ev.actor || 'Agente')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const now = new Date(ev.ts);
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
     const hora = now.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
@@ -2511,7 +2518,7 @@ function _leerConVencimiento(clave, maxAgeMs) {
       </div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div style="font-size:13px;color:#0e7490">
-          <strong style="color:#1e293b">Agente</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
+          <strong style="color:#1e293b">${_actorEv}</strong> — ${texto} · <span style="color:#94a3b8">${fecha} · ${hora} hs</span>
         </div>
       </div>`;
     return entry;
