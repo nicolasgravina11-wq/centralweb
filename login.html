@@ -293,6 +293,10 @@
       return;
     }
 
+    // Esta maquina pasa a ser la dueña de la sesion; la anterior se cierra sola
+    // en su proxima verificacion (como maximo, 30 segundos).
+    if (data && data.user) await cwTomarSesion(data.user.id);
+
     window.location.href = 'casos.html';
   }
 
@@ -300,6 +304,11 @@
   supabaseClient.auth.getSession().then(({ data }) => {
     if (data.session) window.location.href = 'casos.html';
   });
+
+  // Aviso cuando la sesion se cerro porque el usuario entro desde otro lado
+  if (new URLSearchParams(location.search).get('sesion') === 'cerrada') {
+    mostrarError('Tu sesión se cerró porque se inició sesión con este usuario desde otro dispositivo.');
+  }
 </script>
 
 </body>

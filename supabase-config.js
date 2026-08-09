@@ -177,6 +177,60 @@ function cwAvisarCambioEnVivo(detalle) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  SESION UNICA POR USUARIO
+//  Decision de producto: un usuario no puede estar operando en dos lugares a la
+//  vez, para que varias personas no compartan una misma clave.
+//  Se identifica el DISPOSITIVO, no la pestaña: tener CentralWeb abierto en dos
+//  pestañas de la misma maquina es normal y no tiene que cerrar nada.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Id estable de esta maquina/navegador. Vive en localStorage (no sessionStorage)
+// justamente para que lo compartan todas las pestañas.
+function cwDeviceId() {
+  try {
+    let id = localStorage.getItem('cw_device_id');
+    if (!id) {
+      id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('cw_device_id', id);
+    }
+    return id;
+  } catch (e) {
+    return 'dev_sin_storage';
+  }
+}
+
+// Marca este dispositivo como dueño de la sesion. Se llama SOLO al iniciar
+// sesion: si corriera en cada carga, dos maquinas se expulsarian en bucle.
+async function cwTomarSesion(userId) {
+  try {
+    const { error } = await supabaseClient
+      .from('profiles').update({ sesion_device: cwDeviceId() }).eq('id', userId);
+    if (error) console.error('CentralWeb: no se pudo registrar la sesion:', error);
+  } catch (e) {
+    console.error('CentralWeb: no se pudo registrar la sesion:', e);
+  }
+}
+
+// Si otro dispositivo tomo la sesion, cierra la de aca y vuelve al login.
+// Ante cualquier duda (error de red, perfil sin leer) NO expulsa: es preferible
+// dejar trabajar de mas que echar a alguien por un problema de conexion.
+async function cwVerificarSesionUnica() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+    const { data, error } = await supabaseClient
+      .from('profiles').select('sesion_device').eq('id', session.user.id).maybeSingle();
+    if (error || !data) return;
+    if (!data.sesion_device) return;                   // todavia nadie la reclamo
+    if (data.sesion_device === cwDeviceId()) return;   // sigue siendo de esta maquina
+    await supabaseClient.auth.signOut();
+    window.location.replace('login.html?sesion=cerrada');
+  } catch (e) {
+    console.error('CentralWeb: no se pudo verificar la sesion unica:', e);
+  }
+}
+
 // Chequea si la empresa del usuario logueado tiene la suscripcion activa.
 // Si esta vencida/suspendida/cancelada, redirige a suscripcion-vencida.html.
 // Los superadmins (profiles.es_superadmin = true) quedan exentos de este chequeo.
@@ -223,5 +277,7 @@ async function verificarSuscripcionActiva() {
   const exentas = ['login.html', 'alta-inicial.html', 'reset-password.html', 'suscripcion-vencida.html', 'superadmin.html', ''];
   if (!exentas.includes(pagina)) {
     verificarSuscripcionActiva();
+    cwVerificarSesionUnica();
+    setInterval(cwVerificarSesionUnica, 30000);
   }
 })();
