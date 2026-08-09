@@ -203,12 +203,29 @@ function cwDeviceId() {
 // Marca este dispositivo como dueño de la sesion. Se llama SOLO al iniciar
 // sesion: si corriera en cada carga, dos maquinas se expulsarian en bucle.
 async function cwTomarSesion(userId) {
+  const marcar = function() {
+    // Margen de gracia: si la verificacion corre antes de que este update se
+    // propague, la pestaña recien logueada se expulsaria a si misma.
+    try { sessionStorage.setItem('cw_sesion_tomada', String(Date.now())); } catch (e) {}
+  };
+  marcar();
   try {
-    const { error } = await supabaseClient
-      .from('profiles').update({ sesion_device: cwDeviceId() }).eq('id', userId);
-    if (error) console.error('CentralWeb: no se pudo registrar la sesion:', error);
+    const query = function() {
+      return supabaseClient.from('profiles').update({ sesion_device: cwDeviceId() }).eq('id', userId);
+    };
+    // Se confirma que el UPDATE afecto la fila: si no se registra y no nos
+    // enteramos, esta sesion se cierra sola a los pocos segundos.
+    let ok = await cwSyncCritico(query(), 'registrar la sesion');
+    if (!ok) {
+      await new Promise(function(r) { setTimeout(r, 800); });
+      ok = await cwSyncCritico(query(), 'registrar la sesion (reintento)');
+    }
+    if (!ok) console.error('CentralWeb: la sesion no quedo registrada; puede cerrarse sola');
+    marcar();
+    return ok;
   } catch (e) {
     console.error('CentralWeb: no se pudo registrar la sesion:', e);
+    return false;
   }
 }
 
@@ -217,6 +234,10 @@ async function cwTomarSesion(userId) {
 // dejar trabajar de mas que echar a alguien por un problema de conexion.
 async function cwVerificarSesionUnica() {
   try {
+    try {
+      const tomada = parseInt(sessionStorage.getItem('cw_sesion_tomada') || '0', 10);
+      if (tomada && Date.now() - tomada < 15000) return;   // recien tomada aca
+    } catch (e) {}
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
     const { data, error } = await supabaseClient
@@ -278,6 +299,6 @@ async function verificarSuscripcionActiva() {
   if (!exentas.includes(pagina)) {
     verificarSuscripcionActiva();
     cwVerificarSesionUnica();
-    setInterval(cwVerificarSesionUnica, 30000);
+    setInterval(cwVerificarSesionUnica, 12000);
   }
 })();
