@@ -504,6 +504,21 @@ function _togglePwd(id, btn) {
         setTimeout(() => el.classList.remove('show'), 1800);
   }
 
+  // El cartel de la firma dice dos cosas distintas segun como haya salido, asi
+  // que no alcanza con flashSaveMsg (que siempre muestra el texto fijo del HTML).
+  // Se deja mas tiempo cuando es un aviso: hay algo que hacer, no solo leer.
+  function avisarFirma(texto, esAviso) {
+        const el = document.getElementById('save-firma-msg');
+        el.textContent = texto;
+        el.style.color = esAviso ? '#b45309' : '';
+        el.classList.add('show');
+        clearTimeout(window.__firmaMsgTimer);
+        window.__firmaMsgTimer = setTimeout(() => {
+              el.classList.remove('show');
+              setTimeout(() => { el.textContent = 'Guardado ✓'; el.style.color = ''; }, 300);
+        }, esAviso ? 3000 : 1800);
+  }
+
     async function cambiarPassword() { const pActual = document.getElementById('input-pass-actual').value; const p1 = document.getElementById('input-nueva-pass').value; const p2 = document.getElementById('input-nueva-pass2').value; const errEl = document.getElementById('error-pass-msg'); errEl.classList.remove('show'); errEl.textContent = ''; if (!pActual || !p1 || !p2) { errEl.textContent = 'Completá todos los campos.'; errEl.classList.add('show'); return; } if (p1.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.classList.add('show'); return; } if (p1 !== p2) { errEl.textContent = 'Las contraseñas no coinciden.'; errEl.classList.add('show'); return; } const { error: errorActual } = await supabaseClient.auth.signInWithPassword({ email: CURRENT_USER.email, password: pActual }); if (errorActual) { errEl.textContent = 'La contraseña actual es incorrecta.'; errEl.classList.add('show'); return; } const { error } = await supabaseClient.auth.updateUser({ password: p1 }); if (error) { errEl.textContent = error.message; errEl.classList.add('show'); return; } document.getElementById('input-pass-actual').value = ''; document.getElementById('input-nueva-pass').value = ''; document.getElementById('input-nueva-pass2').value = ''; flashSaveMsg('save-pass-msg'); _passwordEditando = false; _aplicarLockPassword(); }
 
   let _firmaEditando = false;
@@ -643,7 +658,9 @@ function _togglePwd(id, btn) {
                 if (modoFirmaActual === 'texto') {
                           payload = { user_id: CURRENT_USER.id, modo: 'texto', texto: document.getElementById('firma-texto').value, archivo_url: null };
                 } else {
-                          if (!firmaArchivoFile && !firmaArchivoDataUrl) { flashSaveMsg('save-firma-msg'); return; }
+                          // Antes esto mostraba "Guardado ✓" y se iba sin guardar nada:
+                          // el usuario se quedaba pensando que tenia firma.
+                          if (!firmaArchivoFile && !firmaArchivoDataUrl) { avisarFirma('Elegí una imagen antes de guardar', true); return; }
                           let url = firmaArchivoDataUrl && !firmaArchivoFile ? firmaArchivoDataUrl : null;
                                 if (firmaArchivoFile) url = await subirArchivoFirma(firmaArchivoFile);
                                 url = url.replace(/#w\d+$/, '') + '#w' + firmaArchivoAncho;
@@ -651,7 +668,7 @@ function _togglePwd(id, btn) {
                 }
                 const { error } = await supabaseClient.from('centralweb_firmas').upsert(payload, { onConflict: 'user_id' });
                 if (error) throw error;
-                flashSaveMsg('save-firma-msg');
+                avisarFirma('Guardado ✓', false);
                 _firmaEditando = false;
                 _aplicarLockFirma();
         } catch (e) {
