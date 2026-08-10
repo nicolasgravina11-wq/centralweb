@@ -166,7 +166,12 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
     } const adjuntosFinal = []; const adjuntosFallidos = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const nombreSeguro = (nombre || 'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_'); const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombreSeguro}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetchConReintentos(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); adjuntosFallidos.push({ nombre: (item && item.nombre) || 'archivo', error: e.message }); } }
 
     function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    const adjuntosMencionHtml = adjuntosFinal.length ? ('<div style="margin:14px 0 0;font-size:13px;color:#475569">' + adjuntosFinal.map(function(a){ return '\uD83D\uDCCE Adjunto: <strong>' + escHtml(a.nombre) + '</strong>'; }).join('<br>') + '</div>') : '';
+    // Aviso en prosa, no una lista de archivos: el adjunto de verdad viaja como
+    // adjunto MIME y lo muestra el cliente de correo (Gmail al final, Outlook
+    // en el encabezado). La version anterior era un clip + "Adjunto: <b>nombre.pdf</b>"
+    // por linea, que se parecia demasiado a los chips de archivo de Gmail: el
+    // destinatario lo tomaba por el archivo, hacia click y no pasaba nada.
+    const adjuntosMencionHtml = adjuntosFinal.length ? ('<div style="margin:14px 0 0;font-size:13px;color:#64748b">\uD83D\uDCCE Este correo incluye ' + (adjuntosFinal.length === 1 ? 'un archivo adjunto' : adjuntosFinal.length + ' archivos adjuntos') + ': ' + adjuntosFinal.map(function(a){ return escHtml(a.nombre); }).join(', ') + '</div>') : '';
     let cuerpoConHistorial = cuerpoHtml + adjuntosMencionHtml;
     try {
       const historialMsgs = await supabaseFetch(`centralweb_mensajes?select=direccion,cuerpo_html,creado_en&caso_id=eq.${caso.id}&order=creado_en.asc`).catch(function(){ return []; });
