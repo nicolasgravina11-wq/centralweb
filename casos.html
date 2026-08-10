@@ -1195,6 +1195,35 @@ async function cerrarSesion() {
 
 function _ocultarOverlayCarga() { try { var ov = document.getElementById('cw-loading-overlay'); if (ov) ov.style.display = 'none'; } catch (eOv) {} }
 setTimeout(_ocultarOverlayCarga, 4000);
+
+// Pantalla a pagina completa para cuando NO se puede entrar a la app y hace
+// falta decir por que. Reemplaza a dos salidas malas que habia antes: dejar la
+// app vacia (sin bandejas ni casos, como si no hubiera trabajo) o rebotar a
+// login.html, que con la sesion todavia viva devuelve aca en un loop mudo.
+function _cwEscapar(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
+  _ocultarOverlayCarga();
+  var caja = document.createElement('div');
+  caja.style.cssText = 'position:fixed;inset:0;background:#f5f6f8;z-index:2147483645;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif';
+  caja.innerHTML =
+    '<div style="max-width:470px;width:100%;background:#fff;border:1px solid #e3e8ef;border-radius:12px;padding:30px 32px;box-shadow:0 8px 28px rgba(16,24,40,.10)">' +
+      '<div style="font:600 17px/1.4 inherit;color:#101828;margin-bottom:10px">' + titulo + '</div>' +
+      '<div style="font:400 14px/1.6 inherit;color:#475467">' + htmlTexto + '</div>' +
+      '<div id="cw-bloqueo-botones" style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap"></div>' +
+    '</div>';
+  document.body.appendChild(caja);
+  var cont = caja.querySelector('#cw-bloqueo-botones');
+  (botones || []).forEach(function (b) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = b.texto;
+    btn.style.cssText = b.primario
+      ? 'background:#2563eb;color:#fff;border:0;border-radius:8px;padding:9px 18px;font:600 13.5px system-ui,sans-serif;cursor:pointer'
+      : 'background:#fff;color:#344054;border:1px solid #d0d5dd;border-radius:8px;padding:9px 18px;font:600 13.5px system-ui,sans-serif;cursor:pointer';
+    btn.onclick = b.accion;
+    cont.appendChild(btn);
+  });
+}
 (async function () {
   // ════════════════════════════════
   //  SESION REAL (Supabase) — reemplaza el viejo gate de localStorage
@@ -1221,12 +1250,48 @@ setTimeout(_ocultarOverlayCarga, 4000);
   }
   sessionStorage.removeItem('cw_redirect_guard');
 
-  const { data: perfil, error: errorPerfil } = await supabaseClient
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .single();
-  if (errorPerfil || !perfil) { window.location.href = 'login.html'; return; }
+  // Una cuenta de Auth puede existir sin fila en profiles (un alta a medio
+  // hacer, un usuario borrado del panel sin borrar su cuenta). Antes eso mandaba
+  // a login.html, que al ver la sesion viva devolvia aca: un rebote infinito sin
+  // ninguna explicacion. Se distingue "no existe el perfil" de "no se pudo leer":
+  // lo primero necesita a un administrador, lo segundo suele ser la conexion.
+  const _leerPerfil = function () {
+    return supabaseClient.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+  };
+  let { data: perfil, error: errorPerfil } = await _leerPerfil();
+  if (errorPerfil) {
+    await new Promise(r => setTimeout(r, 700));
+    ({ data: perfil, error: errorPerfil } = await _leerPerfil());
+  }
+  const _botonCerrarSesion = { texto: 'Cerrar sesión', accion: cerrarSesion };
+  if (errorPerfil) {
+    console.error('CentralWeb: no se pudo leer el perfil:', errorPerfil);
+    _cwPantallaBloqueo(
+      'No pudimos cargar tu perfil',
+      'Hubo un problema al leer tus datos de CentralWeb, así que no podemos mostrarte tus bandejas. Suele ser una falla momentánea de conexión.' +
+      '<div style="margin-top:12px;font-size:12.5px;color:#98a2b3">' + _cwEscapar(errorPerfil.message || errorPerfil.code || '') + '</div>',
+      [{ texto: 'Reintentar', primario: true, accion: function () { window.location.reload(); } }, _botonCerrarSesion]
+    );
+    return;
+  }
+  if (!perfil) {
+    _cwPantallaBloqueo(
+      'Tu cuenta todavía no está habilitada',
+      'Iniciaste sesión como <b>' + _cwEscapar(session.user.email || '') + '</b>, pero esa cuenta no tiene un usuario creado en CentralWeb: por eso no ves bandejas ni casos.' +
+      '<br><br>Pedile a un administrador que te dé de alta con este mismo correo.',
+      [_botonCerrarSesion]
+    );
+    return;
+  }
+  if (!perfil.empresa_id) {
+    _cwPantallaBloqueo(
+      'Tu usuario no está asociado a ninguna empresa',
+      'Tu cuenta existe, pero no tiene empresa asignada, y en CentralWeb las bandejas y los casos son siempre de una empresa.' +
+      '<br><br>Un administrador tiene que asignarte una desde el panel de administración.',
+      [_botonCerrarSesion]
+    );
+    return;
+  }
 
   const EMPRESA_ID = perfil.empresa_id; const CURRENT_USER_ID = session.user.id;
 
