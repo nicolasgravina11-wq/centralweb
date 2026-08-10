@@ -1664,7 +1664,10 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-usuario-input-nombre').disabled = !editando;
     document.getElementById('detalle-usuario-input-apellido').disabled = !editando;
     document.getElementById('detalle-usuario-input-rol').disabled = !editando;
-        document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && u.id !== CURRENT_USER.id) ? '' : 'none';
+        // Oculto mientras se edita: al pasar a edicion, los botones de la derecha
+        // cambian y el rojo se corre justo debajo de donde estaba "Editar". Dos
+        // clicks seguidos en el mismo punto terminaban en el borrado.
+        document.getElementById('detalle-usuario-eliminar-btn').style.display = (ES_ADMIN && !editando && u.id !== CURRENT_USER.id) ? '' : 'none';
     document.getElementById('detalle-usuario-guardar-btn').style.display = 'none';
     document.getElementById('detalle-usuario-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
     document.getElementById('detalle-usuario-cancelar-btn').style.display = editando ? '' : 'none';
@@ -1934,7 +1937,9 @@ async function eliminarUsuario(id) {
     _rteSetAttachments('toolbar_detalle_bienvenida', b.archivos_adjuntos || []);
     document.getElementById('detalle-mensaje-guardar-btn').style.display = editando ? '' : 'none';
     document.getElementById('detalle-subbandeja-crear-btn').style.display = ES_ADMIN ? '' : 'none';
-    document.getElementById('detalle-bandeja-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
+    // Ver el comentario en renderDetalleUsuario: en edicion el rojo queda donde
+    // estaba "Editar", asi que no se muestra mientras se edita.
+    document.getElementById('detalle-bandeja-eliminar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
     document.getElementById('detalle-bandeja-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
     document.getElementById('detalle-bandeja-cancelar-btn').style.display = editando ? '' : 'none';
     document.getElementById('detalle-bandeja-cerrar-btn').style.display = editando ? 'none' : '';
@@ -2234,7 +2239,7 @@ async function eliminarUsuario(id) {
     document.getElementById('detalle-respuesta-input-nombre').disabled = !editando;
     document.getElementById('detalle-respuesta-input-texto').setAttribute('contenteditable', editando ? 'true' : 'false');
     document.getElementById('toolbar-detalle-respuesta').style.display = editando ? '' : 'none';
-    document.getElementById('detalle-respuesta-eliminar-btn').style.display = ES_ADMIN ? '' : 'none';
+    document.getElementById('detalle-respuesta-eliminar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
     document.getElementById('detalle-respuesta-guardar-btn').style.display = 'none';
     document.getElementById('detalle-respuesta-editar-btn').style.display = (ES_ADMIN && !editando) ? '' : 'none';
     document.getElementById('detalle-respuesta-cancelar-btn').style.display = editando ? '' : 'none';
