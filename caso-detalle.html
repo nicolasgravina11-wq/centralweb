@@ -1785,7 +1785,9 @@
   // comporta como casos.html: limpia los datos locales y manda al login, con el mismo
   // guard para no rebotar en loop entre las dos paginas.
   function _sinSesionAlLogin() {
-    try { Object.keys(localStorage).filter(k => k.startsWith('cw_')).forEach(k => localStorage.removeItem(k)); } catch (eLs) {}
+    // cw_device_id se preserva: identifica a la maquina, no a la sesion. Ver el
+    // comentario en casos.html — borrarlo hace que la proxima sesion se expulse sola.
+    try { Object.keys(localStorage).filter(k => k.startsWith('cw_') && k !== 'cw_device_id').forEach(k => localStorage.removeItem(k)); } catch (eLs) {}
     if (sessionStorage.getItem('cw_redirect_guard') === '1') {
       sessionStorage.removeItem('cw_redirect_guard');
       document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif">No pudimos confirmar tu sesión. <a href="login.html">Volvé a iniciar sesión</a>.</div>';
