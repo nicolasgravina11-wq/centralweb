@@ -2438,11 +2438,25 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
       if (error || !data) return;
       const vistoPorId = {};
       data.forEach(function (p) { vistoPorId[p.id] = p.last_seen; });
+      let cambio = false;
       USUARIOS_DINAMICOS.forEach(function (u) {
         if (u.key !== CURRENT_USER_KEY && Object.prototype.hasOwnProperty.call(vistoPorId, u.key)) {
+          if (u.last_seen !== vistoPorId[u.key]) cambio = true;
           u.last_seen = vistoPorId[u.key];
         }
       });
+      // Refrescar el dato no alcanza: las listas se dibujan al abrirse, asi que
+      // una que ya estaba abierta se quedaba congelada hasta cerrarla y volver
+      // a abrirla. Si esta a la vista, se repinta.
+      if (cambio) {
+        try {
+          const listaBandeja = document.getElementById('bandeja-usuarios-list');
+          if (listaBandeja && listaBandeja.classList.contains('open')) renderBandejaUsuariosList();
+          // La clase .open vive en el backdrop, no en el modal.
+          const fondoTransfer = document.getElementById('transfer-modal-backdrop');
+          if (fondoTransfer && fondoTransfer.classList.contains('open')) updateTransferUserCounts();
+        } catch (eRepintar) {}
+      }
     } catch (e) { /* silencioso */ }
   }
   setInterval(_refrescarPresenciaAjena, 60000);
