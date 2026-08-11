@@ -1189,7 +1189,9 @@ async function cerrarSesion() {
   } catch (e) {
     console.error('Error al cerrar sesion:', e.message);
   }
-  Object.keys(localStorage).filter(k => k.startsWith('cw_')).forEach(k => localStorage.removeItem(k));
+  // cw_device_id sobrevive al cierre de sesion: es la identidad de la maquina.
+  // Si se borrara, cada logout haria que este equipo pareciera uno nuevo.
+  Object.keys(localStorage).filter(k => k.startsWith('cw_') && k !== 'cw_device_id').forEach(k => localStorage.removeItem(k));
   window.location.href = 'login.html';
 }
 
@@ -1299,11 +1301,18 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
   // iniciado sesión antes en este mismo navegador (localStorage es por
   // dominio, no por usuario). Si el usuario logueado cambió, limpiamos
   // todo el estado visual "cw_*" antes de que se lea/renderice.
+  // cw_device_id NO se borra: identifica a la MAQUINA, no al usuario ni a su
+  // estado visual. Borrarlo aca cerraba la sesion recien iniciada: login.html
+  // acababa de registrar ese id en profiles.sesion_device, esta limpieza lo
+  // borraba, y a los ~24s cwVerificarSesionUnica generaba uno nuevo, no
+  // coincidia con el guardado y expulsaba con el cartel de "otro dispositivo".
+  // Se disparaba justo al entrar un usuario distinto del anterior en el mismo
+  // navegador, que es cuando corre esta limpieza.
   localStorage.removeItem('cw_read');   // resto de cuando el leido era local
   const _cwUsuarioGuardado = localStorage.getItem('cw_usuario_activo');
   if (_cwUsuarioGuardado !== CURRENT_USER_ID) {
     Object.keys(localStorage)
-      .filter(k => k.startsWith('cw_') && k !== 'cw_usuario_activo')
+      .filter(k => k.startsWith('cw_') && k !== 'cw_usuario_activo' && k !== 'cw_device_id')
       .forEach(k => localStorage.removeItem(k));
   }
   localStorage.setItem('cw_usuario_activo', CURRENT_USER_ID);
