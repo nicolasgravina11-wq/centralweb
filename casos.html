@@ -2412,11 +2412,40 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
   // (reemplaza el online:true fijo que mostraba a todos como conectados)
   async function _actualizarPresencia() {
     try {
-      await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', CURRENT_USER_ID);
+      // El boton "Disponible" es esto y nada mas: en OFF se deja de latir y se
+      // borra la marca, para que los demas vean el puntito gris y el nombre
+      // abajo en las listas. NO bloquea nada: a alguien en OFF se le puede
+      // asignar y quitar casos igual. Antes el boton solo escribia en
+      // localStorage, asi que el estado no salia nunca de su propio navegador.
+      const disponible = localStorage.getItem('cw_disponible') !== 'off';
+      await supabaseClient.from('profiles')
+        .update({ last_seen: disponible ? new Date().toISOString() : null })
+        .eq('id', CURRENT_USER_ID);
     } catch (e) { /* silencioso */ }
   }
   _actualizarPresencia();
   setInterval(_actualizarPresencia, 60000);
+
+  // El last_seen de los DEMAS se leia una sola vez, al cargar la pagina: los
+  // puntitos quedaban congelados en la foto de ese momento y no reflejaban ni
+  // quien se iba ni quien llegaba. Se refresca en el mismo ritmo que el latido
+  // propio; las listas que los muestran (asignar y transferir) se arman al
+  // abrirse, asi que con mantener el dato al dia alcanza para que ordenen bien.
+  async function _refrescarPresenciaAjena() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles').select('id, last_seen').eq('empresa_id', EMPRESA_ID);
+      if (error || !data) return;
+      const vistoPorId = {};
+      data.forEach(function (p) { vistoPorId[p.id] = p.last_seen; });
+      USUARIOS_DINAMICOS.forEach(function (u) {
+        if (u.key !== CURRENT_USER_KEY && Object.prototype.hasOwnProperty.call(vistoPorId, u.key)) {
+          u.last_seen = vistoPorId[u.key];
+        }
+      });
+    } catch (e) { /* silencioso */ }
+  }
+  setInterval(_refrescarPresenciaAjena, 60000);
 
   function _esUsuarioKey(k) { return !!k && (k === 'user_ng' || getUsuariosDinamicos().some(u => u.key === k)); } // ── Permisos por bandeja (tabla centralweb_permisos) ──
   function getPermisos() {
@@ -3076,6 +3105,9 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
     online = !online;
     localStorage.setItem('cw_disponible', online ? 'on' : 'off');
     applyDisponible();
+    // Se avisa en el momento: sin esto el cambio esperaba al proximo latido
+    // (hasta 60s) y, puesto en OFF, no salia nunca del navegador.
+    _actualizarPresencia();
   });
 
   applyDisponible();
