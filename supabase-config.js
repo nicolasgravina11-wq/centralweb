@@ -244,7 +244,18 @@ async function cwVerificarSesionUnica() {
       .from('profiles').select('sesion_device').eq('id', session.user.id).maybeSingle();
     if (error || !data) return;
     if (!data.sesion_device) return;                   // todavia nadie la reclamo
-    if (data.sesion_device === cwDeviceId()) return;   // sigue siendo de esta maquina
+    // Red de seguridad: si el id de esta maquina no esta guardado, es que algo
+    // limpio el localStorage. Llamar a cwDeviceId() aca inventaria uno nuevo que
+    // por definicion no va a coincidir, y expulsaria a alguien que nunca se movio
+    // de lugar — que es exactamente el bug que se arreglo en casos.html. Ante la
+    // duda no se expulsa: la proxima vez que inicie sesion queda todo en orden.
+    let idLocal = null;
+    try { idLocal = localStorage.getItem('cw_device_id'); } catch (e) {}
+    if (!idLocal) {
+      console.error('CentralWeb: no hay id de dispositivo guardado; no se verifica la sesion unica');
+      return;
+    }
+    if (data.sesion_device === idLocal) return;        // sigue siendo de esta maquina
     await supabaseClient.auth.signOut();
     window.location.replace('login.html?sesion=cerrada');
   } catch (e) {
