@@ -2428,9 +2428,11 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
 
   // El last_seen de los DEMAS se leia una sola vez, al cargar la pagina: los
   // puntitos quedaban congelados en la foto de ese momento y no reflejaban ni
-  // quien se iba ni quien llegaba. Se refresca en el mismo ritmo que el latido
-  // propio; las listas que los muestran (asignar y transferir) se arman al
-  // abrirse, asi que con mantener el dato al dia alcanza para que ordenen bien.
+  // quien se iba ni quien llegaba. Se refresca cada 20s: mas seguido que el
+  // latido propio (60s) a proposito, porque un minuto viendo "disponible" a
+  // alguien que ya se fue es demasiado, y la consulta es solo id + last_seen.
+  // Sigue siendo un sondeo; para que sea instantaneo habria que habilitar
+  // profiles en Publications y escuchar por Realtime.
   async function _refrescarPresenciaAjena() {
     try {
       const { data, error } = await supabaseClient
@@ -2459,7 +2461,7 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
       }
     } catch (e) { /* silencioso */ }
   }
-  setInterval(_refrescarPresenciaAjena, 60000);
+  setInterval(_refrescarPresenciaAjena, 20000);
 
   function _esUsuarioKey(k) { return !!k && (k === 'user_ng' || getUsuariosDinamicos().some(u => u.key === k)); } // ── Permisos por bandeja (tabla centralweb_permisos) ──
   function getPermisos() {
