@@ -3181,7 +3181,21 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
       if (payload.eventType === 'INSERT') {
         // Un caso nuevo necesita construir la fila entera (permisos, formato de
         // fecha, celdas derivadas): para eso ya esta el cartel de novedades.
-        try { _novMostrar(1); } catch (e) {}
+        //
+        // El filtro de Realtime es por empresa, no por permisos: sin este
+        // chequeo el cartel le aparecia a TODOS los usuarios conectados por
+        // cualquier caso nuevo, incluso diciendoles "novedades en tus bandejas"
+        // de una bandeja a la que no tienen acceso (y al apretar Actualizar no
+        // encontraban nada). Es el mismo criterio que ya aplica _novChequear,
+        // el poller de 45s: hasta ahora los dos caminos se contradecian.
+        try {
+          var cNuevo = payload.new || {};
+          var esMio = cNuevo.asignado_user_id === CURRENT_USER_ID;
+          var keyNuevo = '';
+          try { keyNuevo = _bandejaKeyDeCaso(cNuevo) || ''; } catch (eKey) {}
+          if (!esMio && keyNuevo && !tieneAccesoBandeja(keyNuevo)) return;
+          _novMostrar(1);
+        } catch (e) {}
         return;
       }
       if (payload.eventType !== 'UPDATE' || !payload.new) return;
