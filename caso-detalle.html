@@ -3250,10 +3250,28 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
     if (ng) ng.online = online;
   }
 
+  // Esta pagina no latia presencia: mientras alguien leia o respondia un caso
+  // su last_seen se congelaba y a los 2 minutos el resto lo veia gris, aunque
+  // estuviera trabajando. Mismo criterio que casos.html, incluido el respeto
+  // por el boton Disponible (en OFF se borra la marca en vez de refrescarla).
+  async function _actualizarPresenciaDetalle() {
+    try {
+      const uid = window._CURRENT_USER_ID_DETALLE;
+      if (!uid) return;   // todavia no termino el bootstrap
+      const disponible = localStorage.getItem('cw_disponible') !== 'off';
+      await supabaseClient.from('profiles')
+        .update({ last_seen: disponible ? new Date().toISOString() : null })
+        .eq('id', uid);
+    } catch (e) { /* silencioso */ }
+  }
+  _actualizarPresenciaDetalle();
+  setInterval(_actualizarPresenciaDetalle, 60000);
+
   document.getElementById('disponible-btn').addEventListener('click', () => {
     online = !online;
     localStorage.setItem('cw_disponible', online ? 'on' : 'off');
     applyDisponible();
+    _actualizarPresenciaDetalle();   // que el cambio salga del navegador ya mismo
   });
 
   applyDisponible();
