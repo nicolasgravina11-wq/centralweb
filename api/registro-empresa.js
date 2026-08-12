@@ -232,7 +232,44 @@ module.exports = async (req, res) => {
     const venceMostrar = venceISO || empresa.trial_vence_en;
     const venceTexto = venceMostrar ? new Date(venceMostrar).toLocaleDateString('es-AR') : null;
 
-    if (MAILGUN_API_KEY) {
+    // ─────────────────────────────────────────────────────────────────────────
+    //  QUIEN PUEDE RECIBIR CORREO DESDE ACA
+    //  Este endpoint es publico a proposito: lo llama alta-inicial.html justo
+    //  despues del signUp, cuando todavia puede no haber sesion (si el proyecto
+    //  pide confirmar el email). Pero antes mandaba la bienvenida a la direccion
+    //  que viniera en el body, para cualquier sigla existente: con solo conocer
+    //  "nova" o "prueba2" un desconocido podia disparar correos ilimitados desde
+    //  nuestro dominio a quien quisiera. No filtraba datos, pero quemaba la
+    //  reputacion de envio, de la que depende todo el producto.
+    //
+    //  Dos condiciones ahora, y las dos tienen que darse:
+    //   1) el alta tiene que ser reciente y sin tocar (esNuevaYSinTocar), asi
+    //      una empresa ya establecida no puede usarse nunca como excusa;
+    //   2) el destinatario tiene que ser un usuario real de ESA empresa.
+    //  Si algo no cierra no se manda nada y queda en el log. Perder un correo
+    //  de bienvenida es barato; mandarselo a un desconocido no.
+    // ─────────────────────────────────────────────────────────────────────────
+    let destinatarioValido = null;
+    if (adminEmail && esNuevaYSinTocar) {
+      try {
+        const perfiles = await supabaseFetch(
+          `profiles?empresa_id=eq.${empresa.id}&email=eq.${encodeURIComponent(adminEmail)}&select=email`
+        );
+        if (perfiles && perfiles.length) destinatarioValido = perfiles[0].email;
+      } catch (ePerfil) {
+        console.error('No se pudo validar el destinatario del alta:', ePerfil.message);
+      }
+    }
+    if (adminEmail && !destinatarioValido) {
+      console.error(
+        'registro-empresa: no se manda bienvenida. sigla=' + sigla +
+        ' nueva=' + esNuevaYSinTocar + ' (el destinatario no es un usuario de esa empresa o el alta no es reciente)'
+      );
+    }
+
+    // El aviso interno tambien se limita a las altas nuevas: si no, cualquiera
+    // podia llenar de correos la casilla de administracion repitiendo el POST.
+    if (MAILGUN_API_KEY && esNuevaYSinTocar) {
       const textoInterno = `Se dio de alta una empresa nueva en CentralWeb.\n\nEmpresa: ${empresaNombre || '(sin nombre)'} (${sigla})\nAdmin: ${adminNombre || ''} ${adminApellido || ''} (${adminEmail || ''})\nTrial hasta: ${venceTexto || '(sin cambios de estado)'}\n\nGestionalo desde superadmin.html.`;
       try {
         await mandarMail({
@@ -245,17 +282,17 @@ module.exports = async (req, res) => {
       }
     }
 
-    if (adminEmail) {
+    if (destinatarioValido) {
       const asuntoBienvenida = `¡Bienvenido a CentralWeb, ${empresaNombre || sigla}!`;
       const textoMail = textoBienvenida({ adminNombre, empresaNombre, venceTexto });
       const htmlMail = htmlBienvenida({ adminNombre, empresaNombre, venceTexto });
       const keyResend = (RESEND_API_KEY || '').trim();
       try {
         if (keyResend && keyResend.startsWith('re_')) {
-          await mandarMailResend({ to: adminEmail, subject: asuntoBienvenida, text: textoMail, html: htmlMail });
+          await mandarMailResend({ to: destinatarioValido, subject: asuntoBienvenida, text: textoMail, html: htmlMail });
         } else if (MAILGUN_API_KEY) {
           await mandarMail({
-            to: adminEmail,
+            to: destinatarioValido,
             from: FROM_BIENVENIDA_FALLBACK,
             subject: asuntoBienvenida,
             text: textoMail,
