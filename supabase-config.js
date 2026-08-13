@@ -200,6 +200,75 @@ function cwDeviceId() {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  UN SOLO USUARIO POR NAVEGADOR
+//  La sesion de Supabase vive en sessionStorage, que es POR PESTAÑA, asi que dos
+//  usuarios distintos podian trabajar a la vez en dos pestañas del mismo
+//  navegador. Decision de producto de Nico: no se permite. El resto del estado
+//  (cw_all_cases, cw_status_map, cw_disponible…) vive en localStorage, que es
+//  por dominio: los dos usuarios se pisaban las cachés, compartian el boton
+//  Disponible, y como los numeros de ticket se repiten entre empresas, valores
+//  de una podian pintarse sobre los de otra.
+//
+//  Gana el ultimo que entra, igual que entre dispositivos. Para trabajar con dos
+//  usuarios a la vez esta la ventana de incognito, que tiene su propio storage.
+//  Varias pestañas del MISMO usuario siguen siendo normales y no molestan.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CW_DUENO_FRESCO_MS = 30000;   // si nadie late en 30s, el navegador queda libre
+
+// Quien manda en este navegador. Devuelve null si no hay nadie o la marca vencio.
+function cwDuenoNavegador() {
+  try {
+    const crudo = localStorage.getItem('cw_navegador_dueno');
+    if (!crudo) return null;
+    const d = JSON.parse(crudo);
+    if (!d || !d.userId || !d.ts) return null;
+    if (Date.now() - d.ts > CW_DUENO_FRESCO_MS) return null;   // se fue sin cerrar
+    return d;
+  } catch (e) {
+    return null;   // ante la duda, navegador libre: nunca dejar a nadie afuera
+  }
+}
+
+// Reclama el navegador. Se llama al iniciar sesion (desde cwTomarSesion).
+function cwTomarNavegador(userId) {
+  try {
+    localStorage.setItem('cw_navegador_dueno', JSON.stringify({ userId: userId, ts: Date.now() }));
+  } catch (e) { /* sin storage no se puede vigilar; se deja pasar */ }
+}
+
+// Latido: SOLO refresca si este usuario ya es el dueño. Si refrescara siempre,
+// la pestaña desplazada le robaria el navegador de vuelta al recien llegado y
+// los dos se expulsarian en bucle.
+function cwLatirNavegador(userId) {
+  try {
+    const d = cwDuenoNavegador();
+    if (d && d.userId === userId) cwTomarNavegador(userId);
+  } catch (e) {}
+}
+
+// Si otro usuario tomo este navegador, esta pestaña se cierra.
+async function cwVerificarNavegador() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+    const dueno = cwDuenoNavegador();
+    if (!dueno) {                       // nadie lo reclamo (o la marca vencio)
+      cwTomarNavegador(session.user.id);
+      return;
+    }
+    if (dueno.userId === session.user.id) {
+      cwLatirNavegador(session.user.id);
+      return;
+    }
+    await supabaseClient.auth.signOut();
+    window.location.replace('login.html?sesion=navegador');
+  } catch (e) {
+    console.error('CentralWeb: no se pudo verificar el usuario del navegador:', e);
+  }
+}
+
 // Marca este dispositivo como dueño de la sesion. Se llama SOLO al iniciar
 // sesion: si corriera en cada carga, dos maquinas se expulsarian en bucle.
 async function cwTomarSesion(userId) {
@@ -209,6 +278,8 @@ async function cwTomarSesion(userId) {
     try { sessionStorage.setItem('cw_sesion_tomada', String(Date.now())); } catch (e) {}
   };
   marcar();
+  // Este navegador pasa a ser de este usuario. Ver "UN SOLO USUARIO POR NAVEGADOR".
+  cwTomarNavegador(userId);
   try {
     const query = function() {
       return supabaseClient.from('profiles').update({ sesion_device: cwDeviceId() }).eq('id', userId);
@@ -311,5 +382,9 @@ async function verificarSuscripcionActiva() {
     verificarSuscripcionActiva();
     cwVerificarSesionUnica();
     setInterval(cwVerificarSesionUnica, 12000);
+    // Mas seguido que la de dispositivo: la otra pestaña esta acá al lado y el
+    // usuario ve las dos, asi que la demora se nota mucho mas.
+    cwVerificarNavegador();
+    setInterval(cwVerificarNavegador, 5000);
   }
 })();
