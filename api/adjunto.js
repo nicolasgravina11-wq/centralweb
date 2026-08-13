@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
 
     // Mismos controles que para subir el adjunto: empresa y acceso a la bandeja.
     const casos = await supabaseFetch(
-      `centralweb_casos?select=id,empresa_id,bandeja_id,asignado_user_id&id=eq.${casoId}`
+      `centralweb_casos?select=id,ticket,empresa_id,bandeja_id,asignado_user_id&id=eq.${casoId}`
     );
     if (!casos || !casos.length) {
       res.status(404).json({ ok: false, error: 'Caso no encontrado' });
@@ -147,9 +147,23 @@ module.exports = async (req, res) => {
       res.status(500).json({ ok: false, error: 'No se pudo determinar la empresa' });
       return;
     }
-    const prefijoEsperado = `${sigla}/notas/${casoId}/`;
-    if (String(path).includes('..') || !String(path).startsWith(prefijoEsperado)) {
-      console.error('adjunto: ruta rechazada. pedida=' + path + ' esperada bajo=' + prefijoEsperado);
+    // Los prefijos validos para ESTE caso. Cada origen arma la ruta distinto:
+    //   notas/    -> upload-nota-attachment (tambien los adjuntos de caso nuevo)
+    //   mensajes/ -> send-email (salientes)
+    //   <ticket>/ -> inbound-email (entrantes), que usa el ticket y no el id
+    // Todos salen de datos del servidor: la sigla de la empresa de quien pide y
+    // el ticket de la fila del caso. Nada de esto viene del body.
+    const ticketPlano = String(casos[0].ticket || '').replace('#', '');
+    const prefijosValidos = [
+      `${sigla}/notas/${casoId}/`,
+      `${sigla}/casos/${casoId}/`,
+      `${sigla}/mensajes/${casoId}/`
+    ];
+    if (ticketPlano) prefijosValidos.push(`${sigla}/${ticketPlano}/`);
+    const rutaPedida = String(path);
+    const permitida = !rutaPedida.includes('..') && prefijosValidos.some(function (p) { return rutaPedida.startsWith(p); });
+    if (!permitida) {
+      console.error('adjunto: ruta rechazada. pedida=' + rutaPedida + ' validas=' + prefijosValidos.join(' | '));
       res.status(403).json({ ok: false, error: 'La ruta no corresponde a este caso' });
       return;
     }
