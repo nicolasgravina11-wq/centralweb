@@ -16,6 +16,7 @@ const sanitizeHtml = require('sanitize-html');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const BUCKET_PRIVADO = 'adjuntos-privados';
 const MAILGUN_SIGNING_KEY = process.env.MAILGUN_SIGNING_KEY;const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY; const MAILGUN_DOMAIN = 'cweb.novadgt.com';
 
 const config = {
@@ -72,7 +73,11 @@ async function supabaseFetch(path, options = {}) {
   try { return JSON.parse(texto); } catch (e) { return null; }
 }
 
-async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } async function obtenerAdjuntosDesdeMailgun(fields) {
+// Los adjuntos entrantes van al bucket PRIVADO: se leen con una URL firmada que
+// emite /api/adjunto tras validar empresa y bandeja. Antes iban al publico, donde
+// la URL era toda la proteccion. Devuelve la RUTA, no una URL.
+// Lo ya subido al bucket publico queda donde esta y sigue abriendose igual.
+async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_PRIVADO}/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return path; } async function obtenerAdjuntosDesdeMailgun(fields) {
   if (!fields || !fields.attachments) return [];
   if (!MAILGUN_API_KEY) { console.error('Falta MAILGUN_API_KEY: no se pueden descargar adjuntos entrantes'); return []; }
   let metaLista;
@@ -252,7 +257,7 @@ module.exports = async (req, res) => {
 
     if (casoExistente) {
       const adjuntosResp = [];
-      for (const f of files) { try { const path = `${sigla}/${casoExistente.ticket.replace('#', '')}/${Date.now()}-${f.nombre}`; const url = await subirAdjunto(path, f.buffer, f.tipo); adjuntosResp.push({ nombre: f.nombre, url, tamano: f.buffer.length }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
+      for (const f of files) { try { const path = `${sigla}/${casoExistente.ticket.replace('#', '')}/${Date.now()}-${f.nombre}`; const rutaGuardada = await subirAdjunto(path, f.buffer, f.tipo); adjuntosResp.push({ nombre: f.nombre, path: rutaGuardada, tamano: f.buffer.length, privado: true }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
 
       await supabaseFetch('centralweb_mensajes', {
         method: 'POST',
@@ -287,7 +292,7 @@ module.exports = async (req, res) => {
     });
     const ticket = `#${numeroTicket}`;
 
-    const adjuntos = []; for (const f of files) { try { const path = `${sigla}/${String(numeroTicket)}/${Date.now()}-${f.nombre}`; const url = await subirAdjunto(path, f.buffer, f.tipo); adjuntos.push({ nombre: f.nombre, url, tamano: f.buffer.length }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
+    const adjuntos = []; for (const f of files) { try { const path = `${sigla}/${String(numeroTicket)}/${Date.now()}-${f.nombre}`; const rutaGuardada = await subirAdjunto(path, f.buffer, f.tipo); adjuntos.push({ nombre: f.nombre, path: rutaGuardada, tamano: f.buffer.length, privado: true }); } catch (e) { console.error('No se pudo subir un adjunto entrante:', f.nombre, e.message); } }
 
     const casos = await supabaseFetch('centralweb_casos', {
       method: 'POST',
