@@ -3005,13 +3005,13 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
                       var elAbs = _buildAbsorbedThreadFragment(pev.otro);
                       _insertTimelineEntryChrono(elAbs, (pev.ts || 0) + 0.1);
                     }
-                  } catch (eCheckAbs) {}
+                  } catch (eCheckAbs) { console.error('CentralWeb: no se pudo rearmar el caso absorbido ' + (pev && pev.otro), eCheckAbs); }
                 }
-              } catch (eAbsLoop) {}
+              } catch (eAbsLoop) { console.error('CentralWeb: fallo el barrido de casos absorbidos:', eAbsLoop); }
             })();
-          } catch (eEventosRemotos2) {}
-        }).catch(function(){});
-      } catch (eEventosRemotos) {}
+          } catch (eEventosRemotos2) { console.error('CentralWeb: fallo el procesamiento de eventos remotos:', eEventosRemotos2); }
+        }).catch(function(eProm){ console.error('CentralWeb: fallo la promesa de eventos remotos:', eProm); });
+      } catch (eEventosRemotos) { console.error('CentralWeb: no se pudieron leer los eventos remotos:', eEventosRemotos); }
     })();
 
     // Backfill del snapshot de pre-combinación para poder descombinar desde el caso PRINCIPAL,
@@ -3099,7 +3099,7 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
             var nuevo = _buildAbsorbedThreadFragment(tk);
             viejos.forEach(function(v){ v.remove(); });
             if (nuevo && parent) parent.insertBefore(nuevo, anchorNode);
-          } catch(eFix) {}
+          } catch(eFix) { console.error('CentralWeb: fallo la correccion diferida del absorbido ' + tk, eFix); }
         });
       })();
     } catch(eOuter) {}
