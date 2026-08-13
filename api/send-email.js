@@ -15,6 +15,21 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.s
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
 const MAILGUN_DOMAIN = 'cweb.novadgt.com';
+const BUCKET_PRIVADO = 'adjuntos-privados';
+
+// Baja un adjunto del bucket privado con la service role key. Quien llama TIENE
+// que haber validado antes que la ruta pertenece al caso: esta funcion puede
+// leer todo el bucket.
+async function bajarPrivado(ruta) {
+  const respuesta = await fetchConReintentos(`${SUPABASE_URL}/storage/v1/object/${BUCKET_PRIVADO}/${ruta}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
+  });
+  if (!respuesta.ok) {
+    const texto = await respuesta.text();
+    throw new Error(`Storage download ${ruta} -> ${respuesta.status}: ${texto}`);
+  }
+  return Buffer.from(await respuesta.arrayBuffer());
+}
 
 // El nombre del remitente va entre comillas en el header From: los sectores traen
 // puntos ("Dpto.", "Div.") y por RFC 5322 un display-name sin comillas no puede
@@ -68,7 +83,7 @@ async function getUsuarioDesdeToken(token) {
 }
 
 async function fetchConReintentos(url, options, intentos) { intentos = intentos || 3; let ultimoError; for (let i = 0; i < intentos; i++) { try { return await fetch(url, options); } catch (e) { ultimoError = e; console.error('Intento ' + (i + 1) + '/' + intentos + ' fallido para ' + url + ':', e.message); if (i < intentos - 1) await new Promise(function(r){ setTimeout(r, 500 * (i + 1)); }); } } throw ultimoError; }
-async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetchConReintentos(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`; } module.exports = async (req, res) => {
+async function subirAdjunto(path, buffer, contentType) { const respuesta = await fetchConReintentos(`${SUPABASE_URL}/storage/v1/object/${BUCKET_PRIVADO}/${path}`, { method: 'POST', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': contentType || 'application/octet-stream' }, body: buffer }); if (!respuesta.ok) { const texto = await respuesta.text(); throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`); } return path; } module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'Method not allowed' });
     return;
@@ -163,7 +178,20 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
       asuntoFinal = prefijoMatch
         ? `${prefijoMatch[0]}[${caso.ticket}] ${asuntoBase.slice(prefijoMatch[0].length)}`
         : `[${caso.ticket}] ${asuntoBase}`;
-    } const adjuntosFinal = []; const adjuntosFallidos = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const nombreSeguro = (nombre || 'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_'); const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombreSeguro}`; const url = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, url, tamano: buffer.length, buffer, tipo }); } else if (item.url) { const respAdj = await fetchConReintentos(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); adjuntosFallidos.push({ nombre: (item && item.nombre) || 'archivo', error: e.message }); } }
+    } const adjuntosFinal = []; const adjuntosFallidos = []; for (const item of (adjuntos || [])) { try { let buffer, tipo, nombre = item.nombre || 'archivo'; if (item.contenidoBase64) { buffer = Buffer.from(item.contenidoBase64, 'base64'); tipo = item.tipo || 'application/octet-stream'; const nombreSeguro = (nombre || 'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_'); const path = `${sigla}/mensajes/${caso.id}/${Date.now()}-${nombreSeguro}`; const rutaSubida = await subirAdjunto(path, buffer, tipo); adjuntosFinal.push({ nombre, path: rutaSubida, tamano: buffer.length, buffer, tipo }); } else if (item.path) { /* Adjunto que ya vive en el bucket privado (se re-adjunta desde la
+        conversacion, o lo acaba de subir el front). La ruta viene del CLIENTE, asi que se
+        valida igual que en /api/adjunto: si no, alguien podria pedir que se adjunte un
+        archivo de otra empresa y se lo mande por correo a si mismo. */
+        const ticketPlano = String(caso.ticket || '').replace('#', '');
+        const prefijosValidos = [`${sigla}/notas/${caso.id}/`, `${sigla}/casos/${caso.id}/`, `${sigla}/mensajes/${caso.id}/`];
+        if (ticketPlano) prefijosValidos.push(`${sigla}/${ticketPlano}/`);
+        const ruta = String(item.path);
+        if (ruta.includes('..') || !prefijosValidos.some(function (p) { return ruta.startsWith(p); })) {
+          throw new Error('La ruta del adjunto no corresponde a este caso: ' + ruta);
+        }
+        buffer = await bajarPrivado(ruta); tipo = item.tipo || 'application/octet-stream';
+        adjuntosFinal.push({ nombre, path: ruta, tamano: item.tamano || buffer.length, buffer, tipo });
+      } else if (item.url) { const respAdj = await fetchConReintentos(item.url); buffer = Buffer.from(await respAdj.arrayBuffer()); tipo = item.tipo || 'application/octet-stream'; adjuntosFinal.push({ nombre, url: item.url, tamano: item.tamano || buffer.length, buffer, tipo }); } } catch (e) { console.error('No se pudo procesar un adjunto saliente:', item && item.nombre, e.message); adjuntosFallidos.push({ nombre: (item && item.nombre) || 'archivo', error: e.message }); } }
 
     function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     // Aviso en prosa, no una lista de archivos: el adjunto de verdad viaja como
@@ -212,7 +240,7 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
         cc: cc || null,
         asunto: asuntoFinal,
         cuerpo_html: cuerpoHtml,
-        mailgun_id: mgJson.id || null, adjuntos: adjuntosFinal.map(a => ({ nombre: a.nombre, url: a.url, tamano: a.tamano }))
+        mailgun_id: mgJson.id || null, adjuntos: adjuntosFinal.map(a => (a.path ? { nombre: a.nombre, path: a.path, tamano: a.tamano, privado: true } : { nombre: a.nombre, url: a.url, tamano: a.tamano }))
       })
     }).catch(e => console.error('No se pudo guardar el mensaje enviado en Supabase:', e.message));
 
