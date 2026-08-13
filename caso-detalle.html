@@ -2401,7 +2401,10 @@ function _leerConVencimiento(clave, maxAgeMs) {
       }
     } catch (e) {}
   const mi = _leerConVencimiento('cw_mensaje_inicial_' + ticket, 60 * 60 * 1000);
-      if (mi) return (mi.adjuntos || []).map(name => ({ name, size: '' }));
+      // Puede venir un string (lo normal) o un objeto viejo mal serializado: si el
+  // nombre no es texto, una excepcion aca se lleva puesta TODA la tarjeta del
+  // caso absorbido, no solo el adjunto.
+  if (mi) return (mi.adjuntos || []).map(a => ({ name: (typeof a === 'string' ? a : ((a && (a.nombre || a.name)) || 'Adjunto')), size: '' }));
     return [];
   }
 
@@ -4205,7 +4208,7 @@ function openNote() {
     if (_miAdj) {
           // Caso creado desde "+ Nuevo Caso": solo muestra los adjuntos reales que se cargaron ahí (puede ser ninguno).
           const adjuntos = _miAdj.adjuntos || [];
-          _renderAttachmentsConZip(container, adjuntos.map(name => ({ name, size: '' })));
+          _renderAttachmentsConZip(container, adjuntos.map(a => ({ name: (typeof a === 'string' ? a : ((a && (a.nombre || a.name)) || 'Adjunto')), size: '' })));
     } else {
       _renderAttachmentsConZip(container, []);
     }
