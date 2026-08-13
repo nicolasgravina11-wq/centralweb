@@ -176,16 +176,42 @@ module.exports = async (req, res) => {
       throw e;
     }
 
-    const bandejasMarcadas = Array.isArray(bandejas) ? bandejas : [];
-    for (const bandejaId of bandejasMarcadas) {
-      await supabaseFetch('centralweb_permisos', {
-        method: 'POST',
-        prefer: 'return=minimal',
-        body: JSON.stringify({ empresa_id: empresaId, bandeja_id: bandejaId, user_id: nuevoAuthId, acceso: true, ver_otros: false })
-      }).catch(e => console.error('No se pudo asignar permiso de bandeja:', e.message));
+    // Las bandejas vienen del body: se filtran contra las de ESTA empresa. Sin
+    // esto se podian insertar permisos con el bandeja_id de otra empresa. No
+    // filtraba datos (RLS igual acota los casos), pero dejaba filas mentirosas.
+    const bandejasPedidas = Array.isArray(bandejas) ? bandejas : [];
+    let bandejasMarcadas = [];
+    if (bandejasPedidas.length) {
+      const propias = await supabaseFetch(`centralweb_bandejas?select=id&empresa_id=eq.${empresaId}`);
+      const idsPropias = new Set((propias || []).map(b => b.id));
+      bandejasMarcadas = bandejasPedidas.filter(id => idsPropias.has(id));
+      const ajenas = bandejasPedidas.filter(id => !idsPropias.has(id));
+      if (ajenas.length) console.error('create-user: se ignoraron bandejas de otra empresa:', ajenas.join(', '));
     }
 
-    res.status(200).json({ ok: true, profile: nuevoPerfil });
+    // Si un permiso no se puede asignar, el usuario queda creado pero sin ver
+    // nada. Antes eso solo iba al log y la respuesta decia ok: ahora se avisa,
+    // para que el administrador sepa que tiene que revisarlo.
+    const permisosFallidos = [];
+    for (const bandejaId of bandejasMarcadas) {
+      try {
+        await supabaseFetch('centralweb_permisos', {
+          method: 'POST',
+          prefer: 'return=minimal',
+          body: JSON.stringify({ empresa_id: empresaId, bandeja_id: bandejaId, user_id: nuevoAuthId, acceso: true, ver_otros: false })
+        });
+      } catch (e) {
+        console.error('No se pudo asignar permiso de bandeja:', bandejaId, e.message);
+        permisosFallidos.push(bandejaId);
+      }
+    }
+
+    const respuesta = { ok: true, profile: nuevoPerfil };
+    if (permisosFallidos.length) {
+      respuesta.advertencia = 'El usuario se creó, pero no se pudieron asignar ' + permisosFallidos.length +
+        ' de ' + bandejasMarcadas.length + ' bandejas. Revisá sus permisos en el detalle del usuario.';
+    }
+    res.status(200).json(respuesta);
   } catch (e) {
     console.error('Error en create-user:', e.message);
     res.status(500).json({ ok: false, error: e.message });
