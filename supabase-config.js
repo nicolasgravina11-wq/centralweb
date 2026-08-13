@@ -231,9 +231,29 @@ function cwDuenoNavegador() {
   }
 }
 
-// Reclama el navegador. Se llama al iniciar sesion (desde cwTomarSesion).
-function cwTomarNavegador(userId) {
+// Bitacora chica para diagnosticar quien se queda con el navegador y quien es
+// expulsado. Solo observa: no cambia ningun comportamiento. Se lee con
+// JSON.parse(localStorage.getItem('cw_navegador_log')).
+function cwLogNavegador(evento, yo, dueno) {
   try {
+    const log = JSON.parse(localStorage.getItem('cw_navegador_log') || '[]');
+    log.push({
+      t: new Date().toISOString().slice(11, 23),
+      pag: location.pathname.split('/').pop(),
+      ev: evento,
+      yo: String(yo || '').slice(0, 8),
+      dueno: String(dueno || '').slice(0, 8)
+    });
+    while (log.length > 40) log.shift();
+    localStorage.setItem('cw_navegador_log', JSON.stringify(log));
+  } catch (e) {}
+}
+
+// Reclama el navegador. Se llama al iniciar sesion (desde cwTomarSesion).
+function cwTomarNavegador(userId, motivo) {
+  try {
+    const antes = JSON.parse(localStorage.getItem('cw_navegador_dueno') || 'null');
+    if (!antes || antes.userId !== userId) cwLogNavegador('RECLAMA' + (motivo ? ' (' + motivo + ')' : ''), userId, antes && antes.userId);
     localStorage.setItem('cw_navegador_dueno', JSON.stringify({ userId: userId, ts: Date.now() }));
   } catch (e) { /* sin storage no se puede vigilar; se deja pasar */ }
 }
@@ -255,13 +275,15 @@ async function cwVerificarNavegador() {
     if (!session) return;
     const dueno = cwDuenoNavegador();
     if (!dueno) {                       // nadie lo reclamo (o la marca vencio)
-      cwTomarNavegador(session.user.id);
+      const crudo = (function () { try { return JSON.parse(localStorage.getItem('cw_navegador_dueno') || 'null'); } catch (e) { return null; } })();
+      cwTomarNavegador(session.user.id, crudo ? 'marca vencida de ' + String(crudo.userId).slice(0, 8) : 'estaba libre');
       return;
     }
     if (dueno.userId === session.user.id) {
       cwLatirNavegador(session.user.id);
       return;
     }
+    cwLogNavegador('EXPULSADO', session.user.id, dueno.userId);
     await supabaseClient.auth.signOut();
     window.location.replace('login.html?sesion=navegador');
   } catch (e) {
