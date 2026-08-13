@@ -1,5 +1,6 @@
-// Sube adjuntos de una nota interna a Supabase Storage (bucket "adjuntos")
-// y devuelve las URLs publicas para guardar en centralweb_notas.adjuntos.
+// Sube adjuntos de una nota interna al bucket PRIVADO "adjuntos-privados" y
+// devuelve las RUTAS para guardar en centralweb_notas.adjuntos. Para verlos hay
+// que pedir una URL firmada a /api/adjunto, que valida empresa y bandeja.
 //
 // Body esperado (JSON):
 //   { casoId, archivos: [{ nombre, tipo, contenidoBase64 }] }
@@ -12,6 +13,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const BUCKET_PRIVADO = 'adjuntos-privados';
 
 async function supabaseFetch(path, options = {}) {
   const headers = {
@@ -52,8 +54,13 @@ function slugify(str) {
     .replace(/[^a-z0-9.]+/g, '-');
 }
 
-async function subirAdjunto(path, buffer, contentType) {
-  const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/adjuntos/${path}`, {
+// Los adjuntos de notas van al bucket PRIVADO: no se pueden leer sin una URL
+// firmada, que emite /api/adjunto despues de validar empresa y bandeja. Antes
+// iban al bucket publico "adjuntos", donde la URL era toda la proteccion.
+// Devuelve la RUTA, no una URL: la URL se arma al abrir el archivo y vence.
+// Lo ya subido al bucket publico queda donde esta y sigue funcionando.
+async function subirAdjuntoPrivado(path, buffer, contentType) {
+  const respuesta = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_PRIVADO}/${path}`, {
     method: 'POST',
     headers: {
       apikey: SERVICE_KEY,
@@ -66,7 +73,7 @@ async function subirAdjunto(path, buffer, contentType) {
     const texto = await respuesta.text();
     throw new Error(`Storage upload ${path} -> ${respuesta.status}: ${texto}`);
   }
-  return `${SUPABASE_URL}/storage/v1/object/public/adjuntos/${path}`;
+  return path;
 }
 
 module.exports = async (req, res) => {
@@ -139,8 +146,11 @@ module.exports = async (req, res) => {
         const buffer = Buffer.from(item.contenidoBase64 || '', 'base64');
         const tipo = item.tipo || 'application/octet-stream';
         const path = `${sigla}/notas/${casoId}/${Date.now()}-${slugify(nombre)}`;
-        const url = await subirAdjunto(path, buffer, tipo);
-        adjuntosFinal.push({ nombre, url, tamano: buffer.length });
+        await subirAdjuntoPrivado(path, buffer, tipo);
+        // Se guarda la ruta, no una URL. El front pide la URL firmada al abrir.
+        // "privado: true" es la marca que distingue estos de los historicos,
+        // que siguen trayendo "url" y se abren directo.
+        adjuntosFinal.push({ nombre, path, tamano: buffer.length, privado: true });
       } catch (e) {
         console.error('No se pudo subir un adjunto de nota:', item && item.nombre, e.message);
       }
