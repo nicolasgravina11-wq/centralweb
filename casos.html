@@ -3052,7 +3052,9 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
       ts: Date.now(),
       data: {
         texto: mensajeInicialHTML,
-        adjuntos: _nuevoCasoAttachFiles.slice(),
+        // Los nombres, no los File: un File pasado por JSON.stringify queda como {}
+        // y del otro lado se leia como nombre de archivo, rompiendo el render.
+        adjuntos: _nuevoCasoAttachFiles.map(function (f) { return f.name; }),
       }
     }));
 
