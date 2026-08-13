@@ -2950,7 +2950,14 @@ const _miIngreso = _leerConVencimiento('cw_mensaje_inicial_' + c.ticket, 60 * 60
     const combineEvents = JSON.parse(localStorage.getItem('cw_combine_events_' + c.ticket) || '[]');
     (function() {
       try {
-        supabaseClient.from('centralweb_caso_eventos').select('tipo,payload').eq('ticket', c.ticket).then(function(res) {
+        // Se espera la sesion ANTES de consultar: esta query salia apenas se
+        // parseaba el script y podia irse sin token. Con RLS eso no da error,
+        // devuelve [] — y el codigo de abajo interpreta "no hay eventos" y corta,
+        // dejando el caso absorbido sin su tarjeta en el timeline. Intermitente,
+        // segun si el cliente ya habia terminado de cargar el token.
+        supabaseClient.auth.getSession()
+          .then(function() { return supabaseClient.from('centralweb_caso_eventos').select('tipo,payload').eq('ticket', c.ticket); })
+          .then(function(res) {
           try {
             const eventosRemotos = res && res.data;
             if (!eventosRemotos || !eventosRemotos.length) return;
