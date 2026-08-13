@@ -3579,7 +3579,7 @@ function openNote() {
               </div>
             </div>
           </div>
-                    <div class="email-body note-text" style="white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>${(adjuntos && adjuntos.length) ? '<div class="note-attachments" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + adjuntos.map(a => '<a href="' + a.url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:var(--note-accent-bg);border:1px solid var(--note-accent-light);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--note-accent);text-decoration:none">📎 ' + a.nombre + '</a>').join('') + '</div>' : ''}
+                    <div class="email-body note-text" style="white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>${(adjuntos && adjuntos.length) ? '<div class="note-attachments" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' + adjuntos.map(a => { var _estilo = 'display:inline-flex;align-items:center;gap:5px;background:var(--note-accent-bg);border:1px solid var(--note-accent-light);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--note-accent);text-decoration:none'; /* Sin url y con path = adjunto privado: no hay enlace fijo, la URL firmada se pide al hacer click. Antes quedaba href="undefined" y el navegador iba a /undefined. */ return a.url ? ('<a href="' + a.url + '" target="_blank" rel="noopener" style="' + _estilo + '">📎 ' + a.nombre + '</a>') : ('<a href="#" onclick="return _abrirAdjuntoPrivado(this)" data-path="' + String(a.path || '').replace(/"/g, '&quot;') + '" style="' + _estilo + ';cursor:pointer">📎 ' + a.nombre + '</a>'); }).join('') + '</div>' : ''}
         </div>
       </div>`;
     return entry;
@@ -4099,6 +4099,26 @@ function openNote() {
     if (!r.ok || !d.ok || !d.url) throw new Error(d.error || 'No se pudo obtener el archivo');
     return d.url;
   }
+
+  // Para los enlaces de adjuntos que se arman como HTML (los de las notas en el
+  // timeline, que no pasan por _buildAttachCard). Se llama desde un onclick, asi
+  // que tiene que ser global.
+  function _abrirAdjuntoPrivado(el) {
+    // La pestaña se abre YA, sincronicamente: si se abriera despues del await,
+    // el bloqueador de pop-ups la frena por no venir de un gesto del usuario.
+    const w = window.open('', '_blank');
+    _resolverUrlAdjunto({ path: el && el.dataset ? el.dataset.path : null })
+      .then(function (url) {
+        if (!url) throw new Error('no se obtuvo el archivo');
+        if (w) w.location = url; else window.location = url;
+      })
+      .catch(function (e) {
+        if (w) w.close();
+        alert('No se pudo abrir el archivo: ' + e.message);
+      });
+    return false;
+  }
+  window._abrirAdjuntoPrivado = _abrirAdjuntoPrivado;
 
   async function _downloadAttach(name, url) {
     if (_esAdjuntoPrivado(url)) {
