@@ -3916,7 +3916,14 @@ function openNote() {
     // privado. En ese caso NO se guarda nada en dataset.url: no existe una URL
     // fija que guardar, se pide al abrir.
     card.className = 'att-card';
-    if (_esAdjuntoPrivado(url)) card.dataset.privado = '1';
+    if (_esAdjuntoPrivado(url)) {
+      card.dataset.privado = '1';
+      // La ruta se guarda en el DOM para que el clip de "archivos de esta
+      // conversacion" pueda re-adjuntarlos. No es un secreto: sin la firma de
+      // /api/adjunto no abre nada.
+      card.dataset.path = url.path;
+      if (url.casoId) card.dataset.casoId = url.casoId;
+    }
     else if (url) card.dataset.url = url;
     card.dataset.status = status || 'done';
     if (status === 'error') card.title = 'No se pudo subir. Se reintentará al enviar.';
@@ -4228,7 +4235,10 @@ function openNote() {
     document.querySelectorAll('.timeline-entry:not(#inline-compose-entry) .att-card').forEach(card => {
       const name = card.querySelector('.att-card-name')?.textContent.trim();
       const size = card.querySelector('.att-card-size')?.textContent.trim() || ''; const url = card.dataset.url || null;
-      if (name && !_convFiles.find(f => f.name === name)) files.push({ name, size, url });
+      // Los adjuntos privados no tienen dataset.url —no existe una URL fija—, asi
+      // que sin esto el clip los ignoraba y se enviaban de menos sin avisar.
+      const path = card.dataset.path || null;
+      if (name && (url || path) && !_convFiles.find(f => f.name === name)) files.push({ name, size, url, path });
     });
     if (!files.length) return;
     _convFiles.push(...files);
