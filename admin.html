@@ -1604,6 +1604,9 @@ function rteInsertCaso(tipo) {
     await cargarTodo();
     cerrarModalUsuario();
     renderUsuariosListado();
+    // Si algun permiso de bandeja no se pudo asignar, el backend lo avisa: sin esto
+    // el administrador creia que el usuario quedaba con accesos y entraba sin ver nada.
+    if (resultado.advertencia) alert(resultado.advertencia);
     alert(`Usuario creado. Le enviamos un email a ${email} para que configure su contraseña e inicie sesión.`);
   }
 
