@@ -310,9 +310,15 @@
     window.location.href = 'casos.html';
   });
 
-  // Aviso cuando la sesion se cerro porque el usuario entro desde otro lado
-  if (new URLSearchParams(location.search).get('sesion') === 'cerrada') {
+  // Aviso cuando la sesion se cerro porque el usuario entro desde otro lado.
+  // Son dos motivos distintos y conviene no confundirlos: "cerrada" es el mismo
+  // usuario desde otra maquina; "navegador" es OTRO usuario en este mismo
+  // navegador, que se resuelve de otra forma (incognito) y merece decirlo.
+  const _motivoSesion = new URLSearchParams(location.search).get('sesion');
+  if (_motivoSesion === 'cerrada') {
     mostrarError('Tu sesión se cerró porque se inició sesión con este usuario desde otro dispositivo.');
+  } else if (_motivoSesion === 'navegador') {
+    mostrarError('Tu sesión se cerró porque se inició sesión con otro usuario en este mismo navegador. Para trabajar con dos usuarios a la vez, usá una ventana de incógnito.');
   }
 </script>
 
