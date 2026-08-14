@@ -1993,6 +1993,10 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
     const checked = getRowChecks().filter(c => c.checked);
     if (!checked.length) return;
     const map = getBandejaMap();
+    // Foto antes de mutar nada, igual que en transferCases: sin esto, si el guardado
+    // fallaba la fila quedaba movida en pantalla y en la base no. _syncBandejaCambios
+    // avisaba, pero sin snapshot no podia deshacer.
+    const _snap = _snapBandejas(checked);
     let any = false;
     checked.forEach(c => {
       const tr = c.closest('tr');
@@ -2021,7 +2025,7 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
     clearSelection();
     _persistAllCases();
     showToast(`${checked.length} caso${checked.length > 1 ? 's' : ''} devuelto${checked.length > 1 ? 's' : ''} a la bandeja`);
-    _syncBandejaCambios(checked);
+    _syncBandejaCambios(checked, _snap);
   }
 
   function _snapBandejas(checked) {
