@@ -1318,7 +1318,7 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
   localStorage.setItem('cw_usuario_activo', CURRENT_USER_ID);
 
   const [{ data: bandejasDB }, { data: usuariosDB }, { data: permisosDB }, { data: casosDB }] = await Promise.all([
-    supabaseClient.from('centralweb_bandejas').select('*').eq('empresa_id', EMPRESA_ID),
+    supabaseClient.from('centralweb_bandejas').select('*').eq('empresa_id', EMPRESA_ID).order('created_at', { ascending: true }).order('id', { ascending: true }),
     supabaseClient.from('profiles').select('*').eq('empresa_id', EMPRESA_ID),
     supabaseClient.from('centralweb_permisos').select('*').eq('empresa_id', EMPRESA_ID),
     supabaseClient.from('centralweb_casos').select('id, empresa_id, ticket, estado, bandeja_id, sub_bandeja_id, asunto, from_name, from_email, asignado_user_id, combinado_con_id, creado_en, actualizado_en, leido').eq('empresa_id', EMPRESA_ID).order('creado_en', { ascending: true }),
