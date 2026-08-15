@@ -3030,7 +3030,7 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
       saveBandejaDisplayMap();
     }
 
-    _guardarCasoCreado(d); _saveCreacionEventBandeja(ticket, (bandejaLabels[bandejaKey] || bandejaKey), (asignadoKey ? ((getUserInfoMap()[asignadoKey]||{}).name || asignadoKey) : ''));
+    _saveCreacionEventBandeja(ticket, (bandejaLabels[bandejaKey] || bandejaKey), (asignadoKey ? ((getUserInfoMap()[asignadoKey]||{}).name || asignadoKey) : ''));
 
     const bienvenida = _mensajeBienvenidaPara(bandejaKey, ticket, asunto);
     if (bienvenida) localStorage.setItem('cw_bienvenida_' + ticket, bienvenida);
@@ -3156,17 +3156,6 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
       };
     });
     localStorage.setItem('cw_all_cases', JSON.stringify({ ts: Date.now(), data: all }));
-  }
-
-  // Casos dados de alta con "+ Nuevo Caso": el POOL/HTML estático no los conoce,
-  // así que se guardan aparte para volver a insertarlos al recargar la página.
-  function getCasosCreados() {
-    try { return JSON.parse(localStorage.getItem('cw_casos_creados') || '[]'); } catch (e) { return []; }
-  }
-  function _guardarCasoCreado(d) {
-    const casos = getCasosCreados();
-    casos.push(d);
-    localStorage.setItem('cw_casos_creados', JSON.stringify(casos));
   }
 
   // ════════════════════════════════
