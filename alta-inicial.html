@@ -118,6 +118,49 @@
     color: white;
   }
   button.btn-primary:hover { background: var(--blue-700); }
+  button.btn-primary:disabled {
+    background: #b6c6de;
+    cursor: not-allowed;
+  }
+  button.btn-primary:disabled:hover { background: #b6c6de; }
+
+  /* ── Términos y Condiciones ─────────────────────────────────────────────
+     El documento se muestra embebido (terminos.html?embed=1) en vez de
+     copiado acá: así hay una sola versión del texto legal y no se puede
+     desincronizar de la página pública. */
+  .terminos-box {
+    height: 260px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+  }
+  .terminos-box iframe { width: 100%; height: 100%; border: none; display: block; }
+  .terminos-estado {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 8px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .terminos-estado.ok { color: #059669; font-weight: 600; }
+  .terminos-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    cursor: pointer;
+  }
+  .terminos-check.bloqueado { opacity: .55; cursor: not-allowed; }
+  .terminos-check input[type=checkbox] {
+    width: 16px; height: 16px; margin: 2px 0 0;
+    accent-color: var(--blue-600); flex-shrink: 0; cursor: pointer;
+  }
+  .terminos-check.bloqueado input[type=checkbox] { cursor: not-allowed; }
+  .terminos-check a { color: var(--blue-700); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -169,7 +212,20 @@
     <div class="error-msg" id="error-msg"></div>
   </div>
 
-  <button class="btn-primary" onclick="finalizarAlta()">Empezar a usar CentralWeb</button>
+  <div class="card">
+    <h2>Términos y Condiciones</h2>
+    <p class="hint">Leé el documento completo. Al llegar al final se habilita la casilla de aceptación.</p>
+    <div class="terminos-box">
+      <iframe id="terminos-frame" src="terminos.html?embed=1" title="Términos y Condiciones de CentralWeb"></iframe>
+    </div>
+    <div class="terminos-estado" id="terminos-estado">Deslizá hasta el final del texto para poder aceptar.</div>
+    <label class="terminos-check bloqueado" id="terminos-check-wrap">
+      <input type="checkbox" id="input-terminos" disabled>
+      <span>Leí y acepto los <a href="terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a> y la <a href="privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a> de CentralWeb.</span>
+    </label>
+  </div>
+
+  <button class="btn-primary" id="btn-alta" onclick="finalizarAlta()" disabled>Empezar a usar CentralWeb</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -231,6 +287,10 @@
       mostrarError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
+    if (!document.getElementById('input-terminos').checked) {
+      mostrarError('Tenés que leer y aceptar los Términos y Condiciones para continuar.');
+      return;
+    }
 
     ocultarError();
     const boton = document.querySelector('.btn-primary');
@@ -266,7 +326,9 @@
                           empresaNombre,
                           adminNombre: nombre,
                           adminApellido: apellido,
-                          adminEmail: email
+                          adminEmail: email,
+                          terminosVersion: TERMINOS_VERSION,
+                          terminosAceptadosEn: terminosAceptadosEn || new Date().toISOString()
                 })
         }).catch(() => {});
 
@@ -287,6 +349,90 @@
 
     window.location.href = 'casos.html';
   }
+
+  // ── Lectura y aceptacion de los Terminos ──────────────────────────────────
+  // La casilla arranca deshabilitada y se libera recien cuando el texto se
+  // leyo hasta el final. El boton de alta queda bloqueado hasta que se tilda.
+  const TERMINOS_VERSION = '1.0';
+  let terminosAceptadosEn = null;
+
+  const _frame = document.getElementById('terminos-frame');
+  const _chk = document.getElementById('input-terminos');
+  const _chkWrap = document.getElementById('terminos-check-wrap');
+  const _estado = document.getElementById('terminos-estado');
+  const _botonAlta = document.getElementById('btn-alta');
+  let _terminosLeidos = false;
+  let _pollTerminos = null;
+
+  function habilitarAceptacion() {
+    if (_terminosLeidos) return;
+    _terminosLeidos = true;
+    if (_pollTerminos) { clearInterval(_pollTerminos); _pollTerminos = null; }
+    _chk.disabled = false;
+    _chkWrap.classList.remove('bloqueado');
+    _estado.classList.add('ok');
+    _estado.textContent = 'Llegaste al final: ya podés aceptar.';
+  }
+
+  let _enganchado = false;
+
+  function engancharScrollTerminos() {
+    if (_enganchado) return;
+    _enganchado = true;
+    let doc, win;
+    try {
+      win = _frame.contentWindow;
+      doc = _frame.contentDocument;
+    } catch (e) {
+      doc = null;
+    }
+    // Si por lo que sea no podemos leer el scroll del iframe, no dejamos el
+    // alta trabada: se habilita la casilla y el texto sigue disponible.
+    if (!doc || !win) { habilitarAceptacion(); return; }
+
+    const scroller = doc.scrollingElement || doc.documentElement;
+    function chequear() {
+      // 24px de tolerancia: no todos los navegadores llegan al pixel exacto.
+      if (scroller.scrollTop + win.innerHeight >= scroller.scrollHeight - 24) {
+        habilitarAceptacion();
+      }
+    }
+    win.addEventListener('scroll', chequear, { passive: true });
+    win.addEventListener('resize', chequear);
+    // Ademas del evento miramos la posicion cada medio segundo: el evento de
+    // scroll va alineado al repintado y no llega si la pestana esta en segundo
+    // plano, ni cuando el marco se mueve por teclado en algunos navegadores.
+    // El intervalo se corta solo apenas se da por leido.
+    _pollTerminos = setInterval(chequear, 500);
+    // Demorado: si chequeamos antes de que carguen las fuentes, el alto todavia
+    // no es el definitivo y podriamos darlo por leido de entrada.
+    setTimeout(chequear, 600);
+  }
+
+  _frame.addEventListener('load', engancharScrollTerminos);
+  // Este script vive al final del body: para cuando corre, el iframe puede
+  // haber terminado de cargar y el evento "load" ya no se dispara de nuevo.
+  // Sin esto el scroll nunca quedaba enganchado y la casilla no se liberaba.
+  try {
+    const _doc0 = _frame.contentDocument;
+    // La clase "embed" la pone terminos.html al arrancar: es la senal de que
+    // adentro ya esta el documento de verdad y no el about:blank inicial, al
+    // que no hay que engancharse (no tiene scroll y se daria por leido solo).
+    if (_doc0 && _doc0.readyState === 'complete' && _doc0.body && _doc0.body.classList.contains('embed')) {
+      engancharScrollTerminos();
+    }
+  } catch (e) { /* iframe todavia sin cargar: lo agarra el evento load */ }
+  setTimeout(function () {
+    if (_terminosLeidos) return;
+    let cargo = false;
+    try { cargo = !!_frame.contentDocument; } catch (e) { cargo = false; }
+    if (!cargo) habilitarAceptacion();
+  }, 8000);
+
+  _chk.addEventListener('change', function () {
+    terminosAceptadosEn = _chk.checked ? new Date().toISOString() : null;
+    _botonAlta.disabled = !_chk.checked;
+  });
 </script>
 
 </body>
