@@ -684,7 +684,7 @@
       </button>
     </div>
     <p class="hint">Cada bandeja obtiene su propia casilla (bandeja.sigla@cweb.novadgt.com).</p>
-        <details class="help-topic config-correo-box">
+        <details class="help-topic config-correo-box" id="ayuda-recepcion-correo">
           <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>¿Cómo funciona la recepción de correo en CentralWeb?</summary>
           <div class="help-topic-body">
             CentralWeb no reemplaza la casilla de correo que ya usan. Cuando les llega un correo a la dirección que tienen publicada en su sitio, redes sociales o facturación, ese correo sigue llegando ahí exactamente igual que siempre — ustedes solo agregan una copia adicional hacia CentralWeb, para que se convierta automáticamente en un caso.
@@ -692,6 +692,8 @@
             Eso significa que la dirección que sus clientes ya conocen nunca cambia, sin importar qué pase con CentralWeb en el futuro. CentralWeb no pide acceso a su dominio ni a su servidor de correo: solo recibe una copia de lo que ustedes decidan reenviarle.
             <br><br>
             Con esa copia, CentralWeb arma el caso, lo asigna, guarda el historial de la conversación y permite responder desde acá, sin que su casilla original deje de funcionar como siempre lo hizo. Toda la información de su empresa queda separada de la de cualquier otro cliente de CentralWeb.
+            <br><br>
+            Sus datos no se guardan en un servidor propio ni casero: viven en la infraestructura de proveedores reconocidos internacionalmente, con centros de datos en Estados Unidos y Brasil. Si en algún momento deciden dejar de usar CentralWeb, sus datos se conservan 90 días después de dar de baja la cuenta —tiempo de sobra para exportar todo lo que necesiten— y después se eliminan de forma definitiva.
           </div>
         </details>
     <div id="bandejas-listado"></div>
@@ -872,7 +874,7 @@
 
                   <div class="detalle-section config-correo-box">
               <h3>Configurar casilla de correo</h3>
-              <p class="hint">Para que los correos que llegan a la casilla real de la empresa se conviertan en casos acá, hay que configurar un reenvío hacia esta dirección.</p>
+              <p class="hint">Para que los correos que llegan a la casilla real de la empresa se conviertan en casos acá, hay que configurar un reenvío hacia esta dirección. <a href="#ayuda-recepcion-correo" onclick="verPorQueRecepcionCorreo(); return false;" style="color:var(--blue-700);font-weight:600;text-decoration:underline">¿por qué funciona así?</a></p>
               <div class="domain-preview" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
                 <b id="detalle-bandeja-correo-configurar"></b>
                 <button type="button" class="btn-cancel" onclick="copiarCorreoBandeja(this)">Copiar</button>
@@ -1442,6 +1444,17 @@ function rteInsertCaso(tipo) {
               if (panel) panel.style.display = '';
               const tab = document.querySelector('.proveedor-tab[data-proveedor="' + prov + '"]');
               if (tab) tab.classList.add('active');
+        }
+
+        // El "por que" general vive en un desplegable de la seccion Bandejas, que queda
+        // detras del modal: para mostrarlo hay que cerrar el modal, abrirlo y llevar
+        // la vista hasta ahi.
+        function verPorQueRecepcionCorreo() {
+              cerrarDetalleBandeja();
+              const det = document.getElementById('ayuda-recepcion-correo');
+              if (!det) return;
+              det.open = true;
+              det.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function copiarCorreoBandeja(btn) {
