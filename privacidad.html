@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidad — CentralWeb</title>
+<meta name="description" content="Política de Privacidad de CentralWeb: qué datos trata, con qué finalidad y qué derechos tiene cada persona sobre ellos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-900:  #0d2244;
+    --blue-800:  #0e3a6e;
+    --blue-700:  #1352a8;
+    --blue-100:  #e8f3fe;
+    --blue-50:   #f4f9ff;
+    --accent:       #2456C9;
+    --accent-light: #4C8DFF;
+    --text-primary:   #0d1f3c;
+    --text-secondary: #4a6285;
+    --text-muted:     #8ba4c4;
+    --border:         #d0e2f7;
+    --bg:             #f0f5fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .legal-top {
+    background: var(--blue-900);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .legal-top .logo { display: flex; align-items: baseline; gap: 2px; font-family: 'Space Grotesk', sans-serif; text-decoration: none; }
+  .legal-top .logo b { font-weight: 700; font-size: 19px; color: #fff; }
+  .legal-top .logo span,
+  .legal-top .logo em { font-weight: 700; font-size: 19px; color: var(--accent-light); font-style: normal; }
+  .legal-top .logo em { font-weight: 500; letter-spacing: .02em; }
+  .legal-top a.volver { color: #9db8e8; font-size: 13px; font-weight: 600; text-decoration: none; }
+  .legal-top a.volver:hover { color: #fff; }
+
+  .legal-doc {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 40px 28px 64px;
+  }
+  .legal-doc .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 40px 44px;
+    box-shadow: 0 10px 34px rgba(13,34,68,.06);
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1.25;
+    color: var(--blue-900);
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .legal-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--blue-800);
+    margin: 34px 0 10px;
+  }
+  h3 {
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--blue-700);
+    margin: 24px 0 8px;
+  }
+  p { margin: 0 0 14px; color: var(--text-secondary); }
+  strong, b { color: var(--text-primary); font-weight: 700; }
+  ul { margin: 0 0 16px; padding-left: 22px; color: var(--text-secondary); }
+  li { margin-bottom: 8px; }
+  a { color: var(--accent); font-weight: 600; }
+  a:hover { text-decoration: none; }
+
+  .aviso {
+    background: var(--blue-50);
+    border-left: 3px solid var(--accent-light);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 0 0 18px;
+  }
+  .aviso p:last-child { margin-bottom: 0; }
+
+  .tabla-wrap { overflow-x: auto; margin: 0 0 18px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 9px 11px; text-align: left; vertical-align: top; }
+  th { background: var(--blue-50); color: var(--blue-800); font-weight: 700; }
+  td { color: var(--text-secondary); }
+
+  .legal-foot {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 28px 48px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  @media (max-width: 640px) {
+    .legal-doc { padding: 22px 14px 40px; }
+    .legal-doc .card { padding: 26px 20px; border-radius: 12px; }
+    h1 { font-size: 22px; }
+  }
+
+  /* Modo embebido: la pagina se muestra dentro del recuadro de lectura
+     del alta (alta-inicial.html) via iframe, sin cabecera ni fondo propios. */
+  body.embed { background: #fff; font-size: 14px; }
+  body.embed .legal-top,
+  body.embed .legal-foot { display: none; }
+  body.embed .legal-doc { padding: 22px 24px 32px; max-width: none; }
+  body.embed .legal-doc .card { border: none; border-radius: 0; padding: 0; box-shadow: none; }
+  body.embed h1 { font-size: 20px; }
+</style>
+</head>
+<body>
+<script>
+  // ?embed=1 -> la pagina viaja dentro del recuadro de lectura del alta.
+  if (new URLSearchParams(location.search).get("embed") === "1") {
+    document.body.className = "embed";
+  }
+</script>
+<div class="legal-top">
+  <a class="logo" href="login.html"><b>central</b><span>.</span><em>web</em></a>
+  <a class="volver" href="login.html">Volver al inicio de sesión</a>
+</div>
+
+<div class="legal-doc">
+  <div class="card">
+    <h1>Política de Privacidad de CentralWeb</h1>
+    <p class="legal-meta">Versión 1.0 — vigente desde el 25 de agosto de 2026</p>
+
+    <h2>1. Compromiso y alcance</h2>
+    <p>Esta Política de Privacidad explica qué datos personales trata CentralWeb, con qué finalidad, y qué derechos tiene cada persona sobre esos datos. Se aplica al sitio y la plataforma de CentralWeb (centralweb.novadgt.com).</p>
+    <p>CentralWeb cumple con la Ley N.º 25.326 de Protección de Datos Personales de la República Argentina y su normativa reglamentaria.</p>
+    <p>Como CentralWeb procesa dos tipos de datos personales muy distintos entre sí, esta política se organiza en dos partes:</p>
+    <ul>
+      <li><b>Parte I</b> — los datos que CentralWeb recolecta y controla como <b>Responsable del Tratamiento</b>: los de las Empresas clientes y sus Usuarios (Agentes, Administradores).</li>
+      <li><b>Parte II</b> — los datos que CentralWeb procesa por cuenta de la Empresa cliente, como <b>Encargado del Tratamiento</b>: el contenido de los correos de los clientes de esa Empresa.</li>
+    </ul>
+
+    <h2>Parte I — Datos que CentralWeb recolecta como Responsable</h2>
+
+    <h3>1.1 Qué datos recolecta</h3>
+    <p>Al dar de alta una Empresa y sus Usuarios, CentralWeb recolecta:</p>
+    <ul>
+      <li><b>Datos de la Empresa:</b> razón social, sigla, dirección de correo de contacto.</li>
+      <li><b>Datos de cada Usuario</b> (Agente o Administrador): nombre, correo electrónico, contraseña (almacenada de forma segura por Supabase Auth, nunca en texto plano), y opcionalmente una firma (texto o imagen).</li>
+      <li><b>Datos técnicos de uso del sitio:</b> dirección IP, tipo de navegador, fecha y hora de acceso — generados automáticamente al usar la plataforma.</li>
+    </ul>
+
+    <h3>1.2 Para qué se usan</h3>
+    <ul>
+      <li>Crear y administrar la cuenta de la Empresa y sus Usuarios.</li>
+      <li>Permitir el inicio de sesión y aplicar los permisos correspondientes a cada rol.</li>
+      <li>Enviar comunicaciones esenciales: confirmación de cuenta, recuperación de contraseña, avisos de estado de la suscripción.</li>
+      <li>Dar soporte técnico cuando la Empresa lo solicita.</li>
+    </ul>
+
+    <h3>1.3 Base legal</h3>
+    <p>El tratamiento de estos datos se basa en la relación contractual entre la Empresa y CentralWeb (<a href="terminos.html" target="_blank" rel="noopener">Términos y Condiciones de Servicio</a>) y, cuando corresponda, en el consentimiento otorgado al registrarse.</p>
+
+    <h2>Parte II — Datos que CentralWeb procesa por cuenta de la Empresa (Encargado del Tratamiento)</h2>
+
+    <h3>2.1 Qué información se confía a CentralWeb</h3>
+    <p>Cuando la Empresa configura el reenvío de su casilla de correo hacia CentralWeb, cada correo que llega se convierte en un «caso». Eso incluye, del remitente original (un cliente de la Empresa) y del cuerpo del mensaje:</p>
+    <ul>
+      <li>Nombre y dirección de correo del remitente.</li>
+      <li>Asunto y cuerpo del mensaje.</li>
+      <li>Archivos adjuntos, si los hubiera.</li>
+    </ul>
+    <p>Esta información puede incluir datos sensibles según la definición de la Ley 25.326 (por ejemplo, si la Empresa cliente pertenece al sector salud) — en ese caso, es responsabilidad de la Empresa contar con la base legal adecuada para que esos datos circulen por CentralWeb, y de CentralWeb aplicar medidas de seguridad reforzadas para ese tipo de contenido.</p>
+
+    <h3>2.2 Propiedad y control de estos datos</h3>
+    <p>La Empresa es la titular de esta información («datos del servicio»). CentralWeb sólo la trata siguiendo las instrucciones de la Empresa (a través de la configuración de bandejas, respuestas automáticas, permisos, etc.), y pone a disposición de la Empresa la posibilidad de acceder, exportar o solicitar la eliminación de esos datos.</p>
+
+    <h3>2.3 Cómo se protege</h3>
+    <p>CentralWeb aplica, entre otras, las siguientes medidas técnicas y organizativas:</p>
+    <ul>
+      <li><b>Aislamiento entre empresas</b> mediante Row Level Security (RLS) en la base de datos: cada Empresa sólo puede acceder a sus propios casos. Esto no es una configuración teórica — se verificó de forma activa, intentando acceder y borrar filas de otra empresa desde una sesión real y confirmando que el sistema lo rechaza en cada una de las tablas que contienen datos de casos, usuarios y permisos.</li>
+      <li><b>Sanitización del contenido</b> de los correos entrantes antes de mostrarlo en pantalla (asunto, remitente y cuerpo), para evitar que un correo malicioso ejecute código en el navegador de un Agente (XSS).</li>
+      <li><b>Adjuntos en almacenamiento privado:</b> los adjuntos de notas, casos y correos (entrantes y salientes) se guardan en un bucket sin acceso público y se abren únicamente mediante URLs firmadas de 60 segundos de validez, generadas bajo demanda y validadas contra la empresa y el caso de quien las solicita.</li>
+      <li><b>Verificación de firma criptográfica (HMAC)</b> en cada correo entrante, para confirmar que proviene realmente de Mailgun y no de un tercero simulando el webhook.</li>
+      <li><b>Acceso restringido por sesión autenticada,</b> con permisos por bandeja dentro de cada Empresa: un Agente sólo ve los casos de las bandejas a las que fue asignado.</li>
+      <li><b>Cambio de contraseña protegido:</b> se exige volver a ingresar la contraseña actual antes de permitir una nueva.</li>
+      <li><b>Sesión de usuario</b> almacenada de forma que se borra automáticamente al cerrar la pestaña del navegador.</li>
+    </ul>
+    <p>Adicionalmente, se encuentran en proceso de implementación la autenticación de dos factores (2FA) en los servicios de infraestructura que dan soporte a CentralWeb y la verificación de contraseñas filtradas al registrarse (chequeo contra bases de contraseñas comprometidas conocidas).</p>
+
+    <h2>3. Con quién se comparte la información</h2>
+    <p>CentralWeb <b>no vende datos personales a terceros</b>. Para poder prestar el Servicio, comparte información con los proveedores de infraestructura detallados en el <a href="#subprocesadores">Anexo — Subprocesadores</a>, al final de este documento, y únicamente en la medida necesaria para que cada uno cumpla su función.</p>
+
+    <h2>4. Transferencia internacional de datos</h2>
+    <p>Los proveedores de infraestructura que utiliza CentralWeb (detallados en el Anexo) pueden alojar los datos fuera de la República Argentina. En ese caso, CentralWeb procura contratar con proveedores que ofrezcan garantías adecuadas de protección de datos personales, y lo informa en el Anexo — Subprocesadores.</p>
+
+    <h2>5. Retención de la información</h2>
+    <p>Los <b>datos del servicio</b> (Parte II) se conservan mientras la Empresa mantenga su cuenta activa. Al cancelar la cuenta, se conservan por 90 días corridos para permitir la exportación, y luego se eliminan de forma definitiva, salvo obligación legal de conservarlos por más tiempo.</p>
+    <p>Los <b>datos de cuenta</b> (Parte I) se conservan mientras la Empresa o el Usuario mantengan una relación con CentralWeb, y se eliminan o anonimizan cuando ya no son necesarios para los fines para los que se recolectaron.</p>
+
+    <h2>6. Derechos del titular de los datos</h2>
+    <p>De acuerdo con la Ley 25.326, toda persona tiene derecho a acceder, rectificar, actualizar y solicitar la supresión de sus datos personales, de forma gratuita, con los límites que establece la propia ley.</p>
+    <p>Si la persona es <b>cliente de una Empresa que usa CentralWeb</b> (es decir, sus datos fueron confiados a CentralWeb como Encargado del Tratamiento — Parte II), debe dirigir su solicitud directamente a esa Empresa, que es la Responsable del Tratamiento. CentralWeb colaborará con la Empresa para dar respuesta en un plazo razonable.</p>
+    <p>Si la persona es <b>Usuario de CentralWeb</b> (Agente o Administrador — Parte I), puede escribir directamente a <a href="mailto:contacto@novadgt.com">contacto@novadgt.com</a>.</p>
+    <div class="aviso">
+      <p>LA AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, Órgano de Control de la Ley N.º 25.326, es la autoridad de aplicación ante la cual se puede presentar una reclamación por el tratamiento indebido de datos personales.</p>
+    </div>
+
+    <h2>7. Cambios en esta política</h2>
+    <p>Esta Política puede actualizarse. Los cambios relevantes se comunicarán a las Empresas clientes con antelación razonable.</p>
+
+    <h2>8. Identidad del responsable y contacto</h2>
+    <p><b>Responsable:</b> Nicolás Eugenio Gravina (CUIT 20-31456460-0), bajo el nombre comercial «Nova Digital Services» (monotributista).<br>
+    <b>Domicilio:</b> Neuquén, Provincia del Neuquén, República Argentina.<br>
+    <b>Contacto:</b> <a href="mailto:contacto@novadgt.com">contacto@novadgt.com</a>.</p>
+
+    <h2 id="subprocesadores">Anexo — Subprocesadores</h2>
+    <p>Proveedores de infraestructura que participan en la prestación del Servicio y pueden tener acceso a datos del servicio (Parte II):</p>
+    <div class="tabla-wrap">
+      <table>
+        <thead>
+          <tr><th>Proveedor</th><th>Función</th><th>Datos que procesa</th><th>Ubicación</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Supabase<br>(proyecto nova-digital-services)</td>
+            <td>Base de datos, autenticación y almacenamiento de archivos adjuntos</td>
+            <td>Todo el contenido de los casos: correos, adjuntos, datos de usuarios y empresas</td>
+            <td>East US (North Virginia, EE. UU.)</td>
+          </tr>
+          <tr>
+            <td>Mailgun<br>(dominio cweb.novadgt.com)</td>
+            <td>Recepción y envío de los correos que generan y responden los casos</td>
+            <td>Remitente, destinatario, asunto, cuerpo y adjuntos de cada correo</td>
+            <td>Estados Unidos (región US de la cuenta)</td>
+          </tr>
+          <tr>
+            <td>Vercel</td>
+            <td>Hosting de la aplicación y de las funciones serverless</td>
+            <td>Igual que Supabase — las funciones actúan como intermediarias, no almacenan de forma permanente</td>
+            <td>Washington D.C. (EE. UU.) — región iad1</td>
+          </tr>
+          <tr>
+            <td>Resend</td>
+            <td>Envío del correo de bienvenida al dar de alta una empresa nueva</td>
+            <td>Nombre y correo de quien se registra</td>
+            <td>São Paulo (Brasil) — región sa-east-1</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Este listado se actualiza cuando cambia algún proveedor. CentralWeb avisa a las Empresas clientes con antelación razonable ante la incorporación de un nuevo subprocesador, dándoles la posibilidad de objetar.</p>
+  </div>
+</div>
+
+<div class="legal-foot">
+  CentralWeb — Nova Digital Services · <a href="terminos.html">Términos y Condiciones</a>
+</div>
+</body>
+</html>
