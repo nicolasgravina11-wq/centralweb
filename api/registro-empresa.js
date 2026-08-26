@@ -198,7 +198,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { sigla, empresaNombre, adminNombre, adminApellido, adminEmail } = req.body || {};
+    const { sigla, empresaNombre, adminNombre, adminApellido, adminEmail, terminosVersion, terminosAceptadosEn } = req.body || {};
     if (!sigla) {
       res.status(400).json({ ok: false, error: 'Falta sigla' });
       return;
@@ -227,6 +227,31 @@ module.exports = async (req, res) => {
         prefer: 'return=minimal',
         body: JSON.stringify({ estado_suscripcion: 'trial', trial_vence_en: venceISO })
       });
+    }
+
+    // Aceptacion de los Terminos (alta-inicial.html la manda al tildar la
+    // casilla). Va en un PATCH aparte y a prueba de fallas a proposito: si las
+    // columnas todavia no existen, PostgREST rechaza el PATCH entero, y eso no
+    // puede llevarse puesto el trial ni el correo de bienvenida.
+    // Solo para un alta recien hecha (esNuevaYSinTocar): este endpoint es
+    // publico, y sin esa condicion cualquiera podria sellar una aceptacion
+    // falsa sobre una empresa ya existente con solo conocer su sigla.
+    if (esNuevaYSinTocar && terminosVersion) {
+      try {
+        const fecha = new Date(terminosAceptadosEn || Date.now());
+        await supabaseFetch(`empresas?id=eq.${empresa.id}`, {
+          method: 'PATCH',
+          prefer: 'return=minimal',
+          body: JSON.stringify({
+            terminos_version: String(terminosVersion).slice(0, 20),
+            terminos_aceptados_en: isNaN(fecha.getTime())
+              ? new Date().toISOString()
+              : fecha.toISOString()
+          })
+        });
+      } catch (e) {
+        console.error('No se pudo asentar la aceptacion de Terminos:', e && e.message);
+      }
     }
 
     const venceMostrar = venceISO || empresa.trial_vence_en;
