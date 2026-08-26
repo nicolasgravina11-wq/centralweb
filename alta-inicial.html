@@ -124,12 +124,33 @@
   }
   button.btn-primary:disabled:hover { background: #b6c6de; }
 
+  [hidden] { display: none !important; }
+  .paso-tag {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--blue-600);
+    background: var(--blue-100);
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-bottom: 10px;
+  }
+  .nota-aceptado {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 12px 0 0;
+  }
+  .nota-aceptado a { color: var(--text-secondary); }
+
   /* ── Términos y Condiciones ─────────────────────────────────────────────
      El documento se muestra embebido (terminos.html?embed=1) en vez de
      copiado acá: así hay una sola versión del texto legal y no se puede
      desincronizar de la página pública. */
   .terminos-box {
-    height: 260px;
+    height: 340px;
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
@@ -168,64 +189,75 @@
 <div class="wrap">
   <div class="header">
     <div class="brand">CentralWeb</div>
-    <div class="sub">Antes de empezar, configuremos tu cuenta</div>
+    <div class="sub" id="header-sub">Antes de empezar, leé y aceptá los Términos</div>
   </div>
 
-  <div class="card">
-    <h2>Tu empresa</h2>
-    <p class="hint">El nombre formal aparece como remitente cuando un caso recibe una respuesta desde la plataforma.</p>
-    <div class="field">
-      <label class="field-label">Nombre formal de la empresa</label>
-      <input type="text" id="input-empresa-nombre" placeholder="ej. Empresa Ejemplo S.A.">
+  <!-- Paso 1: sin aceptar los Terminos no se llega a los campos del alta. -->
+  <div id="paso-terminos">
+    <div class="card">
+      <div class="paso-tag">Paso 1 de 2</div>
+      <h2>Términos y Condiciones</h2>
+      <p class="hint">Leé el documento completo. Al llegar al final se habilita la casilla de aceptación.</p>
+      <div class="terminos-box">
+        <iframe id="terminos-frame" src="terminos.html?embed=1" title="Términos y Condiciones de CentralWeb"></iframe>
+      </div>
+      <div class="terminos-estado" id="terminos-estado">Deslizá hasta el final del texto para poder aceptar.</div>
+      <label class="terminos-check bloqueado" id="terminos-check-wrap">
+        <input type="checkbox" id="input-terminos" disabled>
+        <span>Leí y acepto los <a href="terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a> y la <a href="privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a> de CentralWeb.</span>
+      </label>
     </div>
-    <div class="field">
-      <label class="field-label">Sigla / abreviación</label>
-      <input type="text" id="input-empresa-sigla" placeholder="ej. emp" maxlength="12">
-      <div class="sigla-preview" id="sigla-preview">Se usará para armar los correos de tus bandejas.</div>
-    </div>
+
+    <button class="btn-primary" id="btn-aceptar" onclick="aceptarTerminos()" disabled>Aceptar y continuar</button>
   </div>
 
-  <div class="card">
-    <h2>Usuario administrador</h2>
-    <p class="hint">Vas a usar estos datos para ingresar a CentralWeb.</p>
-    <div class="row">
+  <!-- Paso 2: aparece recien cuando se acepto el paso 1. -->
+  <div id="paso-datos" hidden>
+    <div class="card">
+      <div class="paso-tag">Paso 2 de 2</div>
+      <h2>Tu empresa</h2>
+      <p class="hint">El nombre formal aparece como remitente cuando un caso recibe una respuesta desde la plataforma.</p>
       <div class="field">
-        <label class="field-label">Nombre</label>
-        <input type="text" id="input-admin-nombre" placeholder="ej. Juan">
+        <label class="field-label">Nombre formal de la empresa</label>
+        <input type="text" id="input-empresa-nombre" placeholder="ej. Empresa Ejemplo S.A.">
       </div>
       <div class="field">
-        <label class="field-label">Apellido</label>
-        <input type="text" id="input-admin-apellido" placeholder="ej. Pérez">
+        <label class="field-label">Sigla / abreviación</label>
+        <input type="text" id="input-empresa-sigla" placeholder="ej. emp" maxlength="12">
+        <div class="sigla-preview" id="sigla-preview">Se usará para armar los correos de tus bandejas.</div>
       </div>
     </div>
-    <div class="field">
-      <label class="field-label">Email</label>
-        <input type="email" id="input-admin-email" placeholder="ej. juan.perez@empresa.com">
-    </div>
-    <div class="field">
-      <label class="field-label">Contraseña</label>
-      <div class="pwd-wrap">
-        <input type="password" id="input-admin-password" placeholder="Mínimo 6 caracteres">
-        <button type="button" class="pwd-toggle" onclick="_togglePwd('input-admin-password', this)" aria-label="Mostrar contraseña"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button>
+
+    <div class="card">
+      <h2>Usuario administrador</h2>
+      <p class="hint">Vas a usar estos datos para ingresar a CentralWeb.</p>
+      <div class="row">
+        <div class="field">
+          <label class="field-label">Nombre</label>
+          <input type="text" id="input-admin-nombre" placeholder="ej. Juan">
+        </div>
+        <div class="field">
+          <label class="field-label">Apellido</label>
+          <input type="text" id="input-admin-apellido" placeholder="ej. Pérez">
+        </div>
       </div>
+      <div class="field">
+        <label class="field-label">Email</label>
+          <input type="email" id="input-admin-email" placeholder="ej. juan.perez@empresa.com">
+      </div>
+      <div class="field">
+        <label class="field-label">Contraseña</label>
+        <div class="pwd-wrap">
+          <input type="password" id="input-admin-password" placeholder="Mínimo 6 caracteres">
+          <button type="button" class="pwd-toggle" onclick="_togglePwd('input-admin-password', this)" aria-label="Mostrar contraseña"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button>
+        </div>
+      </div>
+      <div class="error-msg" id="error-msg"></div>
     </div>
-    <div class="error-msg" id="error-msg"></div>
-  </div>
 
-  <div class="card">
-    <h2>Términos y Condiciones</h2>
-    <p class="hint">Leé el documento completo. Al llegar al final se habilita la casilla de aceptación.</p>
-    <div class="terminos-box">
-      <iframe id="terminos-frame" src="terminos.html?embed=1" title="Términos y Condiciones de CentralWeb"></iframe>
-    </div>
-    <div class="terminos-estado" id="terminos-estado">Deslizá hasta el final del texto para poder aceptar.</div>
-    <label class="terminos-check bloqueado" id="terminos-check-wrap">
-      <input type="checkbox" id="input-terminos" disabled>
-      <span>Leí y acepto los <a href="terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a> y la <a href="privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a> de CentralWeb.</span>
-    </label>
+    <button class="btn-primary" id="btn-alta" onclick="finalizarAlta()">Empezar a usar CentralWeb</button>
+    <p class="nota-aceptado" id="nota-aceptado"></p>
   </div>
-
-  <button class="btn-primary" id="btn-alta" onclick="finalizarAlta()" disabled>Empezar a usar CentralWeb</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -293,7 +325,9 @@
     }
 
     ocultarError();
-    const boton = document.querySelector('.btn-primary');
+    // Por id y no por clase: desde que el alta tiene dos pasos hay mas de un
+    // .btn-primary en la pagina y el primero es el de aceptar los Terminos.
+    const boton = document.getElementById('btn-alta');
     boton.disabled = true;
     boton.textContent = 'Creando tu cuenta...';
 
@@ -360,7 +394,7 @@
   const _chk = document.getElementById('input-terminos');
   const _chkWrap = document.getElementById('terminos-check-wrap');
   const _estado = document.getElementById('terminos-estado');
-  const _botonAlta = document.getElementById('btn-alta');
+  const _botonAceptar = document.getElementById('btn-aceptar');
   let _terminosLeidos = false;
   let _pollTerminos = null;
 
@@ -431,8 +465,28 @@
 
   _chk.addEventListener('change', function () {
     terminosAceptadosEn = _chk.checked ? new Date().toISOString() : null;
-    _botonAlta.disabled = !_chk.checked;
+    _botonAceptar.disabled = !_chk.checked;
   });
+
+  // Paso 1 -> paso 2. Los campos del alta no existen en pantalla hasta aca.
+  function aceptarTerminos() {
+    if (!_chk.checked) return;
+    terminosAceptadosEn = terminosAceptadosEn || new Date().toISOString();
+
+    document.getElementById('paso-terminos').hidden = true;
+    document.getElementById('paso-datos').hidden = false;
+    document.getElementById('header-sub').textContent = 'Antes de empezar, configuremos tu cuenta';
+
+    const cuando = new Date(terminosAceptadosEn).toLocaleDateString('es-AR', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+    document.getElementById('nota-aceptado').innerHTML =
+      'Aceptaste los <a href="terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a> y la ' +
+      '<a href="privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a> el ' + cuando + '.';
+
+    window.scrollTo(0, 0);
+    document.getElementById('input-empresa-nombre').focus();
+  }
 </script>
 
 </body>
