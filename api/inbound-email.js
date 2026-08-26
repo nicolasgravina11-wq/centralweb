@@ -107,8 +107,80 @@ function nombreParaHeader(nombre) {
   return limpio ? `"${limpio}"` : '';
 }
 
+// ── Anti-bucle de la confirmación de ingreso ───────────────────────
+// La confirmación es lo único que CentralWeb manda solo. Con casillas reales
+// reenviando hacia acá, dos auto-respondedores pueden quedar contestándose entre sí
+// hasta agotar la cuota diaria de Mailgun. Tres frenos independientes:
+//   1. headers estándar que marcan al correo como automático
+//   2. direcciones que por convención no reciben respuesta (noreply, mailer-daemon)
+//   3. tope por remitente: MAX_AUTO_POR_VENTANA confirmaciones en VENTANA_AUTO_MIN
+// El caso se crea igual en los tres casos: lo único que se saltea es la confirmación.
+// Importa que sea así: el código de verificación de Gmail llega de
+// forwarding-noreply@google.com y tiene que entrar como caso para poder leerlo.
+const MAX_AUTO_POR_VENTANA = 3;
+const VENTANA_AUTO_MIN = 10;
+
+function headersDelCorreo(fields) {
+  const out = {};
+  if (fields && fields['message-headers']) {
+    try {
+      JSON.parse(fields['message-headers']).forEach(([k, v]) => {
+        out[String(k).toLowerCase()] = String(v == null ? '' : v);
+      });
+    } catch (e) {}
+  }
+  return out;
+}
+
+// Devuelve el motivo por el que no hay que responder, o null si se puede responder.
+function esCorreoAutomatico(fields) {
+  const h = headersDelCorreo(fields);
+  const autoSubmitted = (h['auto-submitted'] || '').toLowerCase().trim();
+  if (autoSubmitted && autoSubmitted !== 'no') return `header Auto-Submitted: ${autoSubmitted}`;
+  const precedence = (h['precedence'] || '').toLowerCase().trim();
+  if (/^(bulk|list|junk|auto_reply)$/.test(precedence)) return `header Precedence: ${precedence}`;
+  if (h['x-auto-response-suppress']) return 'header X-Auto-Response-Suppress';
+  if (h['x-autoreply'] || h['x-autorespond'] || h['x-autoresponder']) return 'header de auto-respondedor';
+  if (h['list-id'] || h['list-unsubscribe']) return 'correo de lista o newsletter';
+  if ((h['return-path'] || '').trim() === '<>') return 'Return-Path vacío (rebote)';
+  return null;
+}
+
+const LOCALES_SIN_RESPUESTA = /^(mailer-daemon|postmaster|abuse|listserv|majordomo|bounces?|daemon)$/i;
+
+function direccionNoRespondible(fromEmail, destinatario) {
+  const email = String(fromEmail || '').toLowerCase().trim();
+  if (!email || email.indexOf('@') < 1) return 'remitente sin dirección válida';
+  if (email === String(destinatario || '').toLowerCase().trim()) return 'el remitente es la propia bandeja';
+  const local = email.split('@')[0];
+  const dominio = email.split('@')[1];
+  // Un correo nuestro volviendo a entrar es la señal más clara de bucle.
+  if (dominio === MAILGUN_DOMAIN) return 'remitente del propio dominio de CentralWeb';
+  if (LOCALES_SIN_RESPUESTA.test(local)) return `dirección de sistema (${local})`;
+  if (/(^|[.\-_])(no-?reply|do-?not-?reply|noreply|donotreply)([.\-_]|$)/i.test(local)) return `dirección de tipo noreply (${local})`;
+  return null;
+}
+
+// Tercer freno, el que ataja los bucles que pasan los dos anteriores: si ya le
+// mandamos MAX_AUTO_POR_VENTANA confirmaciones a la misma dirección en los últimos
+// VENTANA_AUTO_MIN minutos, algo está rebotando y cortamos.
+async function superaTopeDeAutoRespuestas(empresaId, fromEmail) {
+  const desde = new Date(Date.now() - VENTANA_AUTO_MIN * 60 * 1000).toISOString();
+  try {
+    const previas = await supabaseFetch(
+      `centralweb_mensajes?select=id&empresa_id=eq.${empresaId}&direccion=eq.saliente&autor_id=is.null&para=eq.${encodeURIComponent(fromEmail)}&creado_en=gte.${encodeURIComponent(desde)}&limit=${MAX_AUTO_POR_VENTANA}`
+    );
+    return (previas || []).length >= MAX_AUTO_POR_VENTANA;
+  } catch (e) {
+    // Ante la duda se manda: perder una confirmación legítima es peor que una de más,
+    // y los otros dos frenos siguen puestos.
+    console.error('No se pudo contar auto-respuestas previas:', e.message);
+    return false;
+  }
+}
+
 async function enviarAutoRespuesta(fromAddress, toEmail, ticket, empresaNombre, mensajeBienvenida, asuntoOriginal) { if (!MAILGUN_API_KEY) return null; const cuerpoHtml = (mensajeBienvenida || `Hemos recibido su consulta y fue registrada con el número de caso <strong>${ticket}</strong>. Un agente de soporte se pondrá en contacto a la brevedad. Gracias por comunicarse con nosotros.`).replace(/<span[^>]*class="var-chip"[^>]*>[^<]*<\/span>/gi, m => /data-var="asunto"/i.test(m) ? '<em>' + (asuntoOriginal || '(sin asunto)') + '</em>' : ticket); const asuntoAuto = 'Confirmación de ingreso'; const form = new FormData(); form.append('from', `${nombreParaHeader(empresaNombre || 'CentralWeb')} <${fromAddress}>`); form.append('to', toEmail); form.append('subject', asuntoAuto); const htmlParaEnvio = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8" /></head><body>${cuerpoHtml}<span style="display:none">\u200B</span></body></html>`; // zero-width space: obliga a Mailgun a codificar el envio como utf-8 real (no ascii)
-    form.append('html', htmlParaEnvio); form.append('h:Reply-To', fromAddress); form.append('h:Content-Language', 'es'); const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form }); const mgJson = await mgResp.json().catch(() => ({})); if (!mgResp.ok) throw new Error(mgJson.message || 'Error enviando auto-respuesta'); return { mailgunId: mgJson.id || null, cuerpoHtml, asunto: asuntoAuto }; } function limpiarCuerpoEntrante(texto) {
+    form.append('html', htmlParaEnvio); form.append('h:Reply-To', fromAddress); form.append('h:Content-Language', 'es'); /* La otra mitad del anti-bucle: marcar la confirmacion como automatica para que el auto-respondedor del otro lado no la conteste (RFC 3834 y el equivalente de Exchange). */ form.append('h:Auto-Submitted', 'auto-replied'); form.append('h:X-Auto-Response-Suppress', 'All'); const mgResp = await fetch(`https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(`api:${MAILGUN_API_KEY}`).toString('base64') }, body: form }); const mgJson = await mgResp.json().catch(() => ({})); if (!mgResp.ok) throw new Error(mgJson.message || 'Error enviando auto-respuesta'); return { mailgunId: mgJson.id || null, cuerpoHtml, asunto: asuntoAuto }; } function limpiarCuerpoEntrante(texto) {
   if (!texto) return '';
   let out = String(texto);
   const patrones = [
@@ -320,7 +392,9 @@ module.exports = async (req, res) => {
         data: { from: fromEmail, asunto } }) }); try { const sectorBandeja = subBandejaSector || (bandejas[0] && bandejas[0].sector) || null;
     const remitenteDisplay = sectorBandeja ? `${sectorBandeja} - ${empresaNombre.toUpperCase()}` : empresaNombre.toUpperCase();
     const mensajeBienvenida = subBandejaMensaje || (bandejas[0] && bandejas[0].mensaje_bienvenida) || null;
-    const autoResp = await enviarAutoRespuesta(destinatario, fromEmail, ticket, remitenteDisplay, mensajeBienvenida, asunto); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
+    const motivoSinConfirmacion = esCorreoAutomatico(fields) || direccionNoRespondible(fromEmail, destinatario) || ((await superaTopeDeAutoRespuestas(empresaId, fromEmail)) ? `ya se mandaron ${MAX_AUTO_POR_VENTANA} confirmaciones a ${fromEmail} en los ultimos ${VENTANA_AUTO_MIN} minutos` : null);
+    if (motivoSinConfirmacion) console.log(`Caso ${ticket}: no se manda confirmacion de ingreso (${motivoSinConfirmacion})`);
+    const autoResp = motivoSinConfirmacion ? null : await enviarAutoRespuesta(destinatario, fromEmail, ticket, remitenteDisplay, mensajeBienvenida, asunto); if (autoResp) { await supabaseFetch('centralweb_mensajes', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify({ empresa_id: empresaId, caso_id: caso.id, autor_id: null, direccion: 'saliente', para: fromEmail, cc: null, asunto: autoResp.asunto, cuerpo_html: autoResp.cuerpoHtml, mailgun_id: autoResp.mailgunId, adjuntos: [] }) }); } } catch (e) { console.error('No se pudo enviar la auto-respuesta:', e.message); } console.log(`Caso ${ticket} creado para empresa ${sigla}, bandeja ${bandejaKey}`);
   } catch (e) {
     // Un fallo en una casilla no debe impedir el procesamiento de las demas.
     console.error('Error creando el caso desde el correo entrante:', e.message);
