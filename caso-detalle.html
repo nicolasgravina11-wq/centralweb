@@ -365,11 +365,16 @@
     .tab-pane::-webkit-scrollbar { width: 4px; }
     .tab-pane::-webkit-scrollbar-thumb { background: var(--blue-200); border-radius: 2px; }
 
-    /* "Informacion personal" se queda con el alto sobrante y scrollea sola, asi
-       "Detalle del caso" (numero, estado, bandeja) queda siempre a la vista sin
-       tener que scrollear todo el panel. */
+    /* "Informacion personal" ocupa solo lo que necesita y scrollea sola si no entra,
+       asi "Detalle del caso" (numero, estado, bandeja) queda siempre a la vista sin
+       tener que scrollear todo el panel.
+       El 0 de flex-grow es a proposito: con "flex: 1 1 auto" esta seccion se quedaba
+       con todo el alto sobrante, y al bajar de cinco campos a tres ese sobrante paso
+       a verse como un hueco blanco entre las dos secciones. El 1 de flex-shrink se
+       queda: en una ventana baja tiene que poder encogerse y scrollear, que es lo
+       que mantiene el detalle del caso a la vista. */
     #tab-contacto { overflow: hidden; }
-    #tab-contacto > .panel-section { flex: 1 1 auto; min-height: 110px; overflow-y: auto; }
+    #tab-contacto > .panel-section { flex: 0 1 auto; min-height: 110px; overflow-y: auto; }
     #tab-contacto > .case-section { flex: 0 0 auto; max-height: 70%; overflow-y: auto; }
     #tab-contacto > .panel-section::-webkit-scrollbar,
     #tab-contacto > .case-section::-webkit-scrollbar { width: 4px; }
