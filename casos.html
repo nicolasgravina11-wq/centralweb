@@ -1636,8 +1636,10 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
       if (ticket && _gracia[ticket] && tr.dataset.bandeja !== _gracia[ticket]) {
         _marcarFilaEnGracia(tr);
       }
-      if (ticket && _graciaCierre[ticket] && tr.dataset.status === 'cerrado') {
-        tr.classList.add('en-gracia');
+      if (ticket && _graciaCierre[ticket]) {
+        if (tr.dataset.status === 'cerrado') tr.classList.add('en-gracia');
+        // Se reabrio mientras la marca seguia puesta: hay que sacarla, no ignorarla.
+        else _limpiarGraciaCierreDe(ticket, tr);
       }
       const show = rowVisible(tr);
       tr.style.display = show ? '' : 'none';
@@ -1918,6 +1920,27 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
   }
   function _limpiarGraciaCierre() {
     sessionStorage.removeItem('cw_cierre_en_gracia');
+  }
+
+  // Un caso cerrado que vuelve a abrirse solo -- tipicamente porque el cliente
+  // respondio y el correo entrante lo reabrio -- tiene que dejar de verse apagado.
+  // La marca de gracia de cierre vive en sessionStorage y sobrevive al F5, asi que
+  // sin esto la fila seguia gris, con el badge "Abierto" al lado, hasta cambiar de
+  // bandeja o tocar el filtro.
+  function _limpiarGraciaCierreDe(ticket, tr) {
+    if (!ticket) return;
+    try {
+      const g = getCierreEnGracia();
+      if (g[ticket]) {
+        delete g[ticket];
+        sessionStorage.setItem('cw_cierre_en_gracia', JSON.stringify(g));
+      }
+      _graciaCierre = g;
+    } catch (e) {}
+    // La clase se comparte con el margen de gracia de transferencia (que ademas
+    // trae el badge "Transferido"): si la fila esta apagada por eso, no se toca.
+    const enGraciaPorTransferencia = !!(_gracia && _gracia[ticket] && tr && tr.dataset.bandeja !== _gracia[ticket]);
+    if (tr && !enGraciaPorTransferencia) tr.classList.remove('en-gracia');
   }
 
   // ── Asignado map ──
@@ -3261,6 +3284,7 @@ function _cwPantallaBloqueo(titulo, htmlTexto, botones) {
         const celda = tr.querySelector('td:nth-child(5)');
         if (celda && badgeMap[fila.estado]) celda.innerHTML = badgeMap[fila.estado];
         const m = getStatusMap(); m[fila.ticket] = fila.estado; saveStatusMap(m);
+        if (fila.estado !== 'cerrado') _limpiarGraciaCierreDe(fila.ticket, tr);
         cambio = true;
       }
 
