@@ -12,7 +12,6 @@
 
 const busboy = require('busboy');
 const crypto = require('crypto');
-const sanitizeHtml = require('sanitize-html');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ftuyjjjkjxbldgdxmcfv.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -96,6 +95,65 @@ async function subirAdjunto(path, buffer, contentType) { const respuesta = await
   }
   return resultado;
 }
+
+// Reemplazo de sanitize-html(texto, { allowedTags: [], allowedAttributes: {} }),
+// que es el unico modo en que inbound-email.js la usaba: "tirar todo el HTML y
+// dejar el texto". Se saco la dependencia porque arrastraba 18 paquetes para usar
+// una sola funcion, y su version al dia (2.18) no carga en el runtime de Vercel:
+// depende de htmlparser2 12, que es ESM, y Vercel no soporta require() de ESM.
+//
+// El resultado sigue saliendo ESCAPADO para HTML, igual que antes, porque
+// casos.html inyecta el asunto con innerHTML (ver <div class="subject-line">).
+// No cambiar eso sin revisar las dos pantallas.
+
+// Las que sanitize-html descarta junto con su contenido (su nonTextTags por defecto).
+const TAGS_SIN_TEXTO = 'script|style|textarea|option';
+
+// Una etiqueta HTML, con los atributos entrecomillados tratados como una unidad:
+// sin esto, un atributo que contiene ">" cortaba la etiqueta al medio y dejaba
+// basura visible en el asunto.
+const UNA_ETIQUETA = /<\/?[a-z][a-z0-9-]*(?:\s+[^\s=/>]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*))?)*\s*\/?>/gi;
+
+// Las entidades que de verdad aparecen en el asunto de un correo en castellano.
+// No hace falta la tabla HTML completa (son miles): lo que no este aca queda
+// escapado tal cual, que es el lado seguro del error.
+const ENTIDADES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú',
+  Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú',
+  ntilde: 'ñ', Ntilde: 'Ñ', uuml: 'ü', Uuml: 'Ü',
+  agrave: 'à', egrave: 'è', ccedil: 'ç', Ccedil: 'Ç',
+  ordf: 'ª', ordm: 'º', deg: '°', euro: '€', pound: '£',
+  iquest: '¿', iexcl: '¡', laquo: '«', raquo: '»',
+  hellip: '…', mdash: '—', ndash: '–', rsquo: '’', lsquo: '‘',
+  ldquo: '“', rdquo: '”', middot: '·', bull: '•',
+  copy: '©', reg: '®', trade: '™', times: '×', divide: '÷'
+};
+
+function decodificarEntidades(texto) {
+  return String(texto)
+    .replace(/&#x([0-9a-f]+);/gi, (m, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch (e) { return m; } })
+    .replace(/&#(\d+);/g, (m, d) => { try { return String.fromCodePoint(parseInt(d, 10)); } catch (e) { return m; } })
+    .replace(/&([a-zA-Z]+);/g, (m, n) => {
+      if (Object.prototype.hasOwnProperty.call(ENTIDADES, n)) return ENTIDADES[n];
+      const bajo = n.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(ENTIDADES, bajo) ? ENTIDADES[bajo] : m;
+    });
+}
+
+function soloTexto(entrada) {
+  let t = String(entrada == null ? '' : entrada);
+  // 1. etiquetas cuyo contenido se descarta entero, cerradas o sin cerrar
+  t = t.replace(new RegExp('<(' + TAGS_SIN_TEXTO + ')\\b[^>]*>[\\s\\S]*?(?:</\\1\\s*>|$)', 'gi'), '');
+  // 2. comentarios
+  t = t.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+  // 3. el resto de las etiquetas: se va la etiqueta, queda el texto de adentro
+  t = t.replace(UNA_ETIQUETA, '');
+  // 4. y 5. decodificar y volver a escapar: el mismo viaje que hacia la libreria
+  t = decodificarEntidades(t);
+  return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 
 // El nombre del remitente va entre comillas en el header From: los sectores traen
 // puntos ("Dpto.", "Div.") y por RFC 5322 un display-name sin comillas no puede
@@ -208,7 +266,7 @@ function textoEntranteAHtml(texto) {
 function partirRemitente(remitenteCrudo) {
   const conNombre = (remitenteCrudo || '').match(/^(.*?)\s*<(.+)>$/);
   if (conNombre) {
-    return { nombre: sanitizeHtml(conNombre[1].trim().replace(/^"|"$/g, ''), { allowedTags: [], allowedAttributes: {} }), email: conNombre[2].trim() };
+    return { nombre: soloTexto(conNombre[1].trim().replace(/^"|"$/g, '')), email: conNombre[2].trim() };
   }
   return { nombre: '', email: (remitenteCrudo || '').trim() };
 }
@@ -266,7 +324,7 @@ module.exports = async (req, res) => {
   }
 
   const recipient = (fields.recipient || '').toLowerCase().trim();
-  const asunto = sanitizeHtml(fields.subject || '(sin asunto)', { allowedTags: [], allowedAttributes: {} });
+  const asunto = soloTexto(fields.subject || '(sin asunto)');
   const cuerpo = textoEntranteAHtml(limpiarCuerpoEntrante(fields['stripped-text'] || fields['body-plain'] || ''));
 
   // Un mismo correo puede venir dirigido a varias casillas nuestras. Gmail hace que Mailgun
